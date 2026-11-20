@@ -1,0 +1,5 @@
+shots/
+variants/
+.DS_Store
+node_modules/
+build/
