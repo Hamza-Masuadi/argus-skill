@@ -1,0 +1,17 @@
+{
+  "name": "argus-skill",
+  "description": "Argus, a design skill for AI coding agents",
+  "owner": {
+    "name": "Hamza Masuadi",
+    "url": "https://github.com/Hamza-Masuadi"
+  },
+  "plugins": [
+    {
+      "name": "argus",
+      "source": "./",
+      "description": "A design skill built around looking at the rendered result. Websites, dashboards and mobile app screens, in any framework.",
+      "version": "0.3.2",
+      "category": "design"
+    }
+  ]
+}

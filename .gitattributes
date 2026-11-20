@@ -1,0 +1,9 @@
+* text=auto eol=lf
+
+# The skill is written in Markdown, so count it in the language bar.
+*.md linguist-detectable=true
+*.md linguist-documentation=false
+
+# Compiled from src/ by `npm run build`. The source of truth is the TypeScript.
+bin/*.js linguist-generated=true
+skills/argus/scripts/*.js linguist-generated=true

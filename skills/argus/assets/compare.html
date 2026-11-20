@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design variants</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: #1c1d1f; color: #e8e8e6; }
+  header { padding: 14px 20px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid #34363a; }
+  h1 { font-size: 16px; margin: 0; font-weight: 650; }
+  header p { margin: 0; color: #a3a5a8; }
+  .controls { margin-left: auto; display: flex; gap: 8px; }
+  button { font: inherit; color: inherit; background: #2a2c30; border: 1px solid #44474c; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  button[aria-pressed="true"] { background: #e8e8e6; color: #1c1d1f; border-color: #e8e8e6; }
+  button:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; }
+  .row { display: flex; gap: 16px; padding: 16px 20px; overflow-x: auto; align-items: flex-start; }
+  figure { margin: 0; flex: none; }
+  figcaption { padding: 0 0 8px; display: flex; justify-content: space-between; gap: 12px; }
+  figcaption a { color: #8ab4ff; }
+  .frame { overflow: hidden; border-radius: 8px; background: #fff; }
+  iframe { border: 0; display: block; transform-origin: 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Design variants</h1>
+  <p>Same brief, different directions. Pick by looking.</p>
+  <div class="controls" role="group" aria-label="Preview width">
+    <button data-w="1440" aria-pressed="true">Desktop</button>
+    <button data-w="390" aria-pressed="false">Phone</button>
+  </div>
+</header>
+<div class="row" id="row"></div>
+<script>
+  // Edit this list: [path to each HTML file, label shown above the preview].
+  // Paths are relative to this file, for example "a.html" or "a-poster/index.html".
+  const versions = [
+    ["a.html", "A: first direction"],
+    ["b.html", "B: second direction"],
+    ["c.html", "C: third direction"]
+  ];
+  // Paths can also be given in the address, with no editing: compare.html?a.html,b.html,c.html
+  const fromAddress = decodeURIComponent(location.search.slice(1)).split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+  if (fromAddress.length) {
+    versions.length = 0;
+    fromAddress.forEach(function (p, i) { versions.push([p, String.fromCharCode(65 + i) + ": " + p]); });
+  }
+  const row = document.getElementById("row");
+  function render(width) {
+    const shown = width === 390 ? 390 : 560;
+    const scale = shown / width;
+    const screenH = width === 390 ? 844 : 900;   // a real screen's height, so 100vh layouts are true
+    const height = Math.round(screenH * scale);
+    row.innerHTML = "";
+    for (const [dir, label] of versions) {
+      const fig = document.createElement("figure");
+      fig.innerHTML =
+        '<figcaption><strong>' + label + '</strong><a href="' + dir + '" target="_blank" rel="noopener">Open full size</a></figcaption>' +
+        '<div class="frame" style="width:' + shown + 'px;height:' + height + 'px">' +
+        '<iframe title="' + label + '" src="' + dir + '" style="width:' + width + 'px;height:' + screenH + 'px;transform:scale(' + scale + ')"></iframe></div>';
+      row.appendChild(fig);
+    }
+  }
+  document.querySelectorAll("button[data-w]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll("button[data-w]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      render(Number(b.dataset.w));
+    });
+  });
+  render(1440);
+</script>
+</body>
+</html>

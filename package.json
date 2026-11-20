@@ -1,0 +1,47 @@
+{
+  "name": "argus-skill",
+  "version": "0.3.2",
+  "description": "Argus: a design skill for AI coding agents, built around looking at the rendered result. This package installs it for Claude Code, Cursor, Codex, Gemini CLI and others.",
+  "bin": {
+    "argus-skill": "bin/argus.js"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "agent-skills",
+    "claude-code",
+    "cursor",
+    "codex",
+    "gemini-cli",
+    "design",
+    "ui",
+    "ux",
+    "skill"
+  ],
+  "author": "Hamza Masuadi (https://github.com/Hamza-Masuadi)",
+  "license": "MIT",
+  "homepage": "https://github.com/Hamza-Masuadi/argus-skill#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hamza-Masuadi/argus-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Hamza-Masuadi/argus-skill/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node build/tools/sync.js",
+    "test": "npm run build && node --test \"build/test/*.test.js\"",
+    "prepublishOnly": "npm test"
+  }
+}
