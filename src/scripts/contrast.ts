@@ -29,9 +29,21 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
-function main(pairs: string[]): number {
+export const USAGE = [
+  'Usage: node contrast.js "#text/#background" [more pairs...]',
+  '',
+  'Each pair is a text colour and a background colour in six-digit hex. Prints the WCAG',
+  'contrast ratio and whether it passes for body text (4.5:1) and for large text or',
+  'control boundaries (3:1). Exit code 2 when any pair fails body text.',
+].join('\n');
+
+export function main(pairs: string[]): number {
+  if (pairs.includes('--help') || pairs.includes('-h')) {
+    console.log(USAGE);
+    return 0;
+  }
   if (!pairs.length) {
-    console.log('Usage: node contrast.js "#text/#background" [more pairs...]');
+    console.log(USAGE);
     return 1;
   }
   let failed = false;

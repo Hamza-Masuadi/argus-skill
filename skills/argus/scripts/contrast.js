@@ -2,9 +2,11 @@
 // Generated from src/scripts/contrast.ts by `npm run build`. Edit the TypeScript, not this file.
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.USAGE = void 0;
 exports.parseHex = parseHex;
 exports.luminance = luminance;
 exports.contrastRatio = contrastRatio;
+exports.main = main;
 function parseHex(hex) {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
     if (!m || !m[1])
@@ -24,9 +26,20 @@ function contrastRatio(a, b) {
     const lb = luminance(b);
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
+exports.USAGE = [
+    'Usage: node contrast.js "#text/#background" [more pairs...]',
+    '',
+    'Each pair is a text colour and a background colour in six-digit hex. Prints the WCAG',
+    'contrast ratio and whether it passes for body text (4.5:1) and for large text or',
+    'control boundaries (3:1). Exit code 2 when any pair fails body text.',
+].join('\n');
 function main(pairs) {
+    if (pairs.includes('--help') || pairs.includes('-h')) {
+        console.log(exports.USAGE);
+        return 0;
+    }
     if (!pairs.length) {
-        console.log('Usage: node contrast.js "#text/#background" [more pairs...]');
+        console.log(exports.USAGE);
         return 1;
     }
     let failed = false;

@@ -6,6 +6,10 @@ A review is useful when the reader can act on it in order of importance. Lead wi
 
 Review the rendered interface where possible (see `verify.md` for how to capture it). If only code was read, say so at the top: spacing, contrast and overflow problems are easy to miss in code.
 
+## Reviewing your own build
+
+The loop hands screenshots to a fresh reviewer (`verify.md`). If there is no separate reviewer or subagent, do it yourself as a distinct pass: only the screenshots and the order below, as if you had not built the page. Write the findings down before fixing anything, and say in the report that the review was your own.
+
 ## Order of inspection
 
 1. **Purpose**: within five seconds, is it clear what this screen is for and what to do next?

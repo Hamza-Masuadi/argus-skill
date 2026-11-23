@@ -4,7 +4,8 @@
  *
  * Installing only copies the skill folder into the place each AI coding tool
  * reads skills from: no downloads, no network calls, no hooks, no settings
- * changes, no prompts.
+ * changes, no prompts. The tools make no network calls either, except
+ * `photos`, which searches free-licence image sources, and only when it is run.
  *
  *   npx argus-skill install            install into this project
  *   npx argus-skill install --global   install for your user account
@@ -13,7 +14,7 @@
  *   npx argus-skill uninstall
  *   npx argus-skill list               show supported tools and where each reads skills
  *
- * Tools: shot, check, inventory, lint, contrast, compare.
+ * Tools: shot, check, inventory, lint, contrast, compare, rules, photos.
  */
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -69,7 +70,7 @@ export const TOOLS: readonly Tool[] = [
 const ALIASES: Record<string, string> = { codex: 'agents', amp: 'agents', vscode: 'copilot', github: 'copilot', windsurf: 'devin', 'claude-code': 'claude' };
 const DEFAULTS = ['claude', 'agents'];
 /** Helper scripts that run through this command. */
-const HELPERS: Record<string, string> = { lint: 'lint.js', contrast: 'contrast.js', shot: 'shot.js', compare: 'compare.js' };
+const HELPERS: Record<string, string> = { lint: 'lint.js', contrast: 'contrast.js', shot: 'shot.js', compare: 'compare.js', photos: 'photos.js' };
 
 type Command = 'install' | 'update' | 'uninstall' | 'list' | 'help';
 
@@ -150,13 +151,18 @@ function help(): void {
       '  npx argus-skill list                show supported tools and their folders',
       '',
       'Tools (the same scripts the skill uses):',
-      '  npx argus-skill shot <url-or-file> [--full]    screenshots at phone and desktop widths',
+      '  npx argus-skill shot <url-or-file> [--full] [--wait MS]  screenshots at phone and desktop widths',
       '  npx argus-skill check <url-or-file>            run the checker in a real browser at each width',
       '  npx argus-skill inventory <url-or-file>        measure the design system a page actually uses',
       '  npx argus-skill inventory <new> --against <old>  list what a new page uses that an existing page does not',
       '  npx argus-skill lint <file-or-folder>          scan source for common design slips',
       '  npx argus-skill contrast "#text/#background"   check colour contrast',
       '  npx argus-skill compare <before> <after>       build a before-and-after page from two screenshots',
+      '  npx argus-skill rules [--json]                 list every rule check and lint apply',
+      '  npx argus-skill photos "<words>" [--count N]   find and download free-licence photographs, with credits',
+      '',
+      'The installer and these tools make no network calls, except photos, which searches',
+      'Openverse and Wikimedia Commons, and only when you run it.',
       '',
       'Install options:',
       '  --global           install for your user account instead of this project',
@@ -177,6 +183,16 @@ function runHelper(script: string, args: string[]): number {
   return run.status ?? 1;
 }
 
+/** Print the rule catalogue, grouped by tool. It ships as a script in the skill folder. */
+function printRules(args: string[]): number {
+  const file = path.join(SOURCE, 'scripts', 'rules.js');
+  if (!exists(file)) {
+    console.log('Cannot find the rule catalogue next to this command (' + file + ').');
+    return 1;
+  }
+  return (require(file) as typeof import('../scripts/rules')).main(args, 'npx argus-skill rules');
+}
+
 /**
  * Run the command. `home` and `cwd` are parameters so tests can point them at
  * temporary folders.
@@ -185,14 +201,24 @@ export function main(raw: string[], home: string = os.homedir(), cwd: string = p
   const first = raw[0] ?? '';
   const helper = HELPERS[first];
   if (helper) return runHelper(helper, raw.slice(1));
+  const wantsHelp = raw.slice(1).some((a) => a === '--help' || a === '-h');
   if (first === 'inventory') {
-    if (raw.length < 2) {
+    if (raw.length < 2 || wantsHelp) {
       console.log('Usage: npx argus-skill inventory <url-or-file> [--against <existing-page>]');
-      return 1;
+      console.log('Measures the fonts, sizes, colours, radii and control heights a rendered page uses.');
+      console.log('With --against, prints only what the first page uses that the second does not.');
+      return wantsHelp ? 0 : 1;
     }
     return runHelper('shot.js', [...raw.slice(1), '--inventory', '--no-shots', '--widths', '1440']);
   }
+  if (first === 'rules') return printRules(raw.slice(1));
   if (first === 'check') {
+    if (wantsHelp) {
+      console.log('Usage: npx argus-skill check [<url-or-file> [--widths LIST]]');
+      console.log('With a page: runs the checker in a real browser at each width and prints the findings.');
+      console.log('With none: prints the checker script, to evaluate in a browser tool or the devtools console.');
+      return 0;
+    }
     // With a page to check, run the checker in a real browser. With none, print
     // it so it can be pasted into a browser console or evaluated by a browser tool.
     if (raw.length > 1) return runHelper('shot.js', [...raw.slice(1), '--check', '--no-shots']);

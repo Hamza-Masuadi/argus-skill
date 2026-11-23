@@ -50,6 +50,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __importStar(require("node:fs"));
 const path = __importStar(require("node:path"));
 const args = process.argv.slice(2);
+const USAGE = [
+    'Usage: node compare.js <before-image> <after-image> [--out compare.html]',
+    '',
+    'Builds one self-contained HTML page from two screenshots: side by side, a slider that',
+    'wipes between them, and a view marking every changed pixel. PNG, JPEG, WebP or GIF.',
+].join('\n');
+if (args.includes('--help') || args.includes('-h')) {
+    console.log(USAGE);
+    process.exit(0);
+}
 let out = 'compare.html';
 const files = [];
 for (let i = 0; i < args.length; i++) {
@@ -61,7 +71,7 @@ for (let i = 0; i < args.length; i++) {
 }
 const [fileA, fileB] = files;
 if (files.length !== 2 || !fileA || !fileB || !out) {
-    console.log('Usage: node compare.js <before-image> <after-image> [--out compare.html]');
+    console.log(USAGE);
     process.exit(1);
 }
 const TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' };

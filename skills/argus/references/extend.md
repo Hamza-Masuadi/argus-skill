@@ -11,7 +11,7 @@ Read before writing, in this order, and stop reading when you can fill in the sn
 3. **Two or three finished screens** that resemble the one being built. These say what is actually done, which wins when it differs from the tokens.
 4. **Shared components**: what exists, their variants and sizes.
 
-**Measure, do not estimate.** If a screen can be rendered, run `scripts/shot.js <url> --inventory --no-shots` (or `argus-skill inventory <url>`). It prints the fonts, text sizes, weights, colours, border and radius values, shadows, control heights and table row heights the screen really uses, most used first. A guess of "about 14px" becomes a list of the five sizes that exist.
+**Measure, do not estimate.** If a screen can be rendered, run `node "<skill>/scripts/shot.js" <url> --inventory --no-shots`. It prints the fonts, text sizes, weights, colours, border and radius values, shadows, control heights and table row heights the screen really uses, most used first. A guess of "about 14px" becomes a list of the five sizes that exist.
 
 **Keep evidence.** Copy two or three real components (a button, a form row, a table, a panel), markup and styles, into your notes exactly as they are written. New components are derived from these, not from memory of them.
 
@@ -61,7 +61,7 @@ Do not restyle neighbouring screens or shared components on the way past. If a s
 
 ## 5. Check by measuring
 
-1. Compare the new screen with the existing one: `scripts/shot.js <new-url> --against <existing-url> --no-shots` prints every font, size, colour, radius, shadow and control height the new screen uses that the existing one does not. Each is a departure. Remove it, or list it under "Unmatched" with the reason.
+1. Compare the new screen with the existing one: `node "<skill>/scripts/shot.js" <new-url> --against <existing-url> --no-shots` prints every font, size, colour, radius, shadow and control height the new screen uses that the existing one does not. Each is a departure. Remove it, or list it under "Unmatched" with the reason.
 2. Put the two screens side by side in screenshots. If the new one can be picked out as the new one, it is not finished.
 3. Use the new screen as `verify.md` describes, including a reload: a change the user made must still be there.
 

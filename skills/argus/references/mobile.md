@@ -14,11 +14,13 @@ To look at native work, build and run it on a simulator or device and capture th
 
 ## Navigation
 
+- **The bars are designed from this app, not defaulted.** Decide what the user needs on every screen before drawing them. Tabs are the app's real destinations, named in the user's words, never a stock set (Home, Explore, Profile) by habit and never a tab with nothing behind it. The top bar says where the user is and carries at most the one or two actions this screen's user reaches for most, the one they look for first in this kind of app (the basket in a shop, the booking in a booking app); everything else goes in the screen or one menu.
 - **Top-level destinations** (three to five) go in a bar that stays put: a tab bar at the bottom. Label every tab with a word; icons alone are guessed at.
 - **Drilling down** pushes a new screen with a clear way back. The title tells users where they are.
 - **Self-contained tasks** (compose, edit, pick) open as a sheet or modal with an explicit cancel and a confirm, and return the user to where they were.
 - Do not hide primary navigation in a hamburger menu. What is out of sight is not used.
 - Keep the user's place: switching tabs and coming back restores scroll position and state.
+- The system back gesture always works and never traps the user on a screen. A flow that must not be left by accident asks once; it does not swallow the gesture.
 
 ## Feel native on each platform
 
@@ -36,7 +38,8 @@ Use the platform's standard controls for standard jobs (lists, settings, pickers
 
 ## Touch
 
-- Targets are at least 44pt on iOS and 48dp on Android, with space between them. Small text links packed together are a common failure.
+- Targets are at least 44pt on iOS and 48dp on Android, with space between them (at least 8dp on Android). Small text links packed together are a common failure.
+- Every control has an accessibility label that names it, icon-only buttons included.
 - The whole row is tappable, not only its label or chevron.
 - Every touch gets immediate visible feedback.
 - Gestures (swipe to delete, pull to refresh, long press) are shortcuts. Each one needs a visible alternative, because gestures cannot be discovered by looking.
@@ -65,10 +68,11 @@ Use the platform's standard controls for standard jobs (lists, settings, pickers
 ## The device is part of the design
 
 - Keep content clear of the notch, rounded corners, home indicator and system bars, while letting backgrounds run to the edges.
-- Support light and dark appearance and the user's text-size setting. A layout that breaks when text grows excludes the people who need it most.
+- Support light and dark appearance and the user's text-size setting, up to the largest accessibility sizes, with no text clipped or cut off. A layout that breaks when text grows excludes the people who need it most.
+- State is never shown by colour alone: pair it with a word, an icon or a shape.
 - Motion explains where things come from and go to. Keep it short, and honour the reduced-motion setting.
 - Haptics mark meaningful moments (success, a threshold crossed), not every tap.
-- On tablets and foldables, use the width: two panes side by side, not a stretched phone layout.
+- On tablets and foldables, use the width: two panes side by side, not a stretched phone layout. Do not lock the app to one orientation or shut out larger screens unless the task truly needs it.
 
 ## Native numbers
 
@@ -122,5 +126,9 @@ Build it, run it on a simulator or device, and capture the screen. Look at four 
 - System grey text on a custom background, failing contrast.
 - A custom control where the platform has a standard one.
 - A tab bar with a single item.
+- A back gesture that does nothing, or that traps the user in a flow.
+- An icon button with no accessibility label.
+- Status shown only by colour.
+- Orientation locked, or a larger screen showing a stretched phone layout.
 - Restyled system chrome.
 

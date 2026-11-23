@@ -10,6 +10,11 @@
  * single expression whose value is the result.
  */
 (function argusInventory() {
+  // Run directly under Node (`node inventory.js`, `--help`), there is no page: say how to run it, and exit 0.
+  if (typeof document === 'undefined') {
+    console.log('inventory.js runs inside a rendered page, not on its own: use `node shot.js <url-or-file> --inventory --no-shots` or `argus-skill inventory <url-or-file>`.');
+    return null;
+  }
   type Count = { value: string; count: number };
 
   const tally = new Map<string, Map<string, number>>();

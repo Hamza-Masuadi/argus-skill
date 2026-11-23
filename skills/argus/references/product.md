@@ -2,7 +2,7 @@
 
 For Operate surfaces: screens people work in, often daily. Almost everything written for landing pages is wrong here. There is no big move, nothing needs to be "alive", and the page is not an argument. The user already chose the product; the job is to let them see what matters and act on it fast. Quality here is clarity, density, accuracy and controls that behave.
 
-This file is the whole route for a new Operate surface; `create.md` is not needed. On a native app, read `mobile.md` with it and take from this file only what applies to a phone screen: the user's questions, the direction, numbers and sample data. The sections on dense scale, tables and URLs are for desktop tools.
+This file is the route for a new Operate surface. From `create.md` you need only steps 2 (the kit) and 4 (the choosing page), each when you reach it. On a native app, read `mobile.md` with it and take from this file only what applies to a phone screen: the user's questions, the directions, numbers and sample data. The sections on dense scale, tables and URLs are for desktop tools.
 
 ## Start from the user's questions
 
@@ -15,13 +15,33 @@ Write down the two or three questions this person opens the screen to answer, in
 
 The first screenful should answer the first two without scrolling. A wall of equal tiles answers none of them.
 
-## The direction, for product UI
+## Directions for a working screen
 
-The direction contract still applies, with different lines:
+New Operate work with an open look gets the directions question and the choosing page like any other new work (`ask.md`, "Who gets the directions question"). When extending an existing product, skip all of this: `extend.md` governs and the existing screens are the direction. When the user has fixed the look, skip the roughs and write the direction block from what they gave.
+
+**A rough** is the main working screen, or the first screen of the flow, at real density with real sample data (below): enough to judge layout, hierarchy and character. It is not a marketing first screen: no hero, no headline pitch. Keep it cheap and static where possible; no working logic is needed. Give each rough one quick look at the width it is used at to confirm it renders; the loop is for the chosen direction. For a phone-first app, build and compare the roughs at phone width: the choosing page's Phone setting, which `roughs/index.html#phone` opens at.
+
+**Directions must differ** in three ways at once:
+
+- **Layout structure**: for example table-first, lanes or a board, master and detail, a stepped flow, a single dense sheet.
+- **Density**: how much fits on one screen, and how much is a click away.
+- **Colour and type character**: different neutrals and accent, a different family with tabular figures.
+
+Every direction stays fit for all-day use. Restraint in colour, legibility and the dense scale below still apply, and no direction trades usability for novelty. A direction that would be tiring by the afternoon is not a direction, and neither is one you would not be willing to pick yourself. Hold each rough against the whole default looks in `tells.md` (the dashboard default and the dark developer tool are the ones that reach working screens): a rough that shares three features with one goes back to its idea, not to a different coat of paint.
+
+**The steps**, the same as for pages:
+
+1. Write the subject's kit as `create.md` step 2 describes, for the work itself: the documents, marks and words the users already work with (a job card, a dispatch board's status words, bed numbers on a ward). Build each candidate's character on one item from it and name the item. Then choose as many as the user asked for (three by default). Pick the wildcard by chance as you choose them (`echo $((RANDOM % N))`).
+2. Build the roughs as separate files, with the choosing page and `directions.json` exactly as `create.md` step 4 describes. Leave every `tag` empty except the wildcard's.
+3. Open the choosing page and look at every rough. Only now decide your own pick: the screen its users would understand and trust fastest and that will hold up across every screen of the product, not the most novel or dramatic one. Ask in order: which answers their questions and makes the main action obvious, fastest; which is built from the users' own work, so it reads as theirs; which will still work at full density and on the screens not yet drawn. A dark ground needs a reason from when the screen is used (a night shift, a control room), written in the direction. Write `"pick"` into `directions.json` and reload to confirm the tag shows. If the pick is the wildcard, its tag becomes `"wildcard pick"`.
+4. Ask the user as `create.md` step 4 says, and wait. With one direction, or nobody to ask, choose yourself the same way.
+
+**The direction block**, written for the chosen one:
 
 ```
 Thesis:    who opens this, how often, and the questions they bring
-Layout:    an ASCII wireframe of the main screen with the regions named
+Layout:    the layout structure, with the main screen's regions named
+Kit:       the item from the users' own work the character is built on
 Character: the one thing that makes it this product's screen and not a template
            (a way of presenting the key figure, a distinctive structure, a voice)
 Palette:   neutrals, one accent, status colours, a categorical set for data
@@ -29,11 +49,9 @@ Type:      one family with tabular figures; sizes for the dense scale below
 Refuses:   two or three things it will not do
 ```
 
-Compare alternatives as wireframes in the contract, not as rendered roughs: for a dense screen the choice is between structures, and three thumbnails of grey boxes tell you little. Render once the structure is chosen.
+Character comes from structure, density and how the main figure is presented, never from decoration. One distinctive idea is plenty.
 
-Character comes from structure and from how the main figure is presented, never from decoration. One distinctive idea is plenty.
-
-Record the direction as `design-md.md` describes. When adding to an existing product, skip the direction altogether: `extend.md` governs and the existing screens are the direction.
+Record it in `DESIGN.md` as `design-md.md` says: the answers are already there from the question rounds (`ask.md`); add the chosen direction and the directions shown and not chosen once chosen, and complete it with what was built after the loop.
 
 ## Dense scale
 
@@ -113,9 +131,11 @@ A product screen is not checked until it has been seen in each state it can be i
 
 If a state cannot be reached in the build, say so in the report instead of assuming it works.
 
-## Motion
+## Motion and pictures
 
-Feedback only. Values that change may transition briefly so the eye can follow. Nothing animates on load, and nothing loops.
+The motion layer in `craft.md` applies here only in its sober part: hover, press and focus that feel physical, and state changes that animate between values (a row added, a total updating, a panel opening) so the eye can follow what happened. No live element, no arrival, no scroll reveals, no scroll-linked effects and no ambient loops; nothing loops unless it shows something live. Good loading, empty and error states (above) matter more here than any animation.
+
+The section plan, the visual per section and the imagery ladder (`create.md` step 3, `imagery.md`) are for Persuade and Read pages. Here a picture earns its place only by carrying information: a chart, a map, a product photograph in a listing, an illustration in an empty state that says what goes there. Nothing is added as decoration.
 
 ## Narrow screens
 
@@ -128,5 +148,8 @@ Decide how far the phone layout needs to go from who uses it. A desk tool opened
 - Data that does not reconcile.
 - Chart text under 12px, or labels overlapping at narrow widths.
 - Filters that reset on reload, or whose active state cannot be seen.
+- A numeric column left-aligned or set in proportional figures, so digits do not line up.
+- A data table with no header cells.
+- Text cut off with an ellipsis and no way to read the full value (a title, a tooltip or an expanded row).
 - A beautiful first screen with a table nobody could actually use.
-- Landing-page habits: oversized headings, hero spacing, decorative illustration, entrance animation.
+- Landing-page habits: oversized headings, hero spacing, decorative illustration, entrance animation, scroll reveals, a picture per section.

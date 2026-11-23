@@ -6,17 +6,16 @@ Read `review.md` and `verify.md` as well as this file.
 
 ## Gather evidence
 
+Read `laws.md` first; the timings below and the scores should rest on its principles and numbers, not on impression.
+
 1. Render the screens and capture them (see `verify.md`).
 2. Run the checker (`scripts/check.js`, see `verify.md`) at phone and desktop widths. Its findings are measurements; treat them as facts.
 3. Walk the screen by keyboard only, then at 200% text size, then with reduced motion on.
+4. Complete the main task from start to finish, and time the response to each press against the limits in `laws.md` (instant under 0.1s, indicator past 1s).
 
 If something could not be rendered or run, say which parts of the audit are from reading code only.
 
-4. Complete the main task from start to finish, and time the response to each press against the limits in `laws.md` (instant under 0.1s, indicator past 1s).
-
 ## Score five areas, 0-4 each
-
-Read `laws.md` first; the scores should rest on its principles and numbers, not on impression.
 
 | Area | 4 means |
 |---|---|

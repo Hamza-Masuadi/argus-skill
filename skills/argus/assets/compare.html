@@ -3,72 +3,386 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Design variants</title>
+<title>Choose a direction</title>
 <style>
+  :root {
+    --bg: #18191b; --panel: #222326; --raised: #2b2d31; --line: #3d4045; --line-strong: #5a5e65;
+    --fg: #ececea; --muted: #a9acb1; --focus: #8ab4ff; --chosen: #7fd1a4;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.4 system-ui, sans-serif; background: #1c1d1f; color: #e8e8e6; }
-  header { padding: 14px 20px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; border-bottom: 1px solid #34363a; }
-  h1 { font-size: 16px; margin: 0; font-weight: 650; }
-  header p { margin: 0; color: #a3a5a8; }
-  .controls { margin-left: auto; display: flex; gap: 8px; }
-  button { font: inherit; color: inherit; background: #2a2c30; border: 1px solid #44474c; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-  button[aria-pressed="true"] { background: #e8e8e6; color: #1c1d1f; border-color: #e8e8e6; }
-  button:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 2px; }
-  .row { display: flex; gap: 16px; padding: 16px 20px; overflow-x: auto; align-items: flex-start; }
-  figure { margin: 0; flex: none; }
-  figcaption { padding: 0 0 8px; display: flex; justify-content: space-between; gap: 12px; }
-  figcaption a { color: #8ab4ff; }
-  .frame { overflow: hidden; border-radius: 8px; background: #fff; }
-  iframe { border: 0; display: block; transform-origin: 0 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); }
+  a { color: var(--focus); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  button { font: inherit; color: inherit; background: var(--raised); border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px 14px; min-height: 40px; cursor: pointer; }
+  button:hover { border-color: var(--fg); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  header { padding: 20px 24px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; }
+  .top { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+  h1 { font-size: 22px; line-height: 1.2; margin: 0; font-weight: 650; }
+  .count { color: var(--muted); }
+  .help { margin: 0; color: var(--muted); max-width: 70ch; }
+  .controls { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; padding: 2px; gap: 2px; }
+  .seg button { border: 0; background: transparent; min-height: 36px; }
+  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .status { margin: 0; min-height: 1.5em; color: var(--chosen); }
+  .fallback { display: none; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .fallback.show { display: flex; }
+  .fallback label { color: var(--muted); }
+  .fallback input { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px 10px; width: min(100%, 640px); }
+  main { padding: 20px 24px 8px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  @media (min-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1800px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+  .card.chosen { border-color: var(--chosen); box-shadow: 0 0 0 2px var(--chosen); }
+  .preview { position: relative; overflow: hidden; background: #0f1011; border-bottom: 1px solid var(--line); }
+  .preview .screen { position: absolute; top: 0; overflow: hidden; background: #fff; }
+  .preview iframe { border: 0; display: block; transform-origin: 0 0; }
+  .body { padding: 16px 18px 18px; display: grid; gap: 10px; }
+  .tagrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 24px; }
+  .letter { font-weight: 650; color: var(--muted); }
+  .tag { font-size: 13px; line-height: 1; padding: 5px 8px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--fg); }
+  .tag.pick { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .card h2 { margin: 0; font-size: 20px; line-height: 1.25; font-weight: 650; overflow-wrap: anywhere; }
+  .idea { margin: 0; font-size: 16px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; margin: 0; padding: 0; }
+  .swatches li { display: flex; align-items: center; gap: 6px; font: 13px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+  .chip { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(255,255,255,.25); flex: none; }
+  .meta { margin: 0; color: var(--muted); }
+  .meta strong { color: var(--fg); font-weight: 600; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-top: 4px; }
+  .choose { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 600; }
+  .card.chosen .choose { background: var(--chosen); border-color: var(--chosen); color: #0d1f15; }
+  .mix { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); cursor: pointer; min-height: 40px; }
+  .mix input { width: 18px; height: 18px; accent-color: var(--fg); }
+  .notice { max-width: 720px; padding: 16px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--raised); }
+  .notice p { margin: 0 0 8px; } .notice p:last-child { margin: 0; }
+  footer { padding: 8px 24px 32px; color: var(--muted); }
+  code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (prefers-reduced-motion: no-preference) { button, .card { transition: background-color .12s, border-color .12s, box-shadow .12s; } }
 </style>
 </head>
 <body>
 <header>
-  <h1>Design variants</h1>
-  <p>Same brief, different directions. Pick by looking.</p>
-  <div class="controls" role="group" aria-label="Preview width">
-    <button data-w="1440" aria-pressed="true">Desktop</button>
-    <button data-w="390" aria-pressed="false">Phone</button>
+  <div class="top">
+    <h1>Choose a direction</h1>
+    <span class="count" id="count"></span>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Preview size">
+        <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-view="phone" aria-pressed="false">Phone</button>
+      </div>
+      <button type="button" id="copyMix" disabled>Copy mix</button>
+    </div>
+  </div>
+  <p class="help">Each card is a rough of one direction: its first screen, or for a tool or app its main working screen. Open any of them full size, then press "Choose this", or tick "Mix" on two cards to combine them.</p>
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+  <div class="fallback" id="fallback">
+    <label for="fallbackText">Copy this and paste it in the chat:</label>
+    <input id="fallbackText" type="text" readonly>
   </div>
 </header>
-<div class="row" id="row"></div>
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+<footer>Want a different set? Ask for a new set, safer or bolder.</footer>
 <script>
-  // Edit this list: [path to each HTML file, label shown above the preview].
-  // Paths are relative to this file, for example "a.html" or "a-poster/index.html".
-  const versions = [
-    ["a.html", "A: first direction"],
-    ["b.html", "B: second direction"],
-    ["c.html", "C: third direction"]
+  // The directions to show. Write them here, or in directions.json beside this page (same shape).
+  // Paths are relative to this file. tag is "wildcard", "pick", "wildcard pick" (the chance choice that also won) or "".
+  //   { "file": "a.html", "name": "The Workshop Manual", "idea": "one sentence a visitor would repeat",
+  //     "palette": ["#0f3d2e", "#f4f1e8", "#d9472b"], "type": "Archivo Black over Source Sans 3",
+  //     "risk": "one line on what could go wrong", "tag": "pick" }
+  // A list written here is used first, which also works when the page is opened as a file.
+  // Without one, the page reads directions.json, then file names in the address (index.html?a.html,b.html),
+  // then this folder's listing from a static server.
+  // Add #phone to the address (index.html#phone) to open in the Phone view, for phone-first apps.
+  const directions = [
   ];
-  // Paths can also be given in the address, with no editing: compare.html?a.html,b.html,c.html
-  const fromAddress = decodeURIComponent(location.search.slice(1)).split(",").map(function (s) { return s.trim(); }).filter(Boolean);
-  if (fromAddress.length) {
-    versions.length = 0;
-    fromAddress.forEach(function (p, i) { versions.push([p, String.fromCharCode(65 + i) + ": " + p]); });
+
+  const VIEWS = { desktop: { w: 1440, h: 900 }, phone: { w: 390, h: 844 } };
+  const TAGS = { wildcard: "Wildcard", pick: "Argus's pick" };
+  const grid = document.getElementById("grid");
+  const statusLine = document.getElementById("status");
+  const fallback = document.getElementById("fallback");
+  const fallbackText = document.getElementById("fallbackText");
+  const copyMix = document.getElementById("copyMix");
+  let view = location.hash === "#phone" ? "phone" : "desktop";
+  let items = [];
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
   }
-  const row = document.getElementById("row");
-  function render(width) {
-    const shown = width === 390 ? 390 : 560;
-    const scale = shown / width;
-    const screenH = width === 390 ? 844 : 900;   // a real screen's height, so 100vh layouts are true
-    const height = Math.round(screenH * scale);
-    row.innerHTML = "";
-    for (const [dir, label] of versions) {
-      const fig = document.createElement("figure");
-      fig.innerHTML =
-        '<figcaption><strong>' + label + '</strong><a href="' + dir + '" target="_blank" rel="noopener">Open full size</a></figcaption>' +
-        '<div class="frame" style="width:' + shown + 'px;height:' + height + 'px">' +
-        '<iframe title="' + label + '" src="' + dir + '" style="width:' + width + 'px;height:' + screenH + 'px;transform:scale(' + scale + ')"></iframe></div>';
-      row.appendChild(fig);
+  function letter(i) { return String.fromCharCode(65 + i); }
+  function label(i) { return "direction " + letter(i) + (items[i].name ? ', "' + items[i].name + '"' : ""); }
+
+  function normalise(list) {
+    return list.filter(function (d) { return d && typeof d.file === "string" && d.file.trim(); }).map(function (d) {
+      return {
+        file: d.file.trim(),
+        name: typeof d.name === "string" && d.name.trim() ? d.name.trim() : d.file.trim(),
+        idea: typeof d.idea === "string" ? d.idea : "",
+        palette: Array.isArray(d.palette) ? d.palette.filter(function (c) { return typeof c === "string" && CSS.supports("color", c); }) : [],
+        type: typeof d.type === "string" ? d.type : "",
+        risk: typeof d.risk === "string" ? d.risk : "",
+        tags: typeof d.tag === "string" ? d.tag.split(/\s+/).filter(function (t) { return t === "wildcard" || t === "pick"; }) : []
+      };
+    });
+  }
+  function fromFiles(names) { return names.map(function (f) { return { file: f, name: f }; }); }
+
+  function fromJson() {
+    return fetch("directions.json", { cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error("status " + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (!Array.isArray(data)) throw new Error("not a list");
+      return data;
+    });
+  }
+  function fromAddress() {
+    return decodeURIComponent(location.search.slice(1)).split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+  function discover() {
+    return fetch("./", { cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error("status " + res.status);
+      return res.text();
+    }).then(function (html) {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const folder = new URL("./", location.href);
+      const names = new Set();
+      doc.querySelectorAll("a[href]").forEach(function (a) {
+        let u;
+        try { u = new URL(a.getAttribute("href"), folder); } catch (e) { return; }
+        if (u.origin !== folder.origin || u.pathname.indexOf(folder.pathname) !== 0) return;
+        const name = decodeURIComponent(u.pathname.slice(folder.pathname.length));
+        if (!name || name.indexOf("/") !== -1) return;
+        if (!/\.html?$/i.test(name) || /^(index|compare)\.html?$/i.test(name)) return;
+        names.add(name);
+      });
+      return Array.from(names).sort();
+    });
+  }
+
+  function say(text, sentence, copied) {
+    statusLine.textContent = text;
+    if (copied) {
+      fallback.classList.remove("show");
+    } else {
+      fallbackText.value = sentence;
+      fallback.classList.add("show");
+      fallbackText.focus();
+      fallbackText.select();
     }
   }
-  document.querySelectorAll("button[data-w]").forEach(function (b) {
+  function copy(sentence, okText) {
+    function failed() { say("Could not copy automatically. The sentence is selected below; copy it, or just say the name in the chat.", sentence, false); }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(sentence).then(function () { say(okText, sentence, true); }, function () {
+        if (legacyCopy(sentence)) say(okText, sentence, true); else failed();
+      });
+    } else if (legacyCopy(sentence)) {
+      say(okText, sentence, true);
+    } else {
+      failed();
+    }
+  }
+  function legacyCopy(text) {
+    const t = document.createElement("textarea");
+    t.value = text; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(t);
+    return ok;
+  }
+
+  function fit(card) {
+    const box = card.querySelector(".preview");
+    const screen = box.querySelector(".screen");
+    const frame = screen.querySelector("iframe");
+    const v = VIEWS[view];
+    const avail = box.clientWidth;
+    if (!avail) return;
+    const scale = view === "phone" ? Math.min(1, (avail - 32) / v.w) : avail / v.w;
+    const w = Math.round(v.w * scale), h = Math.round(v.h * scale);
+    const pad = view === "phone" ? 16 : 0;
+    frame.style.width = v.w + "px";
+    frame.style.height = v.h + "px";
+    frame.style.transform = "scale(" + scale + ")";
+    screen.style.width = w + "px";
+    screen.style.height = h + "px";
+    screen.style.top = pad + "px";
+    screen.style.left = Math.round((avail - w) / 2) + "px";
+    screen.style.borderRadius = view === "phone" ? "12px" : "0";
+    box.style.height = (h + pad * 2) + "px";
+  }
+  const observer = typeof ResizeObserver === "function" ? new ResizeObserver(function (entries) {
+    entries.forEach(function (e) { fit(e.target.closest(".card")); });
+  }) : null;
+
+  function mixed() { return Array.from(grid.querySelectorAll(".mix input:checked")).map(function (c) { return Number(c.dataset.i); }); }
+  function updateMix() {
+    const picked = mixed();
+    copyMix.disabled = picked.length !== 2;
+    grid.querySelectorAll(".mix input").forEach(function (c) { c.disabled = picked.length >= 2 && !c.checked; });
+    copyMix.textContent = picked.length === 2 ? "Copy mix of " + letter(picked[0]) + " and " + letter(picked[1]) : "Copy mix";
+  }
+
+  function render() {
+    grid.innerHTML = "";
+    document.getElementById("count").textContent = items.length + (items.length === 1 ? " direction" : " directions");
+    items.forEach(function (d, i) {
+      const card = el("article", "card");
+      card.setAttribute("aria-labelledby", "name-" + i);
+
+      const box = el("div", "preview");
+      const screen = el("div", "screen");
+      const frame = document.createElement("iframe");
+      frame.src = d.file;
+      frame.title = "Preview of direction " + letter(i) + ": " + d.name;
+      frame.setAttribute("tabindex", "-1");
+      screen.appendChild(frame);
+      box.appendChild(screen);
+      card.appendChild(box);
+
+      const body = el("div", "body");
+      const tagrow = el("div", "tagrow");
+      tagrow.appendChild(el("span", "letter", letter(i)));
+      d.tags.forEach(function (t) { tagrow.appendChild(el("span", "tag " + t, TAGS[t])); });
+      body.appendChild(tagrow);
+      const h = el("h2", null, d.name);
+      h.id = "name-" + i;
+      body.appendChild(h);
+      if (d.idea) body.appendChild(el("p", "idea", d.idea));
+      if (d.palette.length) {
+        const ul = el("ul", "swatches");
+        ul.setAttribute("aria-label", "Palette");
+        d.palette.forEach(function (c) {
+          const li = el("li");
+          const chip = el("span", "chip");
+          chip.style.background = c;
+          chip.setAttribute("aria-hidden", "true");
+          li.appendChild(chip);
+          li.appendChild(el("span", null, c));
+          ul.appendChild(li);
+        });
+        body.appendChild(ul);
+      }
+      if (d.type) {
+        const p = el("p", "meta");
+        p.appendChild(el("strong", null, "Type "));
+        p.appendChild(document.createTextNode(d.type));
+        body.appendChild(p);
+      }
+      if (d.risk) {
+        const p = el("p", "meta");
+        p.appendChild(el("strong", null, "Risk "));
+        p.appendChild(document.createTextNode(d.risk));
+        body.appendChild(p);
+      }
+
+      const actions = el("div", "actions");
+      const choose = el("button", "choose", "Choose this");
+      choose.type = "button";
+      choose.setAttribute("aria-pressed", "false");
+      choose.setAttribute("aria-describedby", "name-" + i);
+      choose.addEventListener("click", function () {
+        grid.querySelectorAll(".card").forEach(function (c) {
+          c.classList.remove("chosen");
+          const b = c.querySelector(".choose");
+          b.setAttribute("aria-pressed", "false");
+          b.textContent = "Choose this";
+        });
+        card.classList.add("chosen");
+        choose.setAttribute("aria-pressed", "true");
+        choose.textContent = "Chosen";
+        const sentence = "Build direction " + letter(i) + (d.name !== d.file ? ', "' + d.name + '".' : " (" + d.file + ").");
+        copy(sentence, "Copied. Paste it in the chat, or just say the name.");
+      });
+      actions.appendChild(choose);
+      const open = el("a", null, "Open full size");
+      open.href = d.file;
+      open.target = "_blank";
+      open.rel = "noopener";
+      actions.appendChild(open);
+      const mix = el("label", "mix");
+      const tick = document.createElement("input");
+      tick.type = "checkbox";
+      tick.dataset.i = String(i);
+      tick.addEventListener("change", updateMix);
+      mix.appendChild(tick);
+      mix.appendChild(document.createTextNode("Mix"));
+      mix.appendChild(el("span", "sr", " direction " + letter(i)));
+      actions.appendChild(mix);
+      body.appendChild(actions);
+      card.appendChild(body);
+
+      grid.appendChild(card);
+      fit(card);
+      if (observer) observer.observe(box);
+    });
+    updateMix();
+  }
+
+  copyMix.addEventListener("click", function () {
+    const p = mixed();
+    if (p.length !== 2) return;
+    const sentence = "Mix " + letter(p[0]) + " and " + letter(p[1]) + ": take ... from " + label(p[0]) + " and ... from " + label(p[1]) + ".";
+    copy(sentence, "Copied. Paste it in the chat and say what to take from each.");
+  });
+
+  document.querySelectorAll("button[data-view]").forEach(function (b) {
     b.addEventListener("click", function () {
-      document.querySelectorAll("button[data-w]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
-      render(Number(b.dataset.w));
+      view = b.dataset.view;
+      document.querySelectorAll("button[data-view]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      grid.querySelectorAll(".card").forEach(fit);
     });
   });
-  render(1440);
+  document.querySelectorAll("button[data-view]").forEach(function (o) { o.setAttribute("aria-pressed", String(o.dataset.view === view)); });
+  if (!observer) window.addEventListener("resize", function () { grid.querySelectorAll(".card").forEach(fit); });
+
+  function showHelp(reason) {
+    grid.innerHTML = "";
+    document.getElementById("count").textContent = "";
+    const box = el("div", "notice");
+    const p1 = el("p");
+    p1.appendChild(el("strong", null, "No directions to show. "));
+    p1.appendChild(document.createTextNode(reason));
+    const p2 = el("p");
+    p2.innerHTML = "Fill the <code>directions</code> list near the top of this page's script, or put <code>directions.json</code> beside it, " +
+      "or put file names after a question mark in the address, for example <code>index.html?a.html,b.html,c.html</code>. " +
+      "Serve this folder over http (any static server) for the last two.";
+    box.appendChild(p1);
+    box.appendChild(p2);
+    grid.appendChild(box);
+  }
+  function show(list) {
+    items = normalise(list);
+    if (!items.length) return showHelp("The list was empty.");
+    render();
+  }
+
+  if (directions.length) {
+    show(directions);
+  } else {
+    grid.textContent = "Looking for directions...";
+    fromJson().then(show).catch(function () {
+      const names = fromAddress();
+      if (names.length) return show(fromFiles(names));
+      return discover().then(function (found) {
+        if (!found.length) return showHelp("No .html files were found in this folder's listing.");
+        show(fromFiles(found));
+      });
+    }).catch(function () {
+      showHelp("No list was found, and this folder's file list could not be read.");
+    });
+  }
 </script>
 </body>
 </html>
