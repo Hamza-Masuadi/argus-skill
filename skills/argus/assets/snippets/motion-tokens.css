@@ -1,0 +1,61 @@
+/* Argus motion tokens.
+   One set of curves and durations for the whole kit, so effects on one page
+   feel related. Every snippet inlines the tokens it uses, so a copied file
+   still stands alone; paste this block once into a page's :root instead.
+
+   Rules the tokens encode:
+   - Enter and respond with --ease-out; move on screen with --ease-in-out;
+     leave with --ease-in at about two thirds of the entry time.
+   - Scroll-scrubbed motion is linear (the scroll is the easing).
+   - Overshoot belongs to movement (position, size), never to opacity or colour.
+   - Feedback stays under 300ms; page-scale reveals take 600-900ms. */
+
+:root {
+  /* Curves */
+  --ease-out: cubic-bezier(.22, 1, .36, 1);     /* enter, respond to input, hover in */
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);  /* move from one place to another on screen */
+  --ease-in: cubic-bezier(.5, 0, .75, 0);       /* exit: things leaving, closing, dismissing */
+
+  /* Springs: bezier fallbacks first; the linear() versions replace them below.
+     --spring overshoots about 16% and settles in --t-slow (toggles, thumbs, bumps).
+     --spring-soft overshoots about 4% and settles in --t-base (cards, sheets, ticks). */
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --spring-soft: cubic-bezier(.3, 1.25, .5, 1);
+
+  /* Durations */
+  --t-fast: 180ms;  /* feedback: press, toggle colour, hover in, focus */
+  --t-base: 320ms;  /* small moves: menus, toasts, steppers, hover out */
+  --t-slow: 640ms;  /* reveals: lines, pictures, cards entering the screen */
+  --t-page: 900ms;  /* page-scale: arrivals, view transitions, full-bleed wipes */
+
+  /* Stagger steps; cap the total near 500ms (stagger the first six, then the rest together). */
+  --stagger-char: 20ms;  /* characters in 1-3 words of display type */
+  --stagger-word: 40ms;  /* words in a short line */
+  --stagger-line: 70ms;  /* lines, list items, cards */
+}
+
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    /* Damped spring (zeta .5), sampled; use with --t-slow. */
+    --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1);
+    /* Gentle spring (zeta .72); use with --t-base or --t-slow. */
+    --spring-soft: linear(0, 0.071, 0.229, 0.415, 0.593, 0.742, 0.858, 0.939, 0.992, 1.022, 1.035, 1.038, 1.035, 1.029, 1.021, 1.015, 1.009, 1.005, 1.002, 1, 0.999, 0.999, 0.999, 0.999, 1);
+  }
+}
+
+/* Reduced motion: remove travel, keep end states. Durations collapse to a short
+   fade so state changes are still noticed; staggers go to zero so everything
+   arrives together; springs stop overshooting. Each snippet also sets its own
+   end state under this query (scrubbed effects show their final frame;
+   parallax, velocity skew and loops are switched off). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --spring: var(--ease-out);
+    --spring-soft: var(--ease-out);
+    --t-slow: 1ms;
+    --t-page: 1ms;
+    --stagger-char: 0ms;
+    --stagger-word: 0ms;
+    --stagger-line: 0ms;
+  }
+}

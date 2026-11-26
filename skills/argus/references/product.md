@@ -1,8 +1,10 @@
 # Product UI: dashboards, tools, admin and app screens
 
+Contents: **Start from the user's questions**; **Directions for a working screen**; **Dense scale**; **Numbers**; **Sample data**; **Charts**; **Tables**; **Controls and structure**; **Settings and account pages**; **States to capture**; **Motion and pictures**; **Narrow screens**; **Faults specific to product UI**.
+
 For Operate surfaces: screens people work in, often daily. Almost everything written for landing pages is wrong here. There is no big move, nothing needs to be "alive", and the page is not an argument. The user already chose the product; the job is to let them see what matters and act on it fast. Quality here is clarity, density, accuracy and controls that behave.
 
-This file is the route for a new Operate surface. From `create.md` you need only steps 2 (the kit) and 4 (the choosing page), each when you reach it. On a native app, read `mobile.md` with it and take from this file only what applies to a phone screen: the user's questions, the directions, numbers and sample data. The sections on dense scale, tables and URLs are for desktop tools.
+This file is the route for a new Operate surface, except a new mobile app with nothing to match, which goes to `app.md`. It still covers dashboards, tools, admin and screens inside an existing app. Of the stage cards you need only `ideas.md` (the kit and the cut) and `directions.md` (the deal, the choosing page and the pick), each when you reach it; keep a `.argus/run.md` (`SKILL.md`, section 7). On a native app, read `app.md` with it and take from this file only the user's questions, numbers and sample data. The sections on dense scale, tables and URLs are for desktop tools.
 
 ## Start from the user's questions
 
@@ -27,14 +29,14 @@ New Operate work with an open look gets the directions question and the choosing
 - **Density**: how much fits on one screen, and how much is a click away.
 - **Colour and type character**: different neutrals and accent, a different family with tabular figures.
 
-Every direction stays fit for all-day use. Restraint in colour, legibility and the dense scale below still apply, and no direction trades usability for novelty. A direction that would be tiring by the afternoon is not a direction, and neither is one you would not be willing to pick yourself. Hold each rough against the whole default looks in `tells.md` (the dashboard default and the dark developer tool are the ones that reach working screens): a rough that shares three features with one goes back to its idea, not to a different coat of paint.
+Every direction stays fit for all-day use. Restraint in colour, legibility and the dense scale below still apply, and no direction trades usability for novelty. A direction that would be tiring by the afternoon is not a direction, and neither is one you would not be willing to pick yourself. Hold each rough against the whole default looks in `faults.md` (the dashboard default and the dark developer tool are the ones that reach working screens): a rough that shares three features with one goes back to its idea, not to a different coat of paint.
 
 **The steps**, the same as for pages:
 
-1. Write the subject's kit as `create.md` step 2 describes, for the work itself: the documents, marks and words the users already work with (a job card, a dispatch board's status words, bed numbers on a ward). Build each candidate's character on one item from it and name the item. Then choose as many as the user asked for (three by default). Pick the wildcard by chance as you choose them (`echo $((RANDOM % N))`).
-2. Build the roughs as separate files, with the choosing page and `directions.json` exactly as `create.md` step 4 describes. Leave every `tag` empty except the wildcard's.
-3. Open the choosing page and look at every rough. Only now decide your own pick: the screen its users would understand and trust fastest and that will hold up across every screen of the product, not the most novel or dramatic one. Ask in order: which answers their questions and makes the main action obvious, fastest; which is built from the users' own work, so it reads as theirs; which will still work at full density and on the screens not yet drawn. A dark ground needs a reason from when the screen is used (a night shift, a control room), written in the direction. Write `"pick"` into `directions.json` and reload to confirm the tag shows. If the pick is the wildcard, its tag becomes `"wildcard pick"`.
-4. Ask the user as `create.md` step 4 says, and wait. With one direction, or nobody to ask, choose yourself the same way.
+1. Write the subject's kit as `ideas.md` describes, for the work itself: the documents, marks and words the users already work with (a job card, a dispatch board's status words, bed numbers on a ward). Build each candidate's character on one item from it and name the item. Then choose as many as the user asked for (three by default), differing in kind as `directions.md` describes (for a tool: a minimal one, one led by the product's own figures, one more expressive).
+2. Deal with `deal.js directions --tone calm` (unless the brief is loud) and take each direction's pairing, shape and ground from the deal; the dealt heroes and sections are for pages and do not apply. Serif-led editorial type tires in dense screens: a serif, if any, is for the product's name and large figures, sans for the data. Build the roughs as separate files, with the choosing page and its list as `directions.md` describes. Leave every `tag` empty until the pick.
+3. Open the choosing page and look at every rough. Only now decide your own pick: the screen its users would understand and trust fastest and that will hold up across every screen of the product, not the most novel or dramatic one. Ask in order: which answers their questions and makes the main action obvious, fastest; which is built from the users' own work, so it reads as theirs; which will still work at full density and on the screens not yet drawn. A dark ground needs a reason from when the screen is used (a night shift, a control room), written in the direction. Write `"pick"` into the page's list and reload to confirm the tag shows.
+4. Show the user the choosing page and wait for their pick, as `directions.md` says.
 
 **The direction block**, written for the chosen one:
 
@@ -51,7 +53,7 @@ Refuses:   two or three things it will not do
 
 Character comes from structure, density and how the main figure is presented, never from decoration. One distinctive idea is plenty.
 
-Record it in `DESIGN.md` as `design-md.md` says: the answers are already there from the question rounds (`ask.md`); add the chosen direction and the directions shown and not chosen once chosen, and complete it with what was built after the loop.
+Record it in `DESIGN.md` as `design-md.md` says: the answers are already there from the question message (`ask.md`); add the chosen direction and the directions shown and not chosen once chosen, and complete it with what was built after the loop.
 
 ## Dense scale
 
@@ -72,7 +74,7 @@ A demo with numbers that do not add up looks fake at once.
 - Make the data reconcile: parts sum to totals, the table agrees with the headline figures or is labelled as a sample of them, and trends are consistent with the current value.
 - Use irregular, plausible values (12,847, not 12,000; 4.3%, not 5%) and realistic variety in names, dates and states.
 - Include the awkward cases: a long name, a zero, a negative, a missing value, a failed payment.
-- Say on screen that it is sample data.
+- Say once that it is sample data, in one quiet line at the foot of the page or screen, not beside each figure: scattered labels read as leaked placeholders.
 
 ## Charts
 
@@ -133,15 +135,15 @@ If a state cannot be reached in the build, say so in the report instead of assum
 
 ## Motion and pictures
 
-The motion layer in `craft.md` applies here only in its sober part: hover, press and focus that feel physical, and state changes that animate between values (a row added, a total updating, a panel opening) so the eye can follow what happened. No live element, no arrival, no scroll reveals, no scroll-linked effects and no ambient loops; nothing loops unless it shows something live. Good loading, empty and error states (above) matter more here than any animation.
+The motion layers in `craft.md` apply here only in their sober part: hover, press and focus that feel physical, and state changes that animate between values (a row added, a total updating, a panel opening) so the eye can follow what happened. No live element, no arrival, no scroll reveals, no scroll-linked effects and no ambient loops; nothing loops unless it shows something live. Good loading, empty and error states (above) matter more here than any animation.
 
-The section plan, the visual per section and the imagery ladder (`create.md` step 3, `imagery.md`) are for Persuade and Read pages. Here a picture earns its place only by carrying information: a chart, a map, a product photograph in a listing, an illustration in an empty state that says what goes there. Nothing is added as decoration.
+The section plan, the visual per section and the picture ladder (`build.md`, `pictures.md`) are for Persuade and Read pages. Here a picture earns its place only by carrying information: a chart, a map, a product photograph in a listing, an illustration in an empty state that says what goes there. Nothing is added as decoration.
 
 ## Narrow screens
 
 Decide how far the phone layout needs to go from who uses it. A desk tool opened daily on a laptop needs a phone view that works for a quick check: the key figures, the exceptions, a simplified table. It does not need every chart reflowed perfectly. Say in the report which you built. Whatever is shown must still be correct: no sideways scroll, no clipped controls, 44px targets.
 
-## Slips specific to product UI
+## Faults specific to product UI
 
 - A grid of equal tiles with nothing ranked.
 - Figures without comparisons, or with a comparison whose direction is ambiguous.

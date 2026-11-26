@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+  text-line-mask: each line of a headline rises out of its own mask, one after another.
+  Trigger: once, when the block is 20% on screen (IntersectionObserver), then it stays.
+  Touch and keyboard: the same, it needs no input. Without JS the text is simply there.
+  Reduced motion: no travel; the lines are visible from the start.
+  Lines are split by hand in the markup (one span per line) so breaks are designed, not guessed.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Line mask-up (text-line-mask)</title>
+<script>document.documentElement.classList.add('js');</script>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f1ebe0; color: #2a1d14; font: 400 18px/1.6 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.wrap { max-width: 72rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem); }
+header { display: flex; justify-content: space-between; padding: 1.5rem 0; font: 500 14px/1 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.hero { min-height: 86vh; display: grid; align-content: end; padding-bottom: 8vh; }
+h1, h2 { font-weight: 400; margin: 0; letter-spacing: -.02em; }
+h1 { font-size: clamp(3rem, 9vw, 8.5rem); line-height: .95; }
+h2 { font-size: clamp(2.25rem, 5.5vw, 5rem); line-height: 1; }
+.meta { display: flex; gap: 3rem; margin-top: 2.5rem; font: 500 14px/1.5 "Avenir Next", "Helvetica Neue", Arial, sans-serif; color: #6b5646; }
+.later { min-height: 100vh; display: grid; grid-template-columns: 5fr 7fr; gap: 3rem; align-items: center; border-top: 1px solid #2a1d1426; padding: 12vh 0; }
+.loaf { aspect-ratio: 4/5; background: #c58b4f; border-radius: 48% 52% 8px 8px / 40% 40% 8px 8px; }
+@media (max-width: 700px) { .later { grid-template-columns: 1fr; } }
+
+/* argus:copy-start css */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --t-slow: 640ms;
+  --stagger-line: 70ms;
+}
+.mask-lines .line { display: block; overflow: clip; overflow-clip-margin: .12em; padding-bottom: .06em; }
+.mask-lines .line > span { display: block; }
+.js .mask-lines .line > span {
+  translate: 0 108%;
+  transition: translate var(--t-slow) var(--ease-out);
+  transition-delay: calc(var(--i, 0) * var(--stagger-line));
+}
+.js .mask-lines.is-in .line > span { translate: 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  .js .mask-lines .line > span { translate: none; transition: none; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><strong>Holm Bakery</strong><span>Open 7 till 2, Tuesday to Sunday</span></header>
+  <main>
+  <section class="hero">
+    <!-- argus:copy-start html -->
+    <h1 class="mask-lines" data-reveal>
+      <span class="line"><span style="--i:0">Bread made</span></span>
+      <span class="line"><span style="--i:1">the slow way,</span></span>
+      <span class="line"><span style="--i:2">every morning.</span></span>
+    </h1>
+    <!-- argus:copy-end html -->
+    <div class="meta"><span>Rye, spelt and wheat sourdough</span><span>Proved for 36 hours</span><span>14 Mill Lane</span></div>
+  </section>
+  <section class="later">
+    <div class="loaf" role="img" aria-label="A round country loaf"></div>
+    <div>
+      <h2 class="mask-lines" data-reveal>
+        <span class="line"><span style="--i:0">Flour from one</span></span>
+        <span class="line"><span style="--i:1">mill, ten miles</span></span>
+        <span class="line"><span style="--i:2">up the valley.</span></span>
+      </h2>
+      <p>We buy stoneground flour by the tonne from Fenwick Mill and use it within the month, while it still smells of the grain.</p>
+    </div>
+  </section>
+  </main>
+</div>
+<script>
+// argus:copy-start js
+(() => {
+  const els = document.querySelectorAll('[data-reveal]');
+  if (!('IntersectionObserver' in window)) { els.forEach(el => el.classList.add('is-in')); return; }
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      e.target.classList.add('is-in');
+      io.unobserve(e.target); // once only
+    }
+  }, { threshold: 0.2 });
+  els.forEach(el => io.observe(el));
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

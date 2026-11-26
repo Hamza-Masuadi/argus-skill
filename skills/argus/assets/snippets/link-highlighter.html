@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  link-highlighter: a marker band sweeps behind the words from the left, as if someone highlighted the line; it wipes back on leaving.
+  Pointer: on hover, background-size grows 0 to 100% in t-base on --ease-out; leaving shrinks in t-base on --ease-in-out. box-decoration-break keeps it right across line breaks.
+  Keyboard: the same on :focus-visible.
+  Touch: a faint resting band marks the link.
+  Reduced motion: the band appears without sweeping.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Highlighter sweep (link-highlighter)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #f4f6f8; color: #1b1b1b; font: 400 20px/1.6 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; display: grid; place-items: center; }
+main { width: min(680px, 100% - 48px); padding: 72px 0; }
+.issue { font: 500 14px/1.4 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #5a5a55; margin: 0 0 18px; }
+h1 { font-weight: 400; font-style: italic; font-size: clamp(34px, 4.6vw, 54px); line-height: 1.05; letter-spacing: -.015em; margin: 0 0 28px; }
+p { margin: 0 0 20px; }
+.sig { font-style: italic; color: #5a5a55; }
+
+/* argus:copy-start css */
+.hl {
+  color: inherit; text-decoration: none;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  background:
+    linear-gradient(104deg, transparent .2em, #ffd84d .3em calc(100% - .3em), transparent calc(100% - .2em)) no-repeat 0 82% / 0% .62em,
+    linear-gradient(#ffd84d66, #ffd84d66) no-repeat 0 100% / 100% 2px;
+  transition: background-size var(--t-base) var(--ease-in-out);
+}
+.hl:hover, .hl:focus-visible {
+  background-size: 100% .62em, 100% 2px;
+  transition-timing-function: var(--ease-out);
+}
+.hl:focus-visible { outline: 2px solid #1b1b1b; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .hl { transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <p class="issue">Sunday Larder, letter 61 · 23 November</p>
+  <h1>The week I stopped peeling squash</h1>
+  <!-- argus:copy-start html -->
+  <p>Roast it in its skin, cut side down, at 200°C until a knife slides in without asking. The skin goes soft and slightly bitter, which is the point; it stands up to <a class="hl" href="#brown-butter">brown butter with sage and a little anchovy</a>.</p>
+  <p>If you only cook one thing from this letter, make <a class="hl" href="#crispy-chickpeas">the crispy chickpeas</a>. They keep for a week in a jar, if they last that long.</p>
+  <!-- argus:copy-end html -->
+  <p class="sig">Until next Sunday, Nell</p>
+</main>
+</body>
+</html>

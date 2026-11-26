@@ -1,0 +1,78 @@
+<!doctype html>
+<!--
+  text-scroll-fill: a statement paragraph fills in word by word as it scrolls up the screen,
+  from faint (22%) to full ink. Scrubbed: scrolling back empties it again.
+  Mechanism: each word has its own view() timeline (CSS scroll-driven animation), linear.
+  Fallback: browsers without animation-timeline show the paragraph in full ink.
+  Touch and keyboard: the same (any scroll drives it). Reduced motion: full ink, no scrub.
+  The text stays real text; the split only wraps words, so it reads and selects normally.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrubbed word fill (text-scroll-fill)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f4f4f1; color: #121212; font: 400 17px/1.6 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+main { max-width: 74rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.top { display: flex; justify-content: space-between; padding: 1.5rem 0; font-size: 14px; }
+.intro { min-height: 80vh; display: grid; align-content: end; padding-bottom: 6vh; border-bottom: 1px solid #1212121f; }
+.intro h1 { font-size: clamp(1rem, 1.3vw, 1.125rem); font-weight: 500; margin: 0; color: #5a5a55; }
+.statement { padding: 30vh 0 60vh; display: grid; grid-template-columns: 1fr 3fr; gap: 2rem; }
+.statement .label { font-size: 14px; color: #5a5a55; padding-top: .8em; }
+.fill { font: 500 clamp(1.9rem, 4.1vw, 3.75rem)/1.12 "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: -.025em; margin: 0; }
+.end { min-height: 60vh; border-top: 1px solid #1212121f; padding-top: 2rem; color: #5a5a55; }
+@media (max-width: 700px) { .statement { grid-template-columns: 1fr; } }
+
+/* argus:copy-start css */
+.fill .word { opacity: 1; }
+@supports (animation-timeline: view()) {
+  /* One timeline for the paragraph; each word takes its own slice of it (--p = index / count),
+     so the fill runs word by word in reading order, not a line at a time. */
+  .fill { view-timeline: --fill block; }
+  .fill .word {
+    animation: word-fill linear both;
+    animation-timeline: --fill;
+    animation-range: cover calc(18% + var(--p) * 34%) cover calc(22% + var(--p) * 34%);
+  }
+  @keyframes word-fill { from { opacity: .2; } to { opacity: 1; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fill .word { animation: none; opacity: 1; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><strong>Kettle &amp; Hart Architects</strong><span>Leeds</span></div>
+  <section class="intro"><h1>Practice statement, 2026</h1></section>
+  <section class="statement">
+    <span class="label">01 / How we work</span>
+    <!-- argus:copy-start html -->
+    <p class="fill" data-fill>We design small public buildings: libraries, swimming baths, a ferry waiting room. We stay on site until the last door is hung, and we go back a year later to see what people actually use.</p>
+    <!-- argus:copy-end html -->
+  </section>
+  <section class="end">Twelve buildings completed, four in construction.</section>
+</main>
+<script>
+// argus:copy-start js
+// Wrap each word in a span; spaces stay as text so wrapping and selection are unchanged.
+document.querySelectorAll('[data-fill]').forEach(p => {
+  const words = p.textContent.trim().split(/\s+/);
+  p.textContent = '';
+  words.forEach((w, i) => {
+    const s = document.createElement('span');
+    s.className = 'word';
+    s.textContent = w;
+    s.style.setProperty('--p', (i / words.length).toFixed(3));
+    p.append(s, i < words.length - 1 ? ' ' : '');
+  });
+});
+// argus:copy-end js
+</script>
+</body>
+</html>

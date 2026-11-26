@@ -72,7 +72,7 @@ test('the length rules match craft.md: 14 screens at 390, 16 at 320, one section
   assert.match(craft, /2\.5 screens/);
 });
 
-test('the type, button and picture rules match craft.md and imagery.md', () => {
+test('the type, button and picture rules match craft.md and pictures.md', () => {
   const text = source('check.ts');
   const between = (from: string, to: string): string => text.slice(text.indexOf(from), text.indexOf(to));
   assert.match(between("rule('font-families'", "rule('thin-body-text'"), /used\.length > 2\)/);
@@ -88,7 +88,7 @@ test('the type, button and picture rules match craft.md and imagery.md', () => {
   const ref = (name: string): string => fs.readFileSync(path.join(__dirname, '..', '..', 'skills', 'argus', 'references', name), 'utf8');
   assert.match(ref('craft.md'), /at most two type families/);
   assert.match(ref('craft.md'), /40-48px tall on desktop/);
-  assert.match(ref('imagery.md'), /mixed-pictures/);
+  assert.match(ref('pictures.md'), /mixed-pictures/);
 });
 
 test('check.ts stays one expression with no imports or exports', () => {
@@ -145,23 +145,29 @@ test('missing-anchor reports same-page links with no target and skips the likely
   for (const m of block.matchAll(/add\('missing-anchor',\s*'([^']+)'/g)) assert.equal(m[1], rule?.severity);
 });
 
-test('many-type-sizes leaves out text inside product mock-ups, and the skill tells builders to mark them', () => {
+test('type-untokened-sizes leaves out text inside product mock-ups and tables, and the skill tells builders to mark them', () => {
   const text = source('check.ts');
-  const block = text.slice(text.indexOf("rule('many-type-sizes'"), text.indexOf("rule('font-families'"));
-  assert.ok(block.includes('[data-mock]'));
-  assert.ok(block.includes('[role="img"]'));
-  assert.ok(block.includes('[aria-hidden="true"]'));
-  assert.match(block, /sizes\.size > 12/);
+  assert.doesNotMatch(text, /many-type-sizes/);
+  const mock = /const MOCK = '([^']+)';/.exec(text)?.[1] ?? '';
+  assert.ok(mock.includes('[data-mock]'));
+  assert.ok(mock.includes('[role="img"]'));
+  assert.ok(mock.includes('table'));
+  const block = text.slice(text.indexOf("rule('type-untokened-sizes'"), text.indexOf("rule('type-small-body'"));
+  assert.ok(block.includes('el.closest(MOCK)'));
+  // Tuned on the five bench pages: more than two heading sizes or four text sizes in the mid band, or more than twelve in all.
+  assert.match(block, /headGroups\.length > 2 \|\| mid\.length > 4/);
+  assert.match(block, /every\.length > 12/);
+  assert.match(text, /s \/ prev <= 1\.08/);
   const ref = (name: string): string => fs.readFileSync(path.join(__dirname, '..', '..', 'skills', 'argus', 'references', name), 'utf8');
-  for (const name of ['web.md', 'imagery.md', 'verify.md']) assert.match(ref(name), /data-mock/, name);
+  for (const name of ['craft.md', 'pictures.md', 'verify.md']) assert.match(ref(name), /data-mock/, name);
 });
 
 test('the rule counts stated in verify.md and the README match the catalogue', () => {
   const checks = RULES.filter((r) => r.tool === 'check').length;
   const lints = RULES.filter((r) => r.tool === 'lint').length;
   const verify = fs.readFileSync(path.join(__dirname, '..', '..', 'skills', 'argus', 'references', 'verify.md'), 'utf8');
-  assert.ok(verify.includes(`It applies ${checks} rules`), 'verify.md check count');
-  assert.ok(verify.includes(`with lint's ${lints}, ${RULES.length} in all`), 'verify.md totals');
+  const floor = RULES.filter((r) => r.tier === 'floor').length;
+  assert.ok(verify.includes(`${checks} checker rules and ${lints} source rules, ${RULES.length} in all, ${floor} of them floor rules`), 'verify.md counts');
   const readme = fs.readFileSync(path.join(__dirname, '..', '..', 'README.md'), 'utf8');
   assert.ok(readme.includes(`Lists all ${RULES.length} rules`), 'README total');
 });
@@ -176,7 +182,8 @@ test('rules.js run directly prints the catalogue, as JSON with --json, and usage
   const text = run([shipped('rules.js')]);
   assert.equal(text.status, 0);
   assert.match(text.out, /^check: measured in the rendered page/);
-  assert.ok(text.out.trim().endsWith('not failures.'));
+  assert.ok(text.out.trim().endsWith('the most serious level a rule reports.'));
+  assert.match(text.out, /\bfloor\s+contrast\b/);
   assert.ok(text.out.includes(`${RULES.length} rules in all`));
   const json = run([shipped('rules.js'), '--json']);
   assert.equal(json.status, 0);
@@ -208,4 +215,61 @@ test('inventory.ts stays one expression with no imports or exports', () => {
   assert.doesNotMatch(source('inventory.ts'), /^\s*(import|export)\s/m);
   const compiled = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'inventory.js'), 'utf8');
   assert.doesNotThrow(() => new Function('return ' + compiled.replace(/^"use strict";\s*/, '')));
+});
+
+test('the flow rules come from flow.md, report at P3 as prompts to look, run at 1024px and wider, and skip app mode', () => {
+  const text = source('check.ts');
+  const block = text.slice(text.indexOf('// ---- flow:'), text.indexOf('// ---- tables'));
+  assert.match(block, /const flowOn = vw >= 1024 && !appMode;/);
+  for (const id of ['blank-band', 'lopsided-section', 'repeated-layout']) {
+    const rule = RULES.find((r) => r.tool === 'check' && r.id === id);
+    assert.equal(rule?.basis, 'Argus flow.md', id);
+    assert.equal(rule?.severity, 'P3', id);
+    assert.equal(rule?.tier, 'advisory', id);
+    assert.match(block, new RegExp("rule\\('" + id + "', \\(\\) => \\{\\n(\\s*//.*\\n)*\\s*if \\(!flowOn"), id);
+    for (const m of text.matchAll(new RegExp("add\\('" + id + "',\\s*'([^']+)'", 'g'))) assert.equal(m[1], 'P3', id);
+  }
+  // The thresholds the catalogue states.
+  assert.match(block, /const THRESHOLD = 0\.12;/);
+  assert.match(block, /vh \* 0\.5/);
+  assert.match(block, /pageH - 200/);
+  assert.match(block, /b\.font >= 96/);
+  assert.match(block, />= 240 && !\(clipped/);
+  assert.match(block, /const VOID = 240;/);
+  assert.match(block, /under < vh \* 0\.5/);
+  assert.match(block, /const zone = cw \* 0\.45;/);
+  assert.match(block, /z\.empty >= 0\.75/);
+  assert.match(block, /z\.area < 0\.05/);
+  assert.match(block, /<= 0\.08/);
+  assert.match(block, /group\.length < 4 \|\| group\.length < total \* 0\.4/);
+});
+
+test('two tiers: every P0 and P1 rule, and text under 12px, is a floor rule never waived; the rest are advisory', () => {
+  for (const r of RULES) {
+    const floor = r.severity === 'P0' || r.severity === 'P1' || r.id === 'small-text';
+    assert.equal(r.tier, floor ? 'floor' : 'advisory', `${r.tool} ${r.id}`);
+  }
+  for (const id of ['contrast', 'page-overflow', 'covered-content', 'img-alt', 'no-pause', 'hero-video', 'form-mailto', 'small-text']) {
+    assert.equal(RULES.find((r) => r.tool === 'check' && r.id === id)?.tier, 'floor', id);
+  }
+  for (const id of ['blank-band', 'repeated-layout', 'lopsided-section', 'narrow-content', 'hero-crowded', 'hero-wordy']) {
+    const r = RULES.find((x) => x.tool === 'check' && x.id === id);
+    assert.equal(r?.tier, 'advisory', id);
+    assert.equal(r?.severity, 'P3', id);
+  }
+});
+
+test('hero-crowded: the checker fires above seven groups, and first-screen.md and the dealer say the same number with the reason', () => {
+  const text = source('check.ts');
+  assert.match(text, /if \(groups > 7\)/);
+  const card = fs.readFileSync(path.join(__dirname, '..', '..', 'skills', 'argus', 'references', 'first-screen.md'), 'utf8');
+  assert.match(card, /About five groups/);
+  assert.match(card, /measure up to seven; `hero-crowded` prompts above seven/);
+  assert.match(RULES.find((r) => r.id === 'hero-crowded')?.summary ?? '', /more than seven separate groups/);
+});
+
+test('hero-wordy leaves out SVG text, charts, mock-ups, aria-hidden content and a list or board that is the hero', () => {
+  const block = source('check.ts').slice(source('check.ts').indexOf("rule('hero-wordy'"), source('check.ts').indexOf('// ---- covered content'));
+  assert.match(block, /svg, canvas, \[aria-hidden="true"\], \[role="img"\], \[data-mock\]/);
+  assert.match(block, /table, ul, ol, dl/);
 });

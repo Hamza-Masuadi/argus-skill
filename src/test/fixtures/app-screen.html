@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture app screen</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.4 -apple-system, Helvetica, Arial, sans-serif; color: #1a1a1a; background: #f4f4f4; }
+  main { padding: 16px 16px 96px; }
+  h1 { font-size: 28px; margin: 8px 0 16px; }
+  .row { display: block; padding: 14px 12px; margin-bottom: 8px; background: #fff; color: #1a1a1a; text-decoration: none; border-radius: 10px; }
+  .meta { font-size: 10px; color: #444; }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: 64px; display: flex; background: #fff; border-top: 1px solid #ddd; }
+  .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: #333; text-decoration: none; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; height: 55vh; background: #fff; border-radius: 16px 16px 0 0; padding: 20px; }
+  .sheet button { min-height: 44px; padding: 0 20px; font-size: 16px; }
+</style>
+</head>
+<body>
+<main inert>
+  <h1>Orders</h1>
+  <a class="row" href="#order">Flat white <span class="meta">Ready in 5 min</span></a>
+  <a class="row" href="#history">Past orders</a>
+  <a class="row" href="#account">Account</a>
+</main>
+<nav class="tabbar" aria-label="Tabs" inert>
+  <a href="#home">Home</a><a href="#order">Order</a><a href="#account">Account</a>
+</nav>
+<div class="scrim"></div>
+<div class="sheet" role="dialog" aria-modal="true" aria-label="Add to order">
+  <p>Flat white, medium</p>
+  <button type="button">Add to order</button>
+</div>
+</body>
+</html>

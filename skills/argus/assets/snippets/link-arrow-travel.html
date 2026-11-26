@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  link-arrow-travel: the arrow leaves through the right edge and a copy arrives from the left, so the link points onward.
+  Pointer: on hover, both arrows translate one box width in t-base on --ease-out; leaving returns softer.
+  Keyboard: the same on :focus-visible.
+  Touch: the arrow simply stays.
+  Reduced motion: no travel; the arrow brightens.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arrow travel (link-arrow-travel)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #101010; color: #f2f0ea; font: 400 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; display: grid; place-items: center; }
+main { width: min(1120px, 100% - 48px); padding: 64px 0; }
+.done { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; border-top: 1px solid #3a3a3a; padding-top: 28px; }
+@media (max-width: 760px) { .done { grid-template-columns: 1fr; } }
+.label { color: #9c9a94; font-size: 14px; margin: 0 0 10px; }
+.thumb { aspect-ratio: 16 / 9; border-radius: 2px; margin-top: 22px; }
+.proj { font: 400 clamp(40px, 6vw, 84px)/1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -.03em; margin: 0 0 28px; }
+.credits { color: #9c9a94; font-size: 15px; max-width: 30rem; }
+.credits p { margin: 0 0 8px; }
+
+/* argus:copy-start css */
+.arrow {
+  color: inherit; text-decoration: none;
+  display: inline-flex; align-items: center; gap: .45em;
+  font: 400 clamp(30px, 3.6vw, 48px)/1.1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -.02em;
+}
+.arrow .arrow-box { position: relative; display: inline-block; width: .9em; height: .9em; overflow: hidden; flex: none; }
+.arrow .arrow-box svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transition: transform var(--t-base) var(--ease-in-out);
+}
+.arrow .arrow-box svg + svg { transform: translateX(-100%); }
+.arrow:hover .arrow-box svg,
+.arrow:focus-visible .arrow-box svg { transform: translateX(100%); transition-timing-function: var(--ease-out); }
+.arrow:hover .arrow-box svg + svg,
+.arrow:focus-visible .arrow-box svg + svg { transform: translateX(0); transition-delay: 40ms; }
+.arrow:focus-visible { outline: 2px solid currentColor; outline-offset: 6px; }
+@media (prefers-reduced-motion: reduce) {
+  .arrow .arrow-box svg { transition: none !important; transform: none !important; }
+  .arrow .arrow-box svg + svg { display: none; }
+  .arrow:hover .arrow-box, .arrow:focus-visible .arrow-box { color: #e9c46a; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1 class="proj">Sea Pool Pavilion, Cliftonville</h1>
+  <div class="credits"><p>Client: Margate Town Council</p><p>Photography: Seren Okafor</p><p>Completed March 2026, on time and £40k under budget.</p></div>
+  <div class="done" style="margin-top:56px">
+    <div>
+      <p class="label">Previous project</p>
+      <a class="arrow" href="#tidal"><span class="arrow-box" aria-hidden="true" style="transform:scaleX(-1)"><svg viewBox="0 0 24 24"><path d="M3 12h17M14 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><svg viewBox="0 0 24 24"><path d="M3 12h17M14 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span>Tidal pool, Walpole Bay</a>
+      <div class="thumb" style="background:linear-gradient(180deg,#5d7f8c 0 55%,#c8b99a 55%)" role="img" aria-label="Tidal pool at low water"></div>
+    </div>
+    <div>
+      <p class="label">Next project</p>
+      <!-- argus:copy-start html -->
+      <a class="arrow" href="#baths">Harbour Baths, Margate <span class="arrow-box" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h17M14 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><svg viewBox="0 0 24 24"><path d="M3 12h17M14 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span></a>
+      <!-- argus:copy-end html -->
+      <div class="thumb" style="background:linear-gradient(160deg,#2f5d62 0 40%,#e7dcc6 40% 62%,#a7c4bc 62%)" role="img" aria-label="Harbour Baths with the sea wall behind"></div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

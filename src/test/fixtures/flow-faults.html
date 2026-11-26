@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture flow, faults</title>
+<meta name="description" content="A page with the faults the flow rules look for.">
+<!--
+  At 1440 the flow rules must find: three sections in a row with the heading on the left and a
+  paragraph on the right (repeated-layout); a list of three big names with the right side of
+  the row empty (lopsided-section); and a band 100vh tall holding one short line (blank-band).
+  Bands alternate plain and tint with 136px padding.
+-->
+<style>
+  * { box-sizing: border-box; }
+  /* One embedded face, so text wraps the same on every system and the bands measure the same everywhere. */
+  @font-face { font-family: "Fixture Sans"; src: url(face.woff2) format("woff2"); font-display: block; }
+  body { margin: 0; background: #fff; color: #1b1c1e; font: 18px/1.5 "Fixture Sans", sans-serif; }
+  header { padding: 20px 64px; border-bottom: 1px solid #ddd; }
+  .wrap { max-width: 1312px; margin: 0 auto; padding: 0 64px; }
+  section { padding: 136px 0; }
+  section:nth-of-type(even) { background: #f3f4f1; }
+  h1 { font-size: 72px; line-height: 1; margin: 0 0 24px; }
+  h2 { font-size: 44px; line-height: 1.1; margin: 0; }
+  p { margin: 0 0 16px; }
+  .btn { display: inline-block; padding: 12px 22px; border-radius: 8px; background: #1d4d3a; color: #fff; text-decoration: none; }
+  .btn:hover { transform: translateY(-1px); }
+  .head { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .names { list-style: none; margin: 48px 0 0; padding: 0; }
+  .names li { font-size: 64px; font-weight: 700; line-height: 1.6; border-bottom: 1px solid #ddd; }
+  .names li { width: 40%; }
+  .tall { min-height: 100vh; }
+</style>
+</head>
+<body>
+<header><strong>Halden</strong></header>
+<main>
+  <section><div class="wrap"><h1>Back on your bike in five days.</h1><p>Servicing in Halden Bridge from £45, with the price agreed before we touch it.</p><a class="btn" href="#book">Book a service</a></div></section>
+  <section><div class="wrap head"><h2>What happens in the five days.</h2><p>You hand over the bike on Tuesday morning and you ride it home the next Tuesday. Here is what happens in between, and the one phone call you might get. We look at it with you and write the price on the tag.</p></div></section>
+  <section><div class="wrap head"><h2>Three services, one price each.</h2><p>The price on the board is the price on your tag. Parts are extra, and we quote them before any work starts, so the bill at collection is never a surprise. Every service ends with a test ride.</p></div></section>
+  <section><div class="wrap head"><h2>Bikes that leave here ready.</h2><p>Gravel, commuter and children's bikes from three makers. Each one is built and test-ridden by a named mechanic, fitted to you, and checked again free at six weeks, whatever you ride.</p></div></section>
+  <section aria-labelledby="crew-h"><div class="wrap"><h2 id="crew-h">Three names.</h2><ul class="names"><li>Tom Ashworth</li><li>Priya Sutcliffe</li><li>Dan Holroyd</li></ul></div></section>
+  <section class="tall"><div class="wrap"><h2>Ring from 8.</h2></div></section>
+  <section id="book"><div class="wrap"><h2>Book a service</h2><p>Tell us the bike and the day. We ring back within the hour.</p><a class="btn" href="#book">Book a service</a></div></section>
+</main>
+<footer style="padding:48px 64px">Sample content for a test page.</footer>
+</body>
+</html>

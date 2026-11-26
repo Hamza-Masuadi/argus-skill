@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+  text-word-reveal: the words of a short display line rise into place one after another,
+  each from behind its own mask, with a 40ms stagger.
+  For one line of up to about eight words. Longer text: use text-line-mask.
+  Trigger: once, when the line is 30% on screen. Touch and keyboard: the same.
+  Screen readers get the sentence once (aria-label on the parent, words aria-hidden).
+  Reduced motion: the words are simply there. Without JS: the plain sentence.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Word reveal (text-word-reveal)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #12241f; color: #e8efe9; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 76rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.top { display: flex; justify-content: space-between; padding: 1.5rem 0; font-size: 14px; color: #9fb7ac; }
+.hero { min-height: 92vh; display: grid; align-content: center; gap: 2rem; }
+.eyebrow { font: 500 14px/1 "Avenir Next", sans-serif; color: #7fd1a8; margin: 0; }
+h1 { font: 600 clamp(2.75rem, 7.4vw, 7rem)/1 "Futura", "Avenir Next", "Century Gothic", sans-serif; letter-spacing: -.02em; margin: 0; max-width: 14ch; text-wrap: balance; }
+.lede { max-width: 34rem; color: #b9cbc2; margin: 0; }
+.rows { border-top: 1px solid #e8efe92e; padding: 10vh 0 20vh; display: grid; gap: 1rem; }
+.rows h2 { font: 600 clamp(2rem, 5vw, 4.5rem)/1.05 "Futura", "Avenir Next", sans-serif; margin: 0; }
+
+/* argus:copy-start css */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --t-slow: 640ms;
+  --stagger-word: 40ms;
+}
+.split-words .w { display: inline-block; overflow: clip; overflow-clip-margin: .15em; vertical-align: top; padding-bottom: .08em; margin-bottom: -.08em; }
+.split-words .w > span { display: inline-block; }
+.split-words.is-ready .w > span {
+  translate: 0 110%; rotate: 4deg; transform-origin: 0 100%;
+  transition: translate var(--t-slow) var(--ease-out), rotate var(--t-slow) var(--ease-out);
+  transition-delay: calc(var(--i) * var(--stagger-word));
+}
+.split-words.is-in .w > span { translate: 0 0; rotate: 0deg; }
+@media (prefers-reduced-motion: reduce) {
+  .split-words.is-ready .w > span { translate: none; rotate: none; transition: none; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><strong>Fernhill Cycles</strong><span>Workshop open Monday to Saturday</span></div>
+  <section class="hero">
+    <p class="eyebrow">Servicing, wheel builds, bike fits</p>
+    <!-- argus:copy-start html -->
+    <h1 class="split-words" data-split-words>Your bike back by Friday, running like new.</h1>
+    <!-- argus:copy-end html -->
+    <p class="lede">Drop it in before ten and we will call you with a fixed price by noon. No work starts until you say yes.</p>
+  </section>
+  <section class="rows">
+    <h2 class="split-words" data-split-words>Wheels built by hand, trued twice.</h2>
+    <p class="lede">Every wheel is tensioned, left overnight and trued again in the morning.</p>
+  </section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const lines = document.querySelectorAll('[data-split-words]');
+  lines.forEach(el => {
+    const text = el.textContent.trim().replace(/\s+/g, ' ');
+    el.setAttribute('aria-label', text);
+    el.textContent = '';
+    text.split(' ').forEach((word, i, all) => {
+      const w = document.createElement('span');
+      w.className = 'w';
+      w.setAttribute('aria-hidden', 'true');
+      const inner = document.createElement('span');
+      inner.textContent = word;
+      inner.style.setProperty('--i', Math.min(i, 10)); // cap the total stagger near 400ms
+      w.append(inner);
+      el.append(w, i < all.length - 1 ? ' ' : '');
+    });
+    el.classList.add('is-ready');
+  });
+  const show = el => el.classList.add('is-in');
+  if (!('IntersectionObserver' in window)) { lines.forEach(show); return; }
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } });
+  }, { threshold: 0.3 });
+  // Wait one frame so the hidden start state is painted before it changes.
+  requestAnimationFrame(() => lines.forEach(el => io.observe(el)));
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

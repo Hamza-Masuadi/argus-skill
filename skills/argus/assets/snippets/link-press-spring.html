@@ -1,0 +1,106 @@
+<!doctype html>
+<!--
+  link-press-spring: buttons press in quickly under the finger and spring back with a small overshoot on release; hover only steps the colour, nothing lifts.
+  Pointer: :active scales to .96 in 90ms on --ease-out; release runs t-slow on the --spring curve, retargeting if pressed again.
+  Keyboard: Space and Enter add the same pressed state while held.
+  Touch: the same; the press is the feedback.
+  Reduced motion: no scale; the press darkens the fill instead.
+  The right quiet default for every button.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Press state with spring release (link-press-spring)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #e6e2ec; color: #221d2b; font: 400 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; display: grid; place-items: center; }
+main { width: min(900px, 100% - 48px); display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 64px 0; }
+@media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+.bag { aspect-ratio: 1; border-radius: 6px; background: #c9bfd8; display: grid; place-items: center; }
+.bag svg { width: 54%; }
+h1 { font: 400 clamp(34px, 4.4vw, 52px)/1.04 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -.02em; margin: 0 0 8px; }
+.notes { color: #5b5367; margin: 0 0 28px; }
+.price { font-size: 22px; margin: 0 0 24px; font-variant-numeric: tabular-nums; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.qty { display: inline-flex; align-items: center; border: 1.5px solid #221d2b; border-radius: 999px; }
+.qty output { min-width: 2ch; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* argus:copy-start css */
+.press {
+  appearance: none; border: 0; cursor: pointer;
+  font: 600 16px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  padding: 18px 28px; border-radius: 999px;
+  background: #221d2b; color: #f1edf6;
+  transition: transform var(--t-slow) var(--spring), background-color var(--t-fast) var(--ease-out);
+}
+.press:hover { background: #3a3247; }
+.press:active, .press.is-pressed { transform: scale(.96); transition: transform 90ms var(--ease-out), background-color var(--t-fast) var(--ease-out); }
+.press.ghost { background: transparent; color: #221d2b; padding: 12px 16px; }
+.press.ghost:hover { background: #221d2b14; }
+.press:focus-visible { outline: 2px solid #221d2b; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .press, .press:active, .press.is-pressed { transform: none; transition: background-color var(--t-fast) linear; }
+  .press:active, .press.is-pressed { background: #0d0a12; }
+  .press.ghost:active, .press.ghost.is-pressed { background: #221d2b2e; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="bag" role="img" aria-label="A 250 gram bag of coffee beans">
+    <svg viewBox="0 0 120 150" aria-hidden="true"><path d="M20 20 h80 l8 120 h-96 z" fill="#f1edf6"/><rect x="20" y="12" width="80" height="12" fill="#221d2b"/><text x="60" y="78" text-anchor="middle" font-family="Georgia, serif" font-size="13" fill="#221d2b">Huila</text><text x="60" y="94" text-anchor="middle" font-family="Helvetica, Arial" font-size="7" fill="#5b5367">Washed · 250 g</text></svg>
+  </div>
+  <div>
+    <h1>Huila, El Paraíso</h1>
+    <p class="notes">Colombia. Red grape, panela and cocoa nib. Roasted on Mondays in Hackney Wick.</p>
+    <p class="price">£14.50 <span style="color:#5b5367;font-size:15px">for 250 g</span></p>
+    <!-- argus:copy-start html -->
+    <div class="row">
+      <div class="qty" role="group" aria-label="Quantity">
+        <button class="press ghost" type="button" data-step="-1" aria-label="One fewer">−</button>
+        <output id="qty" aria-live="polite">1</output>
+        <button class="press ghost" type="button" data-step="1" aria-label="One more">+</button>
+      </div>
+      <button class="press" type="button" id="add">Add to basket</button>
+    </div>
+    <!-- argus:copy-end html -->
+  </div>
+</main>
+<script>
+// argus:copy-start js
+// Keyboard presses get the same held state as the pointer's :active.
+document.querySelectorAll('.press').forEach((b) => {
+  b.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') b.classList.add('is-pressed'); });
+  b.addEventListener('keyup', () => b.classList.remove('is-pressed'));
+  b.addEventListener('blur', () => b.classList.remove('is-pressed'));
+});
+// argus:copy-end js
+// Demo only: the stepper and basket label.
+const out = document.getElementById('qty');
+document.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => {
+  out.value = out.textContent = Math.max(1, Math.min(9, +out.textContent + +b.dataset.step));
+}));
+document.getElementById('add').addEventListener('click', (e) => { e.currentTarget.textContent = 'Added, ' + out.textContent + ' in basket'; });
+</script>
+</body>
+</html>

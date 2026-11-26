@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" class="motion">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture design, a chosen look</title>
+<meta name="description" content="A page the design rules must leave alone at 1440.">
+<link rel="icon" href="data:,">
+<!--
+  A finished page at 1440: one family, a few size roles, comfortable running text, one radius
+  system and an uncrowded first screen. (Its look is one of many; the design rules judge only
+  faults of finish, not the style.)
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #efece4; color: #16140f; font: 18px/1.55 "Fixture Grotesk", Georgia, serif; }
+  .bar { position: absolute; top: 0; left: 0; right: 0; z-index: 2; display: flex; justify-content: space-between; padding: 20px 48px; color: #fff; }
+  .bar a { color: inherit; margin-left: 20px; }
+  .bar a:hover { text-decoration: underline; }
+  .hero { position: relative; height: 900px; padding: 0; }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .hero .copy { position: absolute; left: 48px; right: 48px; bottom: 56px; color: #fff; }
+  .hero h1 { font-size: 168px; line-height: .88; letter-spacing: -0.045em; margin: 0 0 24px; font-weight: 800; }
+  .hero p { margin: 0 0 20px; max-width: 40ch; }
+  .btn { display: inline-block; padding: 14px 26px; background: #16140f; color: #fff; text-decoration: none; transition: background-color .2s, color .2s; }
+  .btn:hover { background: #fff; color: #16140f; }
+  section { padding: 96px 48px; }
+  h2 { font-size: 24px; margin: 0 0 24px; }
+  .row { display: grid; grid-template-columns: 200px 1fr 240px; gap: 48px; align-items: center; border-top: 1px solid rgb(22 20 15 / .18); padding: 32px 0; }
+  .row .bottle { width: 120px; height: 200px; background: #8c2a17; transition: transform .3s; }
+  .row:hover .bottle { transform: rotate(-6deg); }
+  .row .name { font-size: 120px; line-height: .85; letter-spacing: -0.05em; font-weight: 800; margin: 0; }
+  .ink { background: #16140f; color: #efece4; }
+  .ink .btn, .finale .btn { background: #efece4; color: #16140f; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .pic { position: relative; display: block; }
+  .pic img { display: block; width: 100%; height: 420px; object-fit: cover; }
+  .pic .alt { position: absolute; inset: 0; opacity: 0; transition: opacity .3s; }
+  .pic:hover .alt { opacity: 1; }
+  .quote { font-size: 44px; line-height: 1.15; margin: 0; max-width: 24ch; text-indent: -0.4em; }
+  .motion .lines:not(.is-in) span { transform: translateY(110%); }
+  .motion .pic:not(.is-in) img { clip-path: inset(0 0 100% 0); }
+  .finale { background: #16140f; color: #efece4; padding: 120px 48px; }
+  .finale p.name { font-size: 160px; line-height: .85; font-weight: 800; letter-spacing: -0.05em; margin: 0 0 32px; }
+  @media (prefers-reduced-motion: reduce) { .motion .lines:not(.is-in) span { transform: none; } }
+</style>
+</head>
+<body>
+<header class="bar"><strong>Hollin</strong><nav aria-label="Sections"><a href="#sauces">Sauces</a><a href="#shop">Shop</a></nav></header>
+<main>
+  <section class="hero" aria-labelledby="h1">
+    <img src="app-banner.png" width="600" height="60" alt="Fried eggs on a plate with three drops of hot sauce">
+    <div class="copy">
+      <h1 id="h1" class="lines is-in"><span>A few drops change dinner.</span></h1>
+      <p>Three fermented hot sauces, aged six weeks in Margate.</p>
+      <a class="btn" href="#shop">Choose a sauce</a>
+    </div>
+  </section>
+  <section id="sauces" aria-labelledby="sauces-h">
+    <h2 id="sauces-h">The three sauces</h2>
+    <div class="row"><div class="bottle"></div><p class="name">Green</p><p>Jalapeño and lime, for eggs and fish. Mild, bright and sharp.</p></div>
+    <div class="row"><div class="bottle"></div><p class="name">Red</p><p>Scotch bonnet and roast pepper, for everything else on the table.</p></div>
+    <div class="row"><div class="bottle"></div><p class="name">Black</p><p>Chipotle and black garlic, smoky and slow, for meat and beans.</p></div>
+  </section>
+  <section class="ink" aria-labelledby="weeks-h">
+    <h2 id="weeks-h">Six weeks in the crock</h2>
+    <p class="quote">"The only sauce I put on the table without asking."</p>
+    <p>Every batch ferments for six weeks before it is bottled, and every bottle carries its batch date on the label.</p>
+  </section>
+  <section aria-labelledby="table-h">
+    <h2 id="table-h">On the table</h2>
+    <div class="pair">
+      <a class="pic is-in" href="#shop"><img src="app-banner.png" width="600" height="60" alt="Green sauce on scrambled eggs"><img class="alt" src="app-banner.png" width="600" height="60" alt=""></a>
+      <a class="pic is-in" href="#shop"><img src="app-banner.png" width="600" height="60" alt="Red sauce on rice and beans"><img class="alt" src="app-banner.png" width="600" height="60" alt=""></a>
+    </div>
+  </section>
+  <section id="shop" aria-labelledby="shop-h">
+    <h2 id="shop-h">The set of three</h2>
+    <p>Green, Red and Black in 150ml bottles, £21 with delivery in two working days.</p>
+    <a class="btn" href="#shop">Add the set to the bag</a>
+  </section>
+  <section class="finale" aria-labelledby="fin-h">
+    <h2 id="fin-h">Hollin</h2>
+    <p class="name">Hollin</p>
+    <a class="btn" href="#shop">Choose a sauce</a>
+  </section>
+</main>
+</body>
+</html>

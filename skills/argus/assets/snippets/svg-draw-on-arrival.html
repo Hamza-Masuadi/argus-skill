@@ -1,0 +1,98 @@
+<!doctype html>
+<!--
+  svg-draw-on-arrival: a line drawing draws itself once, path by path, when it first comes
+  into view; here a garden designer's planting plan: the boundary, the path, the beds, then
+  the trees. It does not undraw.
+  Mechanism: every path has pathLength="1"; under a class the script adds (.draw-ready) the
+  paths start at stroke-dashoffset: 1, and an IntersectionObserver adds .is-drawn, which
+  transitions them to 0 with a delay of --n times the line stagger (the first six staggered,
+  the rest together). Labels fade in after the lines.
+  Fallback and reduced motion: without script, or if the observer never fires (a timer
+  draws it after a second), or under prefers-reduced-motion, the drawing is complete.
+  Touch and keyboard: nothing to operate; the drawing has role="img" and an aria-label, and
+  its labels are real text.
+  A technique to redraw for the subject (a joinery detail, a wiring plan, a recipe's steps),
+  not a decoration to paste: keep the mechanism, draw your own paths in one stroke style.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Line drawing on arrival (svg-draw-on-arrival)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f3f1ea; color: #1d2a1f; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.pad { min-height: 80vh; max-width: 72rem; margin: 0 auto; padding: 2rem clamp(1.25rem, 4vw, 3rem); display: grid; align-content: end; }
+.pad h1 { font: 400 clamp(2.25rem, 5vw, 4.5rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0 0 1rem; max-width: 16ch; }
+.pad p { margin: 0; max-width: 32rem; color: #4d5a4f; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-page: 900ms; --stagger-line: 70ms; }
+.plan { max-width: 72rem; margin: 0 auto; padding: 8vh clamp(1.25rem, 4vw, 3rem); display: grid; grid-template-columns: 7fr 5fr; gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
+.plan svg { width: 100%; height: auto; }
+.plan .ln { fill: none; stroke: #1d2a1f; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.plan .ln.soft { stroke: #5f7f4f; }
+.plan .lbl { font: 600 15px "Avenir Next", sans-serif; fill: #1d2a1f; }
+.plan h2 { font: 400 clamp(1.6rem, 3vw, 2.4rem)/1.1 "Iowan Old Style", Georgia, serif; margin: 0 0 1rem; }
+.plan p { margin: 0 0 1rem; color: #4d5a4f; }
+@media (prefers-reduced-motion: no-preference) {
+  .draw-ready .plan .ln { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--t-page) var(--ease-out); transition-delay: calc(min(var(--n), 6) * var(--stagger-line)); }
+  .draw-ready .plan .lbl { opacity: 0; transition: opacity 400ms var(--ease-out) 700ms; }
+  .draw-ready .plan.is-drawn .ln { stroke-dashoffset: 0; }
+  .draw-ready .plan.is-drawn .lbl { opacity: 1; }
+}
+@media (max-width: 700px) { .plan { grid-template-columns: 1fr; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<section class="pad"><h1>Small gardens, planned on paper first</h1><p>Wren &amp; Moss design town gardens in Bristol: a site visit, a measured plan, then planting through the seasons.</p></section>
+<!-- argus:copy-start html -->
+<section class="plan" aria-labelledby="plan-t">
+  <svg viewBox="0 0 600 420" role="img" aria-label="Plan of a walled town garden: a curved gravel path from the back door to a bench, two planting beds and three trees">
+    <path class="ln" style="--n:0" pathLength="1" d="M30 30 H570 V390 H30 Z"/>
+    <path class="ln" style="--n:1" pathLength="1" d="M80 390 C 120 300, 260 300, 300 220 S 420 120, 500 90"/>
+    <path class="ln soft" style="--n:2" pathLength="1" d="M60 60 H260 C 220 120, 150 160, 60 170 Z"/>
+    <path class="ln soft" style="--n:3" pathLength="1" d="M540 180 V360 H330 C 400 320, 470 260, 540 180 Z"/>
+    <path class="ln" style="--n:4" pathLength="1" d="M470 70 H540 V110 H470 Z"/>
+    <path class="ln soft" style="--n:5" pathLength="1" d="M400 230 m-34 0 a34 34 0 1 0 68 0 a34 34 0 1 0 -68 0"/>
+    <path class="ln soft" style="--n:6" pathLength="1" d="M120 260 m-28 0 a28 28 0 1 0 56 0 a28 28 0 1 0 -56 0"/>
+    <path class="ln soft" style="--n:7" pathLength="1" d="M330 90 m-24 0 a24 24 0 1 0 48 0 a24 24 0 1 0 -48 0"/>
+    <text class="lbl" x="72" y="112">Shade bed</text>
+    <text class="lbl" x="420" y="340">Sun bed</text>
+    <text class="lbl" x="452" y="135">Bench</text>
+    <text class="lbl" x="92" y="380">Back door</text>
+  </svg>
+  <div>
+    <h2 id="plan-t">A plan you can walk around</h2>
+    <p>Drawn to scale from a two-hour site visit, with every plant named and where it goes.</p>
+    <p>Plans from £650; most gardens are planted within six weeks.</p>
+  </div>
+</section>
+<!-- argus:copy-end html -->
+<section class="pad"><p>We work within ten miles of Clifton.</p></section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const plans = document.querySelectorAll('.plan');
+  if (!plans.length || document.visibilityState === 'hidden' || !('IntersectionObserver' in window)) return;
+  requestAnimationFrame(() => {
+    document.documentElement.classList.add('draw-ready');
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('is-drawn');
+      io.unobserve(e.target);
+    }), { threshold: 0.3 });
+    plans.forEach(p => io.observe(p));
+    // If the observer has said nothing for a while, never leave a drawing blank.
+    setTimeout(() => plans.forEach(p => { if (!p.classList.contains('is-drawn') && p.getBoundingClientRect().top < innerHeight) p.classList.add('is-drawn'); }), 1000);
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

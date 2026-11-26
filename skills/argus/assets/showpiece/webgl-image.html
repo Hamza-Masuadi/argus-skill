@@ -1,0 +1,284 @@
+<!doctype html>
+<!--
+  webgl-image: the page's own pictures drawn again as WebGL planes, so they can ripple under the
+  pointer (with a slight colour split) and bend a little with scroll speed. The <img> elements stay
+  in the page for search, screen readers and every fallback; each goes transparent only once its
+  own plane has been drawn where the picture is now and read back as not blank. A blank box cannot
+  happen: until then, and on any doubt, the <img> shows.
+
+  Level: showpiece, or the one moment on a picture-led page (a photographer, a gallery, a menu of
+  dishes). Never on text, forms or prices.
+
+  Library (pinned, vendored, runs offline): OGL 1.0.11 (Unlicense), vendor/ogl-1.0.11.global.js,
+  built from jsDelivr's bundle of the npm package with its export turned into window.OGL (see the
+  file's header). CDN alternative as an ES module: https://cdn.jsdelivr.net/npm/ogl@1.0.11/+esm
+  JS on the wire: about 39 KB gzipped for the whole OGL bundle (this uses a small part; an ES module
+  import of only Renderer, Program, Mesh, Plane, Texture, Transform and Camera tree-shakes far smaller).
+
+  Fallbacks and guards:
+    no WebGL / context lost / a read-back error -> plain <img>s, canvas removed
+    a plane not yet proven drawn (off screen at load, texture still loading, layout just changed)
+      -> its <img> stays visible; a plane that fails for a second is dropped and its <img> stays
+    rectangles are read live every frame and on resize, scroll, font load, ResizeObserver and
+      ScrollTrigger refresh, so a pin or a late layout change never leaves a plane in the wrong place
+    reduced motion -> WebGL never starts; plain pictures
+    touch (hover: none) -> no hover ripple; scroll bend only, gentle
+    no script -> plain pictures
+  Pictures must be same-origin or served with CORS (crossorigin="anonymous"), or the texture is
+  refused and the canvas stays blank. Opened as file://, a photo file counts as another origin in
+  Chrome: these demo pictures are inline SVG data, which is allowed. Serve real photos over http.
+  Cost: one canvas, one draw per picture, DPR capped at 2 (1.5 on touch), the loop stops when
+  nothing moves.
+  Registers window.__argus.timelines.hover (progress 0-1 = hover strength on the first picture,
+  pointer at its centre) so shot.js --timeline hover can show the effect without a mouse.
+  Copy the marked blocks (the copy markers below).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pictures as WebGL planes (webgl-image)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #ecebe6; color: #191a1c; font: 400 17px/1.55 "Helvetica Neue", "Segoe UI", system-ui, sans-serif; }
+a { color: inherit; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+h1 { font: 400 clamp(2.5rem, 6vw, 5.5rem)/.95 "Didot", "Bodoni 72", Georgia, serif; letter-spacing: -.03em; margin: 6vh clamp(1.25rem, 4vw, 3rem) 6vh; max-width: 14ch; }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(1rem, 2vw, 2rem); padding: 0 clamp(1.25rem, 4vw, 3rem) 16vh; }
+.grid figure { margin: 0; }
+.grid figure:nth-child(1) { grid-column: 1 / span 7; }
+.grid figure:nth-child(2) { grid-column: 9 / span 4; margin-top: 30vh; }
+.grid figure:nth-child(3) { grid-column: 3 / span 6; }
+.grid figcaption { font-size: 14px; margin-top: .6rem; display: flex; justify-content: space-between; }
+.grid figcaption span { font-variant-numeric: tabular-nums; color: #5a5b5f; }
+@media (max-width: 760px) { .grid figure:nth-child(n) { grid-column: 1 / -1; margin-top: 0; } }
+
+/* argus:copy-start webgl-image css */
+.gl-pic { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.gl-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+/* A picture hides only after its plane has drawn (script adds .gl-drawn). */
+.gl-on .gl-pic.gl-drawn { opacity: 0; }
+/* argus:copy-end webgl-image css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Ines Barros, photographer</strong><a href="#contact">Commissions</a></header>
+<main>
+  <h1>Coastlines, mostly in winter.</h1>
+  <!-- argus:copy-start webgl-image html -->
+  <div class="grid">
+    <figure>
+      <img class="gl-pic" data-gl width="1200" height="900" alt="A breakwater under a low orange sun"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23f6b26b'/%3E%3Cstop offset='.55' stop-color='%23e07a5f'/%3E%3Cstop offset='1' stop-color='%23324a5f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='900' fill='url(%23a)'/%3E%3Ccircle cx='760' cy='420' r='90' fill='%23ffe3b3'/%3E%3Crect y='560' width='1200' height='340' fill='%23243746'/%3E%3Cpath d='M0 600 L1200 600' stroke='%23ffd9a0' stroke-width='3' opacity='.6'/%3E%3Cpath d='M120 640 L700 560 L720 575 L140 660Z' fill='%23101c26'/%3E%3C/svg%3E">
+      <figcaption>Breakwater, Porto <span>01.2026</span></figcaption>
+    </figure>
+    <figure>
+      <img class="gl-pic" data-gl width="900" height="1200" alt="Fog over a grey sea with one small boat"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='1200'%3E%3Crect width='900' height='1200' fill='%23aab3b5'/%3E%3Crect y='700' width='900' height='500' fill='%236f7c80'/%3E%3Crect y='690' width='900' height='30' fill='%23c3cacb' opacity='.7'/%3E%3Cpath d='M380 760 L520 760 L500 790 L400 790Z' fill='%23262c2e'/%3E%3Crect x='446' y='690' width='6' height='70' fill='%23262c2e'/%3E%3C/svg%3E">
+      <figcaption>Fog, Nazar&eacute; <span>02.2026</span></figcaption>
+    </figure>
+    <figure>
+      <img class="gl-pic" data-gl width="1200" height="900" alt="Blue dusk over black rocks and white surf"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='900'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23233c6b'/%3E%3Cstop offset='1' stop-color='%236d8fb8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='900' fill='url(%23b)'/%3E%3Cpath d='M0 640 Q300 600 600 650 T1200 620 V900 H0Z' fill='%23e9f0f5'/%3E%3Cpath d='M0 720 L260 560 L420 700 L640 590 L900 740 L1200 640 V900 H0Z' fill='%23121417'/%3E%3C/svg%3E">
+      <figcaption>Rocks at dusk, Sagres <span>12.2025</span></figcaption>
+    </figure>
+  </div>
+  <canvas class="gl-canvas" aria-hidden="true"></canvas>
+  <!-- argus:copy-end webgl-image html -->
+</main>
+
+<!-- argus:copy-start webgl-image js -->
+<script src="vendor/ogl-1.0.11.global.js" defer></script>
+<script>
+addEventListener('DOMContentLoaded', () => {
+  const reg = (window.__argus = window.__argus || { timelines: {}, scenes: [] });
+  const canvas = document.querySelector('.gl-canvas');
+  const pics = Array.from(document.querySelectorAll('img[data-gl]'));
+  // Any doubt shows the plain pictures: every <img> visible again and the canvas gone.
+  const giveUp = () => {
+    stopped = true;
+    document.documentElement.classList.remove('gl-on');
+    pics.forEach((p) => p.classList.remove('gl-drawn'));
+    canvas.remove();
+  };
+  let stopped = false;
+  if (!window.OGL || !pics.length || matchMedia('(prefers-reduced-motion: reduce)').matches) return giveUp();
+
+  const { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } = OGL;
+  const touch = matchMedia('(hover: none)').matches;
+  let renderer;
+  try {
+    renderer = new Renderer({ canvas, dpr: Math.min(devicePixelRatio || 1, touch ? 1.5 : 2), alpha: true, antialias: false });
+  } catch (e) { return giveUp(); }
+  const gl = renderer.gl;
+  if (!gl) return giveUp();
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); giveUp(); });
+  document.documentElement.classList.add('gl-on');
+
+  const camera = new Camera(gl); // required by render(); the shader places planes in CSS pixels itself
+  const scene = new Transform();
+  const geometry = new Plane(gl);
+
+  const vertex = `
+    attribute vec3 position; attribute vec2 uv;
+    uniform vec4 uRect; uniform vec2 uViewport;
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      // The plane covers exactly the picture's box; the scroll bend happens inside it (fragment shader).
+      vec2 px = vec2(uRect.x + (position.x + 0.5) * uRect.z, uRect.y + (0.5 - position.y) * uRect.w);
+      gl_Position = vec4(px.x / uViewport.x * 2.0 - 1.0, 1.0 - px.y / uViewport.y * 2.0, 0.0, 1.0);
+    }`;
+  const fragment = `
+    precision highp float;
+    uniform sampler2D tMap; uniform vec2 uMouse; uniform float uHover; uniform float uTime; uniform float uVelocity;
+    uniform vec2 uSize; uniform vec2 uImage;
+    varying vec2 vUv;
+    vec2 cover(vec2 uv, float zoom) { // object-fit: cover, as the <img> is drawn; zoom < 1 crops in a little
+      float rs = uSize.x / uSize.y, ri = uImage.x / uImage.y;
+      vec2 s = rs < ri ? vec2(rs / ri, 1.0) : vec2(1.0, ri / rs);
+      return (uv - 0.5) * s * zoom + 0.5;
+    }
+    void main() {
+      vec2 uv = vUv;
+      // Scroll bend: the picture sags along its width with scroll speed, inside its own box. It crops in
+      // by as much as it bends, so the edges never show past the photograph; at rest it matches the <img>.
+      float v = clamp(uVelocity, -40.0, 40.0);
+      float zoom = 1.0 - abs(v) * 0.0012;
+      uv.y -= sin(uv.x * 3.14159) * v * 0.0005;
+      vec2 to = uv - uMouse;
+      float d = length(to * vec2(uSize.x / uSize.y, 1.0));
+      float ring = uHover * smoothstep(0.45, 0.0, d) * sin(d * 38.0 - uTime * 5.0) * 0.010;
+      uv += normalize(to + 1e-5) * ring;
+      float split = uHover * 0.004 + min(abs(uVelocity), 40.0) * 0.00012;
+      vec2 c = cover(uv, zoom);
+      vec4 g = texture2D(tMap, c);
+      // Alpha comes from the texture: a texture not yet uploaded is transparent, so it reads back as "not drawn".
+      gl_FragColor = vec4(texture2D(tMap, c + vec2(split, 0.0)).r, g.g, texture2D(tMap, c - vec2(split, 0.0)).b, g.a);
+    }`;
+
+  // One plane per picture. Its rectangle is read live every frame (a few pictures cost nothing), so a
+  // pin, a reveal, a late font or a resize can never leave a plane drawn where its picture no longer is.
+  const planes = pics.map((img) => {
+    const texture = new Texture(gl, { generateMipmaps: false });
+    const program = new Program(gl, {
+      vertex, fragment, transparent: true,
+      uniforms: {
+        tMap: { value: texture }, uRect: { value: [0, 0, 1, 1] }, uViewport: { value: [innerWidth, innerHeight] },
+        uMouse: { value: [0.5, 0.5] }, uHover: { value: 0 }, uTime: { value: 0 }, uVelocity: { value: 0 },
+        uSize: { value: [1, 1] }, uImage: { value: [img.naturalWidth || 1, img.naturalHeight || 1] },
+      },
+    });
+    const mesh = new Mesh(gl, { geometry, program });
+    mesh.visible = false;
+    mesh.setParent(scene);
+    // verified: a frame drawn at its current place was read back and is not blank; only then is the <img> hidden.
+    const plane = { img, texture, program, mesh, rect: null, hover: 0, hoverTo: 0, ready: false, verified: false, misses: 0, failed: false };
+    const upload = () => img.decode().then(() => {
+      texture.image = img; // uploads on the next render
+      program.uniforms.uImage.value = [img.naturalWidth, img.naturalHeight];
+      plane.ready = true;
+      plane.verified = false;
+      kick();
+    }).catch(() => {});
+    if (img.complete && img.naturalWidth) upload(); else img.addEventListener('load', upload);
+    if (!touch) {
+      img.addEventListener('pointerenter', () => { plane.hoverTo = 1; kick(); });
+      img.addEventListener('pointerleave', () => { plane.hoverTo = 0; kick(); });
+      img.addEventListener('pointermove', (e) => {
+        const r = img.getBoundingClientRect();
+        program.uniforms.uMouse.value = [(e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height];
+      }, { passive: true });
+    }
+    return plane;
+  });
+
+  // Show a picture again (its plane unproven) whenever the layout may have changed.
+  const unprove = () => planes.forEach((p) => { if (p.verified) { p.verified = false; p.img.classList.remove('gl-drawn'); } });
+  const resize = () => { renderer.setSize(innerWidth, innerHeight); unprove(); kick(); };
+
+  // Read back five points inside the plane's visible part, straight after drawing (no preserveDrawingBuffer
+  // needed): drawn means alpha at four of them. Anything else counts as blank.
+  const px = new Uint8Array(4);
+  const drawnAt = (r) => {
+    const l = Math.max(r.left, 0), t = Math.max(r.top, 0), rr = Math.min(r.right, innerWidth), b = Math.min(r.bottom, innerHeight);
+    if (rr - l < 8 || b - t < 8) return null; // too little on screen to judge yet
+    const dpr = renderer.dpr;
+    let hits = 0;
+    for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]]) {
+      gl.readPixels(Math.round((l + (rr - l) * fx) * dpr), Math.round((innerHeight - (t + (b - t) * fy)) * dpr), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      if (px[3] > 0) hits++;
+    }
+    return hits >= 4;
+  };
+
+  let running = false, lastY = scrollY, velocity = 0;
+  const draw = (t) => {
+    if (stopped) return;
+    const dy = scrollY - lastY; lastY = scrollY;
+    velocity += (Math.max(-40, Math.min(40, dy)) - velocity) * 0.2;
+    let moving = Math.abs(velocity) > 0.05;
+    planes.forEach((p) => {
+      p.hover += (p.hoverTo - p.hover) * 0.12;
+      if (Math.abs(p.hoverTo - p.hover) > 0.002 || p.hoverTo > 0) moving = true;
+      const r = p.img.getBoundingClientRect();
+      const last = p.rect;
+      // A picture that moved since the last frame (a pin, a reveal, a transform) keeps the loop running.
+      if (last && (Math.abs(last.top - r.top) > 0.5 || Math.abs(last.left - r.left) > 0.5 || Math.abs(last.width - r.width) > 0.5 || Math.abs(last.height - r.height) > 0.5)) moving = true;
+      p.rect = r;
+      const u = p.program.uniforms;
+      u.uRect.value = [r.left, r.top, r.width, r.height];
+      u.uSize.value = [Math.max(1, r.width), Math.max(1, r.height)];
+      u.uViewport.value = [innerWidth, innerHeight];
+      u.uHover.value = p.hover; u.uTime.value = t / 1000; u.uVelocity.value = velocity;
+      const onScreen = r.width > 1 && r.height > 1 && r.bottom > -50 && r.top < innerHeight + 50 && r.right > 0 && r.left < innerWidth;
+      p.mesh.visible = p.ready && !p.failed && onScreen;
+    });
+    renderer.render({ scene, camera });
+    try {
+      for (const p of planes) {
+        if (!p.mesh.visible || p.verified) continue;
+        const ok = drawnAt(p.rect);
+        if (ok === null) continue;
+        if (ok) { p.verified = true; p.misses = 0; p.img.classList.add('gl-drawn'); }
+        // Not drawn after a second of tries: this picture stays a plain <img> and its plane is never shown.
+        else if (++p.misses > 60) { p.failed = true; p.mesh.visible = false; }
+        else moving = true;
+      }
+    } catch (e) { return giveUp(); }
+    if (moving) requestAnimationFrame(draw); else running = false;
+  };
+  function kick() { if (!running && !stopped) { running = true; requestAnimationFrame(draw); } }
+
+  addEventListener('scroll', kick, { passive: true });
+  addEventListener('resize', resize);
+  // Layout can change without a resize or a scroll: fonts, late pictures, a pin refreshing.
+  const ro = new ResizeObserver(() => { unprove(); kick(); });
+  ro.observe(document.documentElement);
+  pics.forEach((img) => ro.observe(img));
+  const io = new IntersectionObserver(kick);
+  pics.forEach((img) => io.observe(img));
+  if (window.ScrollTrigger) ScrollTrigger.addEventListener('refresh', () => { unprove(); kick(); });
+  document.fonts.ready.then(resize);
+  addEventListener('load', resize);
+  resize();
+
+  // For shot.js --timeline hover: hover strength on the first picture, pointer at its centre.
+  let held = false;
+  reg.timelines.hover = {
+    progress(p) {
+      if (p === undefined) return planes[0].hover;
+      const pl = planes[0];
+      pl.hover = pl.hoverTo = p; pl.program.uniforms.uMouse.value = [0.5, 0.5];
+      kick();
+      return this;
+    },
+    pause() { held = true; return this; },
+    paused(v) { if (v === undefined) return held; held = v; if (!v) planes[0].hoverTo = 0; kick(); return this; },
+  };
+});
+</script>
+<!-- argus:copy-end webgl-image js -->
+</body>
+</html>

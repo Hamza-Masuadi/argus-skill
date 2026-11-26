@@ -1,0 +1,104 @@
+<!doctype html>
+<!--
+  micro-toast-stack: notices slide up from the bottom edge (250ms ease-out) and stack:
+  the newest in front, older ones tucked behind at 95% and 90% scale with only their tops
+  showing. Pointing at the stack (or focusing into it) fans it open and pauses every
+  timer; leaving resumes them. Each toast closes itself after 5 seconds, or with its
+  close button, or Escape.
+  Mechanism: CSS transitions on translate/scale driven by a --n index per toast; one
+  timer per toast that is paused by remembering the time left. aria-live="polite" region.
+  Touch: tap the stack to fan and pause; tap again to resume. Reduced motion: toasts
+  appear and go without travel; the stack is always fanned.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toast stack that pauses on hover (micro-toast-stack)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #edeae4; color: #1d1c1a; font: 400 16px/1.5 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 40rem; margin: 0 auto; padding: 14vh 1.5rem; }
+h1 { font: 600 1.6rem/1.2 "Avenir Next", sans-serif; margin: 0 0 1rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.actions button { font: 600 15px/1 "Avenir Next", sans-serif; padding: .9rem 1.1rem; border-radius: 6px; border: 1px solid #1d1c1a; background: #fff; cursor: pointer; }
+.actions button:focus-visible { outline: 2px solid #2a62d6; outline-offset: 3px; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --ease-in: cubic-bezier(.5,0,.75,0); --t-base: 320ms; }
+.toasts { position: fixed; right: 1.25rem; bottom: 1.25rem; width: min(22rem, calc(100vw - 2.5rem)); height: 0; z-index: 50; }
+.toast { position: absolute; right: 0; bottom: 0; width: 100%; display: flex; gap: .75rem; align-items: start; padding: .9rem 1rem; border-radius: 10px;
+  background: #1d1c1a; color: #f3f1ec; box-shadow: 0 10px 30px -10px #0006; font-size: 15px; transform-origin: 50% 100%;
+  translate: 0 calc(var(--n) * -10px); scale: calc(1 - var(--n) * .05); opacity: calc(1 - var(--n) * .25);
+  transition: translate 250ms var(--ease-out), scale 250ms var(--ease-out), opacity 250ms var(--ease-out); }
+.toast[data-state="enter"] { translate: 0 130%; opacity: 0; }
+.toast[data-state="leave"] { translate: 0 30%; opacity: 0; transition-timing-function: var(--ease-in); transition-duration: 160ms; }
+.toast:nth-child(n+4) { opacity: 0; pointer-events: none; }
+.toasts.is-open .toast { translate: 0 calc(var(--n) * -100% - var(--n) * 10px); scale: 1; opacity: 1; }
+.toast p { margin: 0; flex: 1; }
+.toast button { all: unset; cursor: pointer; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 6px; margin: -4px -4px 0 0; }
+.toast button:focus-visible { outline: 2px solid #9cc0ff; }
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: opacity 1ms; }
+  .toasts .toast { translate: 0 calc(var(--n) * -100% - var(--n) * 10px); scale: 1; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Studio bookings</h1>
+  <div class="actions">
+    <button type="button" data-msg="Session moved to Thursday 2pm.">Move session</button>
+    <button type="button" data-msg="Invoice INV-2031 sent to Mara Ortiz.">Send invoice</button>
+    <button type="button" data-msg="Room B is booked out on Saturday.">Book room B</button>
+  </div>
+</main>
+<!-- argus:copy-start html -->
+<section class="toasts" aria-live="polite" aria-label="Notifications"></section>
+<!-- argus:copy-end html -->
+<script>
+// argus:copy-start js
+const toast = (() => {
+  const box = document.querySelector('.toasts');
+  const LIFE = 5000;
+  let paused = false;
+  const layout = () => [...box.children].reverse().forEach((t, i) => t.style.setProperty('--n', i)); // newest is --n:0
+  const remove = t => {
+    if (t._gone) return; t._gone = true; clearTimeout(t._timer);
+    t.dataset.state = 'leave';
+    setTimeout(() => { t.remove(); layout(); }, 170);
+  };
+  const start = t => { t._t0 = performance.now(); t._timer = setTimeout(() => remove(t), t._left); };
+  const pause = on => {
+    paused = on; box.classList.toggle('is-open', on);
+    [...box.children].forEach(t => {
+      if (on) { clearTimeout(t._timer); t._left -= performance.now() - t._t0; } else start(t);
+    });
+  };
+  box.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') pause(true); });
+  box.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') pause(false); });
+  box.addEventListener('focusin', () => { if (!paused) pause(true); });
+  box.addEventListener('focusout', e => { if (!box.contains(e.relatedTarget)) pause(false); });
+  box.addEventListener('click', e => { if (e.pointerType && e.pointerType !== 'mouse' && !e.target.closest('button')) pause(!paused); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && box.lastElementChild) remove(box.lastElementChild); });
+  return msg => {
+    const t = document.createElement('div');
+    t.className = 'toast'; t.dataset.state = 'enter';
+    t.innerHTML = '<p></p><button type="button" aria-label="Dismiss">✕</button>';
+    t.querySelector('p').textContent = msg;
+    t.querySelector('button').addEventListener('click', () => remove(t));
+    box.append(t); layout();
+    requestAnimationFrame(() => requestAnimationFrame(() => delete t.dataset.state));
+    t._left = LIFE;
+    if (!paused) start(t); else t._t0 = performance.now();
+  };
+})();
+// argus:copy-end js
+document.querySelectorAll('[data-msg]').forEach(b => b.addEventListener('click', () => toast(b.dataset.msg)));
+if (location.search.includes('demo')) [0, 1, 2].forEach(i => setTimeout(() => toast(document.querySelectorAll('[data-msg]')[i].dataset.msg), 200 + i * 220));
+</script>
+</body>
+</html>

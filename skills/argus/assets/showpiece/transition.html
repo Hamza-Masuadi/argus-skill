@@ -1,0 +1,99 @@
+<!doctype html>
+<!--
+  transition (page 1 of 2; page 2 is transition-project.html): a page transition between two real
+  documents with the browser's cross-document View Transitions. The project's picture is the shared
+  element: it travels from its card here to the top of the project page, while the new page wipes up
+  over the old one, which sinks a little and darkens. About 650ms.
+
+  Level: showpiece (a moment page may use the shared picture alone, without the overlay).
+
+  No library. Works where cross-document view transitions do (Chrome and Edge 126+, Safari 18.2+);
+  elsewhere the link is an ordinary link and the page simply changes. Same-origin only: open the two
+  pages over http (python3 -m http.server in this folder, then http://localhost:8000/transition.html);
+  opened as file:// the browser treats each file as its own origin and does a plain navigation.
+
+  Rules it keeps:
+    - Under 800ms, and the new page is usable at once (view transitions do not block input after the
+      new page is shown; the old page is a picture by then and cannot be clicked).
+    - Focus goes to the new page's <h1> (pagereveal), so keyboard and screen-reader users land where
+      they expect. The back button plays the same transition in reverse, never a long intro.
+    - Reduced motion: navigation: none, a plain page change.
+    - No script needed for the transition; the small pagereveal script only moves focus and labels
+      which way the visitor is going.
+  Check it with: shot.js http://localhost:8000/transition.html --transition "text=Saltmarsh House" --widths 1440,390
+  Copy the marked blocks (the copy markers below) (the same CSS goes on both pages).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selected work: page transition, page 1 (transition)</title>
+<style>
+/* argus:copy-start transition css */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* The old page stays put (never fade both pages at once: the bare canvas shows through as a flash);
+   the new page wipes up over it like a sheet, while the shared picture travels on top. */
+::view-transition-old(root) { animation: vt-sink 600ms cubic-bezier(.65, 0, .35, 1) both; }
+::view-transition-new(root) { animation: vt-wipe 600ms cubic-bezier(.65, 0, .35, 1) both; }
+/* The browser blends the two root snapshots with plus-lighter (made for a cross-fade); a wipe over an
+   opaque old page needs plain stacking, or both show through each other. */
+::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; }
+/* The shared picture moves on its own curve, a little longer, so it leads the change. */
+::view-transition-group(project-picture) { animation-duration: 640ms; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+/* The card is tall and the hero wide: crop both snapshots to the moving box instead of stretching them. */
+::view-transition-old(project-picture), ::view-transition-new(project-picture) { height: 100%; object-fit: cover; }
+/* Both pictures are the same photograph: move the new one alone, opaque, instead of cross-fading two
+   snapshots of different crops (which reads as a ghost while it travels). */
+::view-transition-old(project-picture) { display: none; }
+::view-transition-new(project-picture) { animation: none; }
+@keyframes vt-sink { to { translate: 0 -8vh; filter: brightness(.85); } }
+@keyframes vt-wipe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+/* argus:copy-end transition css */
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f4f1ec; color: #1d1c1a; font: 400 17px/1.55 "Avenir Next", "Segoe UI", system-ui, sans-serif; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+h1 { font: 500 clamp(2.5rem, 6vw, 5.5rem)/.95 "Avenir Next", system-ui, sans-serif; letter-spacing: -.04em; margin: 8vh clamp(1.25rem, 4vw, 3rem) 6vh; }
+.work { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1rem, 2vw, 2rem); padding: 0 clamp(1.25rem, 4vw, 3rem) 10vh; list-style: none; margin: 0; }
+.work a { display: block; text-decoration: none; }
+.work .pic { display: block; aspect-ratio: 4 / 5; border-radius: 3px; }
+.work h2 { font-size: 1.1rem; margin: .8rem 0 .1rem; font-weight: 600; }
+.work p { margin: 0; font-size: 15px; color: #5d5a54; }
+.work a:hover h2 { text-decoration: underline; text-underline-offset: .2em; }
+@media (max-width: 760px) { .work { grid-template-columns: 1fr; } }
+/* argus:copy-start transition css-shared-element */
+/* Only the card being opened carries the name (two elements may not share one); see the script. */
+.work a.opening .pic { view-transition-name: project-picture; }
+/* argus:copy-end transition css-shared-element */
+</style>
+</head>
+<body>
+<header class="top"><strong>Morrow Field, landscape architects</strong><span>Selected work</span></header>
+<main>
+  <h1>Gardens that hold water.</h1>
+  <ul class="work">
+    <li><a href="transition-project.html"><span class="pic" style="background: linear-gradient(160deg, #8aa39b, #3f5d57);"></span><h2>Saltmarsh House</h2><p>A tidal garden in Suffolk, 2025</p></a></li>
+    <li><a href="transition-project.html"><span class="pic" style="background: linear-gradient(160deg, #d7b98e, #8c6a3f);"></span><h2>The Rope Walk</h2><p>A courtyard in Bristol, 2024</p></a></li>
+    <li><a href="transition-project.html"><span class="pic" style="background: linear-gradient(160deg, #a7a9c4, #4b4f72);"></span><h2>Low Fold</h2><p>A rain garden in Kendal, 2023</p></a></li>
+  </ul>
+</main>
+<!-- argus:copy-start transition js -->
+<script>
+  // Give the shared name to the card being followed, just before the browser snapshots the old page.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('.work a');
+    if (!a) return;
+    document.querySelectorAll('.work a.opening').forEach((x) => x.classList.remove('opening'));
+    a.classList.add('opening');
+  });
+  // Coming back: the browser restores this page from cache; clear the mark so the next click is clean.
+  addEventListener('pageshow', () => document.querySelectorAll('.work a.opening').forEach((x) => x.classList.remove('opening')));
+</script>
+<!-- argus:copy-end transition js -->
+</body>
+</html>

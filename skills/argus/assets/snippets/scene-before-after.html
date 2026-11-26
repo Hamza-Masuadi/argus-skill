@@ -1,0 +1,146 @@
+<!doctype html>
+<!--
+  scene-before-after: one photograph of the chair as it came in and one as it went out, with a
+  divider the visitor drags across to compare them, the restorer's own proof.
+  Mechanism: the "before" layer is clipped with clip-path: inset() from a custom property.
+  The control is a real <input type="range"> laid over the picture, so pointer, touch, keyboard and
+  screen readers all use the browser's own slider (no drag code to maintain).
+  Pointer: press anywhere on the picture and drag. Keyboard: Tab to it, arrow keys move 1%,
+  Page Up and Down move 10%, Home and End go to the ends. Touch: drag sideways; vertical swipes
+  still scroll (touch-action: pan-y). Reduced motion: nothing travels on its own; the handle stops
+  growing on hover. Swap the two inline SVGs for two photographs of the same framing.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Before and after divider (scene-before-after)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #222c33; color: #efe7d8; font: 400 17px/1.55 "Charter", "Bitstream Charter", "Sitka Text", Georgia, serif; }
+main { width: min(1200px, 100%); margin: 0 auto; padding: 4rem 2rem; display: grid; grid-template-columns: 1.7fr 1fr; gap: 3rem; align-items: center; }
+h1 { font: 400 clamp(2rem, 3.6vw, 3.1rem)/1.05 "Charter", Georgia, serif; margin: 0 0 1rem; }
+.meta { font: 500 14px/1.5 "Avenir Next", Avenir, "Segoe UI", sans-serif; color: #b7c0c4; margin: 0 0 1.5rem; }
+.spec { list-style: none; padding: 0; margin: 1.5rem 0; border-top: 1px solid #3c4a52; font: 400 15px/1.5 "Avenir Next", Avenir, "Segoe UI", sans-serif; }
+.spec li { display: flex; justify-content: space-between; padding: .6rem 0; border-bottom: 1px solid #3c4a52; }
+.spec b { font-weight: 600; }
+a { color: #efe7d8; display: inline-block; padding: .6rem 0; }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+
+/* argus:copy-start css */
+.ba { position: relative; aspect-ratio: 8 / 5; border-radius: 4px; overflow: hidden; --pos: 35%; user-select: none; }
+.ba > svg, .ba-before > svg { display: block; width: 100%; height: 100%; }
+.ba-before { position: absolute; inset: 0; clip-path: inset(0 calc(100% - var(--pos)) 0 0); }
+.ba-tag {
+  position: absolute; top: 1rem; padding: .3rem .7rem; border-radius: 999px;
+  font: 600 13px/1.2 "Avenir Next", Avenir, "Segoe UI", sans-serif; background: rgb(20 26 30 / .72); color: #f3ecdf;
+  pointer-events: none; z-index: 1;
+}
+.ba-tag.is-before { left: 1rem; }
+.ba-tag.is-after { right: 1rem; }
+.ba-handle { position: absolute; top: 0; bottom: 0; left: var(--pos); width: 0; pointer-events: none; }
+.ba-handle::before { content: ""; position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #f3ecdf; }
+.ba-knob {
+  position: absolute; top: 50%; left: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
+  background: #f3ecdf; color: #222c33; display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgb(0 0 0 / .3);
+  transition: transform var(--t-fast) var(--ease-out);
+}
+.ba:hover .ba-knob { transform: scale(1.12); transition-duration: var(--t-base); }
+.ba:has(.ba-range:active) .ba-knob { transform: scale(.94); }
+.ba:has(.ba-range:focus-visible) .ba-knob { outline: 3px solid #f3ecdf; outline-offset: 4px; }
+/* the real control: invisible, covering the picture, so the whole picture is the drag area */
+.ba-range {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  opacity: 0; cursor: ew-resize; touch-action: pan-y;
+  -webkit-appearance: none; appearance: none; background: transparent;
+}
+.ba-range::-webkit-slider-thumb { -webkit-appearance: none; width: 2px; height: 100vh; }
+.ba-range::-moz-range-thumb { width: 2px; height: 100vh; border: 0; }
+@media (prefers-reduced-motion: reduce) { .ba-knob { transition: none; } .ba:hover .ba-knob { transform: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <!-- argus:copy-start html -->
+  <figure class="ba" data-ba style="margin:0">
+    <svg viewBox="0 0 800 500" aria-hidden="true">
+      <defs>
+        <symbol id="chair" viewBox="0 0 800 500">
+          <ellipse cx="400" cy="462" rx="190" ry="16" fill="rgb(0 0 0 / .18)"/>
+          <g stroke="var(--wood)" stroke-linecap="round" fill="none">
+            <path d="M312 280 C 296 110, 504 110, 488 280" stroke-width="17"/>
+            <g stroke-width="8"><path d="M346 280 L 350 158"/><path d="M372 280 L 374 142"/><path d="M400 280 L 400 137"/><path d="M428 280 L 426 142"/><path d="M454 280 L 450 158"/></g>
+            <g stroke-width="13"><path d="M322 300 L 292 452"/><path d="M478 300 L 508 452"/><path d="M362 312 L 352 458"/><path d="M438 312 L 448 458"/></g>
+            <path d="M304 398 L 496 398" stroke-width="7"/>
+          </g>
+          <path d="M268 286 C 268 262, 532 262, 532 286 L 532 300 C 532 326, 268 326, 268 300 Z" fill="var(--wood)"/>
+          <ellipse cx="400" cy="284" rx="132" ry="18" fill="var(--top)"/>
+        </symbol>
+      </defs>
+      <rect width="800" height="500" fill="#d7cdbb"/><rect y="400" width="800" height="100" fill="#c2b59e"/>
+      <use href="#chair" style="--wood:#7a3d1b;--top:#9a5428"/>
+      <ellipse cx="370" cy="280" rx="70" ry="7" fill="#f6c99a" opacity=".45"/>
+    </svg>
+    <div class="ba-before" aria-hidden="true">
+      <svg viewBox="0 0 800 500">
+        <rect width="800" height="500" fill="#cfc6b6"/><rect y="400" width="800" height="100" fill="#b8ac97"/>
+        <use href="#chair" style="--wood:#958a78;--top:#a89d8a"/>
+        <g fill="#ece6da"><circle cx="356" cy="282" r="9"/><circle cx="372" cy="288" r="4"/><circle cx="452" cy="276" r="6"/><circle cx="330" cy="360" r="5"/></g>
+        <g stroke="#6d6354" stroke-width="2" opacity=".7" fill="none"><path d="M300 290 L 380 284 L 395 292"/><path d="M420 280 L 470 276"/><path d="M476 330 L 486 370"/></g>
+      </svg>
+    </div>
+    <span class="ba-tag is-before">Before</span><span class="ba-tag is-after">After</span>
+    <div class="ba-handle"><span class="ba-knob" aria-hidden="true"><svg width="22" height="14" viewBox="0 0 22 14"><path d="M7 1 1 7l6 6M15 1l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+    <input class="ba-range" type="range" min="0" max="100" step="1" value="35" aria-label="Compare the chair before and after restoration">
+    <figcaption hidden>Ercol Windsor armchair before restoration, grey and paint-spattered, and after, in oiled walnut-brown elm.</figcaption>
+  </figure>
+  <!-- argus:copy-end html -->
+  <div>
+    <p class="meta">Pruett Restoration · Hebden Bridge</p>
+    <h1>Ercol Windsor armchair, 1962</h1>
+    <p>It came in grey with forty years of garage dust and a coat of emulsion on the seat. Stripped by hand, re-glued at every joint, then two coats of hard wax oil.</p>
+    <ul class="spec">
+      <li><span>Time in the workshop</span><b>3 weeks</b></li>
+      <li><span>Cost</span><b>£340</b></li>
+    </ul>
+    <p><a href="#quote">Send us a photo for a quote</a></p>
+  </div>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  document.querySelectorAll('[data-ba]').forEach((fig) => {
+    const range = fig.querySelector('.ba-range');
+    const cap = fig.querySelector('figcaption');
+    if (cap) fig.setAttribute('aria-label', cap.textContent);
+    const set = () => {
+      fig.style.setProperty('--pos', range.value + '%');
+      range.setAttribute('aria-valuetext', `${range.value}% before, ${100 - range.value}% after`);
+    };
+    range.addEventListener('input', set);
+    set();
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

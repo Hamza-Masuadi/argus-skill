@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+  horizontal-gallery: a row of pictures that travels sideways while the section is pinned, so
+  scrolling down walks along a wall of prints. For pictures only: never for steps, prices, a
+  timeline or anything that must be read in order (nobody sees what is off to the side).
+
+  Level: showpiece; on a picture-led "moment" page it may be the one scroll moment.
+
+  Libraries (pinned): gsap 3.15.1 + ScrollTrigger (GSAP Standard "no charge" licence), jsDelivr:
+      https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js
+      https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js
+  Works with or without Lenis (see smooth-scroll-scene.html to add it). JS: about 47 KB gzipped.
+
+  The default is the fallback: a native, swipeable scroll-snap row with the next print peeking, a
+  label, and keyboard scrolling (the row is focusable). Script turns it into the pinned walk only on
+  wide screens with motion allowed and a fine pointer. So:
+    no JS / phones / touch / reduced motion -> the native row (never scroll-jacked)
+  The pin is as long as the row is wide (scroll distance = sideways distance, speed unchanged), with
+  a light scrub (0.6s) so the row trails the wheel a little.
+  Registers window.__argus.scenes (shot.js --scenes) and timelines.walk.
+  Copy the marked blocks (the copy markers below).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pinned horizontal gallery of prints (horizontal-gallery)</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js" defer></script>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f2efe8; color: #222; font: 400 17px/1.55 "Gill Sans", "Segoe UI", system-ui, sans-serif; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid #c2410c; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+.intro { padding: 12vh clamp(1.25rem, 4vw, 3rem) 8vh; }
+.intro h1 { font: 400 clamp(2.5rem, 6vw, 5.5rem)/.95 "Gill Sans", system-ui, sans-serif; letter-spacing: -.02em; margin: 0 0 1rem; max-width: 14ch; }
+.after { padding: 16vh clamp(1.25rem, 4vw, 3rem); }
+
+/* argus:copy-start horizontal-gallery css */
+.hg { padding: 4vh 0; }
+.hg-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 clamp(1.25rem, 4vw, 3rem) 2rem; }
+.hg-head h2 { margin: 0; font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 500; }
+.hg-head span { font-size: 14px; font-variant-numeric: tabular-nums; }
+/* Native row: swipe, trackpad or keyboard; the next print shows at the edge. */
+.hg-row { display: flex; gap: clamp(1rem, 2vw, 2rem); overflow-x: auto; scroll-snap-type: x mandatory; padding: 0 clamp(1.25rem, 4vw, 3rem) 1rem; scrollbar-width: thin; list-style: none; margin: 0; }
+.hg-row li { flex: 0 0 min(78vw, 30rem); scroll-snap-align: start; }
+.hg-row figure { margin: 0; }
+.hg-row .print { aspect-ratio: 3 / 4; border-radius: 2px; }
+.hg-row figcaption { display: flex; justify-content: space-between; font-size: 14px; margin-top: .6rem; }
+.hg-row figcaption span { font-variant-numeric: tabular-nums; color: #666; }
+/* Pinned walk (set by script): the row is a track moved by transform; the page scrolls, not the row. */
+.hg.is-walking { height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.hg.is-walking .hg-row { overflow: visible; scroll-snap-type: none; width: max-content; }
+.hg.is-walking .hg-row li { flex-basis: min(34vw, 30rem); }
+/* argus:copy-end horizontal-gallery css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Flatbed Press</strong><a href="#shop">Shop prints</a></header>
+<main>
+  <section class="intro"><h1>Twelve linocuts from the 2026 edition.</h1><p>Each printed by hand in a run of 40.</p></section>
+  <!-- argus:copy-start horizontal-gallery html -->
+  <section class="hg" aria-labelledby="hg-title">
+    <div class="hg-head"><h2 id="hg-title">The 2026 edition</h2><span>6 of 12 shown</span></div>
+    <ul class="hg-row" tabindex="0" aria-label="Prints in the 2026 edition, scroll sideways">
+      <li><figure><div class="print" style="background: linear-gradient(135deg, #c2410c 0 40%, #f2efe8 40% 44%, #1f2937 44%);"></div><figcaption>Harbour wall <span>No. 01</span></figcaption></figure></li>
+      <li><figure><div class="print" style="background: radial-gradient(circle at 50% 35%, #eab308 0 18%, transparent 18.5%), linear-gradient(#1e3a8a 60%, #0f172a 60%);"></div><figcaption>Low sun <span>No. 02</span></figcaption></figure></li>
+      <li><figure><div class="print" style="background: repeating-linear-gradient(170deg, #14532d 0 14px, #f2efe8 14px 22px);"></div><figcaption>Barley <span>No. 03</span></figcaption></figure></li>
+      <li><figure><div class="print" style="background: conic-gradient(from 200deg at 50% 70%, #7c2d12, #fb923c, #7c2d12);"></div><figcaption>Kiln <span>No. 04</span></figcaption></figure></li>
+      <li><figure><div class="print" style="background: linear-gradient(#e5e7eb 55%, #374151 55% 58%, #9ca3af 58%);"></div><figcaption>Estuary <span>No. 05</span></figcaption></figure></li>
+      <li><figure><div class="print" style="background: radial-gradient(circle at 30% 30%, #0f766e 0 30%, transparent 31%), radial-gradient(circle at 70% 70%, #be123c 0 26%, transparent 27%), #f5f5f4;"></div><figcaption>Two pebbles <span>No. 06</span></figcaption></figure></li>
+    </ul>
+  </section>
+  <!-- argus:copy-end horizontal-gallery html -->
+  <section class="after" id="shop"><h2>Prints are &pound;85 each, unframed</h2><p>Posted flat in a board-backed envelope.</p></section>
+</main>
+
+<!-- argus:copy-start horizontal-gallery js -->
+<script>
+addEventListener('DOMContentLoaded', () => {
+  const reg = (window.__argus = window.__argus || { timelines: {}, scenes: [] });
+  if (!window.gsap || !window.ScrollTrigger) return; // the native row stays
+  gsap.registerPlugin(ScrollTrigger);
+  const section = document.querySelector('.hg');
+  const row = section.querySelector('.hg-row');
+  const mm = gsap.matchMedia();
+  mm.add('(prefers-reduced-motion: no-preference) and (min-width: 900px) and (hover: hover) and (pointer: fine)', () => {
+    section.classList.add('is-walking');
+    row.removeAttribute('tabindex'); // the page scroll moves it now; keyboard users scroll the page
+    const distance = () => Math.max(0, row.scrollWidth - innerWidth);
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: section, start: 'top top', end: () => '+=' + distance(), pin: true, scrub: 0.6, invalidateOnRefresh: true },
+    });
+    tl.to(row, { x: () => -distance(), ease: 'none' }); // linear: it follows the scroll, it is not timed
+    reg.timelines.walk = tl;
+    reg.scenes.push({ name: 'gallery-walk', scrollTrigger: tl.scrollTrigger });
+    return () => {
+      section.classList.remove('is-walking');
+      row.setAttribute('tabindex', '0');
+      delete reg.timelines.walk;
+      reg.scenes = reg.scenes.filter((s) => s.name !== 'gallery-walk');
+    };
+  });
+  document.fonts.ready.then(() => ScrollTrigger.refresh());
+});
+</script>
+<!-- argus:copy-end horizontal-gallery js -->
+</body>
+</html>

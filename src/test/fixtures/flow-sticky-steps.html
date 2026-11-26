@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture flow, sticky steps set apart</title>
+<meta name="description" content="A sticky picture beside steps spaced well apart.">
+<!--
+  The sticky scene flow.md recommends: a sticky picture column beside steps set about 60vh apart.
+  The picture is stuck at 20vh and 45vh tall, so between two steps the strips under it hold
+  nothing, yet the visitor is looking at the stuck picture the whole time: blank-band must leave
+  it alone. A variant in flow-browser.test.ts hides the picture, and the gaps are reported.
+-->
+<style>
+  * { box-sizing: border-box; }
+  /* One embedded face, so text wraps the same on every system and the bands measure the same everywhere. */
+  @font-face { font-family: "Fixture Sans"; src: url(face.woff2) format("woff2"); font-display: block; }
+  body { margin: 0; background: #f6f7fa; color: #15171a; font: 18px/1.5 "Fixture Sans", sans-serif; }
+  section { padding: 64px; }
+  h1 { font-size: 72px; line-height: 1; margin: 0 0 24px; }
+  h2 { font-size: 44px; line-height: 1.1; margin: 0 0 24px; }
+  p { margin: 0 0 16px; max-width: 56ch; }
+  .intro { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .intro img { width: 100%; height: 480px; object-fit: cover; border-radius: 16px; display: block; }
+  .scene { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+  .media { position: sticky; top: 20vh; height: 45vh; }
+  .media img { width: 100%; height: 100%; object-fit: cover; border-radius: 16px; display: block; }
+  .steps { list-style: none; margin: 0; padding: 15vh 0; }
+  .steps li { max-width: 32ch; }
+  .steps li + li { margin-top: 60vh; }
+  .steps b { display: block; font-size: 28px; line-height: 1.2; margin-bottom: 8px; }
+  .end { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  footer { padding: 48px 64px; border-top: 1px solid #d5d8de; }
+</style>
+</head>
+<body>
+<main>
+  <section class="intro">
+    <div><h1>Invoices that chase themselves.</h1><p>Send it once. Reminders go out on your schedule, signed by you, and the tax is put aside the minute it is paid.</p><p>Built for people who work for themselves and would rather not chase.</p></div>
+    <img src="app-banner.png" alt="An invoice on a phone" width="1440" height="640">
+  </section>
+  <section>
+    <h2>How it gets paid</h2>
+    <div class="scene">
+      <div class="media"><img src="app-banner.png" alt="The invoice as it moves along" width="1440" height="640"></div>
+      <ol class="steps">
+        <li><b>Draft it from a quote.</b><p>Start from the quote you already sent, or from the hours on your timer.</p></li>
+        <li><b>Send it in a tap.</b><p>It goes out as a link and a PDF, with your logo and your terms.</p></li>
+        <li><b>The reminder goes for you.</b><p>Three days before it is due, a friendly note in your words.</p></li>
+        <li><b>The tax goes aside.</b><p>The moment it is paid, a slice moves to your tax pot.</p></li>
+      </ol>
+    </div>
+  </section>
+  <section class="end">
+    <div><h2>Start with one invoice.</h2><p>Free for your first ten. No card, no call, nothing to install.</p><p><a href="#start">Start free</a></p></div>
+    <div><p>Questions? Write to us and a person answers within a day.</p><p>We are three people in Leeds who used to chase invoices for a living.</p></div>
+  </section>
+</main>
+<footer><p>Pinwheel, Leeds.</p></footer>
+</body>
+</html>

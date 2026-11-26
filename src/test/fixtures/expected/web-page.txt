@@ -1,0 +1,46 @@
+
+Check at 390px: 0 broken (P0), 1 likely problems (P1), 14 rough (P2), 3 minor or to confirm (P3), 0 tells
+  P2   a "Menu"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "Order"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "About"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   span.tiny "Fine print here."  Text is 10px; below 12px is hard to read.  [small-text]
+  P2   a "Menu"  Target is 48x16px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P2   a "Order"  Target is 48x16px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P2   a "About"  Target is 48x16px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P1   button "Close"  Target is 64x20px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P2   a "Menu"  Link to "#menu" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Order"  Link to "#order" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   page  Nothing on the page moves outside prefers-reduced-motion: no arrival, no reveals, no transition beyond a colour change. Every page gets the baseline unless the owner chose still (motion.md, "How much"): an arrival for the first screen, reveals as sections enter, hover, focus and press states that show something, and one choreographed moment. If the owner asked for no motion, set data-argus-motion="still" on <html>.  [motionless-page]
+  P3   page  The page has no meta description.  [page-basics]
+  P3   page  The page links no icon, so its tab shows a blank or default one.  [page-basics]
+  P3   page  The page has no og:image, so a shared link shows no picture (finish.md, 2).  [page-basics]
+  P2   header "MenuOrderAbout"  Fixed and sticky bars cover 100% of the screen height at this width; keep them well under a quarter.  [fixed-cover]
+  P2   a "Menu"  When focused, this control is hidden behind div.scrim, which is fixed or sticky.  [focus-obscured]
+  P2   a "Order"  When focused, this control is hidden behind div.scrim, which is fixed or sticky.  [focus-obscured]
+  P2   a "About"  When focused, this control is hidden behind div.scrim, which is fixed or sticky.  [focus-obscured]
+  note: Sideways overflow is only measured at the current width (390px). Run again at 320.
+  note: Not checked: keyboard order, states, whether forms complete, overlapping or colliding labels below the first screen, and anything about taste. Focus is checked on the first 40 controls only. Check the rest by hand.
+
+Check at 1440px: 0 broken (P0), 0 likely problems (P1), 16 rough (P2), 4 minor or to confirm (P3), 0 tells
+  P2   a "Menu"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "Order"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "About"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   span.tiny "Fine print here."  Text is 10px; below 12px is hard to read.  [small-text]
+  P2   a "Menu"  Target is 48x16px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P2   a "Order"  Target is 48x16px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P2   a "About"  Target is 48x16px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P2   button "Close"  Target is 64x20px; the minimum is 24px and 44px is the goal on touch.  [target-size]
+  P2   a "Menu"  Link to "#menu" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Order"  Link to "#order" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   page  Nothing on the page moves outside prefers-reduced-motion: no arrival, no reveals, no transition beyond a colour change. Every page gets the baseline unless the owner chose still (motion.md, "How much"): an arrival for the first screen, reveals as sections enter, hover, focus and press states that show something, and one choreographed moment. If the owner asked for no motion, set data-argus-motion="still" on <html>.  [motionless-page]
+  P3   page  The page has no meta description.  [page-basics]
+  P3   page  The page links no icon, so its tab shows a blank or default one.  [page-basics]
+  P3   page  The page has no og:image, so a shared link shows no picture (finish.md, 2).  [page-basics]
+  P2   h1 "A small page"  The largest text on the first screen is 32px, only 2.0 times the 16px body text; a first-screen headline usually needs at least about 2.2 times (craft.md).  [timid-headline]
+  P2   page  No button or button-styled link is visible on the first screen at 1440px; the main action should be reachable without scrolling.  [first-screen-no-action]
+  P3   page  The first screen has no picture covering at least 15% of it and no text of 44px or more, so nothing leads the eye (faults.md).  [first-screen-nothing-large]
+  P2   a "Menu"  When focused, this control is hidden behind div.scrim, which is fixed or sticky.  [focus-obscured]
+  P2   a "Order"  When focused, this control is hidden behind div.scrim, which is fixed or sticky.  [focus-obscured]
+  P2   a "About"  When focused, this control is hidden behind div.scrim, which is fixed or sticky.  [focus-obscured]
+  note: Sideways overflow is only measured at the current width (1440px). Run again at 320.
+  note: Not checked: keyboard order, states, whether forms complete, overlapping or colliding labels below the first screen, and anything about taste. Focus is checked on the first 40 controls only. Check the rest by hand.

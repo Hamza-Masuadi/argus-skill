@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  arrival-shared-element: clicking a product in a list opens its detail view, and the
+  product's picture travels and grows from its place in the list into the detail hero
+  (and back again on "Back"). Everything else cross-fades.
+  Mechanism: same-document View Transitions. The clicked picture gets
+  view-transition-name: hero just before document.startViewTransition(); the detail
+  hero carries the same name, so the browser morphs one into the other. For separate
+  pages use @view-transition { navigation: auto; } with the same names on both pages.
+  Fallback: browsers without startViewTransition swap views instantly.
+  Keyboard: the items are buttons; focus moves to the detail heading, then back to the
+  item that opened it. Reduced motion: no morph, the views swap.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shared-element view transition (arrival-shared-element)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f5f2ec; color: #1f1d1a; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 76rem; margin: 0 auto; padding: 1.5rem clamp(1.25rem, 4vw, 3rem) 4rem; }
+.top { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 3rem; }
+h1 { font: 400 clamp(2.25rem, 5vw, 4rem)/1 "Iowan Old Style", Georgia, serif; margin: 0 0 2rem; }
+.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 2rem 1.5rem; }
+.item { all: unset; display: block; cursor: pointer; width: 100%; border-radius: 4px; }
+.item:focus-visible { outline: 2px solid #b5552e; outline-offset: 6px; }
+.item .pic { aspect-ratio: 4 / 5; border-radius: 4px; display: grid; place-items: center; }
+.item .pic svg, .detail .pic svg { width: 46%; height: auto; }
+.item .name { display: flex; justify-content: space-between; margin-top: .7rem; font-size: 15px; }
+.detail { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+.detail .pic { aspect-ratio: 4 / 5; border-radius: 4px; display: grid; place-items: center; }
+.detail h2 { font: 400 clamp(2.25rem, 4.5vw, 3.75rem)/1 "Iowan Old Style", Georgia, serif; margin: 0 0 1rem; }
+.detail h2:focus { outline: none; }
+.detail .price { font-size: 1.25rem; margin: 0 0 1.5rem; }
+.btn { font: 600 15px/1 "Avenir Next", sans-serif; padding: .9rem 1.2rem; border-radius: 4px; border: 1px solid #1f1d1a; background: none; color: inherit; cursor: pointer; }
+.btn:focus-visible { outline: 2px solid #b5552e; outline-offset: 3px; }
+.btn.solid { background: #1f1d1a; color: #f5f2ec; margin-left: .5rem; }
+[hidden] { display: none !important; }
+@media (max-width: 760px) { .detail { grid-template-columns: 1fr; } }
+
+/* argus:copy-start css */
+:root { --ease-in-out: cubic-bezier(.65,0,.35,1); --t-base: 320ms; --t-slow: 640ms; }
+::view-transition-group(hero) { animation-duration: var(--t-slow); animation-timing-function: var(--ease-in-out); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--t-base); }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><strong>Fold &amp; Field, ceramics</strong><span>Free delivery over £60</span></div>
+  <!-- argus:copy-start html -->
+  <section id="list">
+    <h1>Vases, autumn kiln</h1>
+    <ul class="grid">
+      <li><button class="item" type="button" data-id="0"><div class="pic" style="background:#d7c4a3"><svg viewBox="0 0 100 160" aria-hidden="true"><path d="M38 0h24v20q22 20 22 70t-34 70q-34-20-34-70t22-70z" fill="#5b6b4f"/></svg></div><div class="name"><span>Moss bottle</span><span>£48</span></div></button></li>
+      <li><button class="item" type="button" data-id="1"><div class="pic" style="background:#c9d3d6"><svg viewBox="0 0 100 160" aria-hidden="true"><path d="M30 0h40l-6 30q30 30 30 70q0 60-44 60t-44-60q0-40 30-70z" fill="#2f4d6b"/></svg></div><div class="name"><span>Tide jar</span><span>£64</span></div></button></li>
+      <li><button class="item" type="button" data-id="2"><div class="pic" style="background:#ecd2c6"><svg viewBox="0 0 100 160" aria-hidden="true"><path d="M20 10h60l-8 140h-44z" fill="#a4442c"/></svg></div><div class="name"><span>Brick column</span><span>£52</span></div></button></li>
+    </ul>
+  </section>
+  <section id="detail" class="detail" hidden>
+    <div class="pic" id="detail-pic"></div>
+    <div>
+      <h2 id="detail-name" tabindex="-1"></h2>
+      <p class="price" id="detail-price"></p>
+      <p>Thrown on the wheel in Hastings and fired twice. Each one is slightly different; the one you receive is the one in the picture.</p>
+      <p><button class="btn" type="button" id="back">Back to vases</button><button class="btn solid" type="button">Add to basket</button></p>
+    </div>
+  </section>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const list = document.getElementById('list'), detail = document.getElementById('detail');
+  const dPic = document.getElementById('detail-pic'), dName = document.getElementById('detail-name'), dPrice = document.getElementById('detail-price');
+  let opener = null;
+  const run = update => {
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) { update(); return; }
+    document.startViewTransition(update);
+  };
+  document.querySelectorAll('.item').forEach(item => item.addEventListener('click', () => {
+    opener = item;
+    const pic = item.querySelector('.pic');
+    pic.style.viewTransitionName = 'hero';             // name the old element...
+    run(() => {
+      pic.style.viewTransitionName = '';
+      dPic.style.background = pic.style.background;
+      dPic.innerHTML = pic.innerHTML;
+      dPic.style.viewTransitionName = 'hero';          // ...and the new one
+      const [n, p] = item.querySelectorAll('.name span');
+      dName.textContent = n.textContent; dPrice.textContent = p.textContent;
+      list.hidden = true; detail.hidden = false;
+      dName.focus({ preventScroll: true });
+    });
+  }));
+  document.getElementById('back').addEventListener('click', () => {
+    const pic = opener.querySelector('.pic');
+    run(() => {
+      dPic.style.viewTransitionName = '';
+      pic.style.viewTransitionName = 'hero';
+      detail.hidden = true; list.hidden = false;
+      opener.focus({ preventScroll: true });
+    });
+    // Clear the name once the transition is over so the next click starts clean.
+    setTimeout(() => (pic.style.viewTransitionName = ''), 800);
+  });
+})();
+// argus:copy-end js
+</script>
+<script>
+// Demo only: ?demo triggers the interaction after load so a frame capture can see it run.
+if (location.search.includes('demo')) setTimeout(() => document.querySelectorAll('.item')[1].click(), 250);
+</script>
+</body>
+</html>

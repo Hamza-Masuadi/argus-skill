@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  scroll-clip-reveal: pictures open as they come up the screen. Two shapes in one file:
+  a wipe that opens upward from the bottom edge (inset), and a circle that opens from the
+  centre. Scrubbed by scroll over the entry range, so scrolling back closes them again.
+  Mechanism: clip-path animated on a view() timeline (CSS scroll-driven animation). Linear.
+  Pick one shape per page and keep it; do not mix them on the same page.
+  Fallback: without scroll timelines the pictures are simply open.
+  Touch and keyboard: the same. Reduced motion: open, no clipping.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clip and circle reveals (scroll-clip-reveal)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #faf7f2; color: #222; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 74rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem) 30vh; }
+h1 { font: 600 clamp(2.25rem, 5vw, 4.5rem)/1 "Avenir Next", sans-serif; letter-spacing: -.03em; margin: 34vh 0 14vh; max-width: 16ch; }
+.row { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(1.5rem, 4vw, 4rem); align-items: center; margin-bottom: 16vh; }
+.row.flip { grid-template-columns: 5fr 7fr; }
+.row.flip .pic-wrap { order: 2; }
+.row h2 { font: 600 clamp(1.5rem, 2.6vw, 2.25rem)/1.1 "Avenir Next", sans-serif; margin: 0 0 .5rem; }
+.row p { margin: 0; color: #555; }
+.pic-wrap svg { width: 100%; height: 100%; display: block; }
+.wipe { aspect-ratio: 5 / 4; }
+.circle { aspect-ratio: 1; }
+
+/* argus:copy-start css */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal-wipe, .reveal-circle { animation-timing-function: linear; animation-fill-mode: both; animation-timeline: view(); animation-range: entry 10% cover 45%; }
+    .reveal-wipe { animation-name: reveal-wipe; }
+    .reveal-circle { animation-name: reveal-circle; }
+    @keyframes reveal-wipe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+    @keyframes reveal-circle { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(71% at 50% 50%); } }
+  }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Ceramics from the Oak Street kilns</h1>
+  <!-- argus:copy-start html -->
+  <div class="row">
+    <div class="pic-wrap wipe reveal-wipe"><svg viewBox="0 0 500 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Three tall jugs in a speckled glaze"><rect width="500" height="400" fill="#d9cdb9"/><rect y="300" width="500" height="100" fill="#bfae92"/><path d="M110 300 L120 150 Q150 120 180 150 L190 300z" fill="#6a7f8f"/><path d="M220 300 L228 110 Q260 80 292 110 L300 300z" fill="#4c5f6e"/><path d="M330 300 L338 170 Q365 145 392 170 L400 300z" fill="#8aa0ae"/></svg></div>
+    <div><h2>Jugs, thrown in threes</h2><p>From £42. A speckled stoneware that is lighter than it looks.</p></div>
+  </div>
+  <!-- argus:copy-end html -->
+  <div class="row flip">
+    <div class="pic-wrap circle reveal-circle"><svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A shallow blue bowl seen from above"><rect width="400" height="400" fill="#efe4d0"/><circle cx="200" cy="200" r="140" fill="#2f5c8a"/><circle cx="200" cy="200" r="100" fill="#3f73a6"/><circle cx="200" cy="200" r="30" fill="#2f5c8a"/></svg></div>
+    <div><h2>Serving bowls, seen from above</h2><p>Glazed inside only, so the outside keeps the colour of the clay.</p></div>
+  </div>
+</main>
+</body>
+</html>

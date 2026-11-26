@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  transition (page 2 of 2): the project page reached from transition.html. It carries the same
+  @view-transition rules and names its hero picture project-picture, so the picture travels from the
+  card. pagereveal moves focus to the heading once the new page is shown. See transition.html.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saltmarsh House: page transition, page 2 (transition)</title>
+<style>
+/* argus:copy-start transition-project css */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+::view-transition-old(root) { animation: vt-sink 600ms cubic-bezier(.65, 0, .35, 1) both; }
+::view-transition-new(root) { animation: vt-wipe 600ms cubic-bezier(.65, 0, .35, 1) both; }
+/* The browser blends the two root snapshots with plus-lighter (made for a cross-fade); a wipe over an
+   opaque old page needs plain stacking, or both show through each other. */
+::view-transition-old(root), ::view-transition-new(root) { mix-blend-mode: normal; }
+::view-transition-group(project-picture) { animation-duration: 640ms; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+/* The card is tall and the hero wide: crop both snapshots to the moving box instead of stretching them. */
+::view-transition-old(project-picture), ::view-transition-new(project-picture) { height: 100%; object-fit: cover; }
+/* Both pictures are the same photograph: move the new one alone, opaque, instead of cross-fading two
+   snapshots of different crops (which reads as a ghost while it travels). */
+::view-transition-old(project-picture) { display: none; }
+::view-transition-new(project-picture) { animation: none; }
+@keyframes vt-sink { to { translate: 0 -8vh; filter: brightness(.85); } }
+@keyframes vt-wipe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+.project-hero { view-transition-name: project-picture; }
+/* argus:copy-end transition-project css */
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f4f1ec; color: #1d1c1a; font: 400 17px/1.55 "Avenir Next", "Segoe UI", system-ui, sans-serif; }
+a { color: inherit; }
+h1:focus { outline: none; }
+:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+.project-hero { display: block; height: 62vh; margin: 0 clamp(1.25rem, 4vw, 3rem); border-radius: 3px; background: linear-gradient(160deg, #8aa39b, #3f5d57); }
+.body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 3rem; padding: 6vh clamp(1.25rem, 4vw, 3rem) 12vh; }
+h1 { font: 500 clamp(2.5rem, 5vw, 4.5rem)/.95 "Avenir Next", system-ui, sans-serif; letter-spacing: -.04em; margin: 0; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: .4rem 1.5rem; margin: 1.5rem 0 0; font-size: 15px; }
+.facts dt { color: #5d5a54; }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .body { grid-template-columns: 1fr; } .project-hero { height: 44vh; } }
+</style>
+</head>
+<body>
+<header class="top"><a href="transition.html">&larr; All work</a><span>Morrow Field</span></header>
+<main>
+  <span class="project-hero" role="img" aria-label="Saltmarsh House: reed beds at high water"></span>
+  <div class="body">
+    <div>
+      <h1 tabindex="-1">Saltmarsh House</h1>
+      <dl class="facts"><dt>Where</dt><dd>Orford, Suffolk</dd><dt>Size</dt><dd>1.2&nbsp;ha</dd><dt>Finished</dt><dd>2025</dd></dl>
+    </div>
+    <p>The garden floods twice a day. We planted for that: sea lavender and samphire at the edge, a timber walk that rides above the spring tides, and a pond that keeps fresh water for the birds when the rest of the ground is salt.</p>
+  </div>
+</main>
+<!-- argus:copy-start transition-project js -->
+<script>
+  // Once the new page is shown (with or without a transition), put focus on its heading.
+  const land = () => document.querySelector('h1').focus({ preventScroll: true });
+  if ('onpagereveal' in window) addEventListener('pagereveal', land, { once: true });
+  else addEventListener('DOMContentLoaded', land, { once: true });
+</script>
+<!-- argus:copy-end transition-project js -->
+</body>
+</html>

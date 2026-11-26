@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+  micro-accordion: questions that open and close smoothly to their natural height, with a
+  plus that turns into a minus. Two versions in one file:
+  1. Button + region: animates grid-template-rows from 0fr to 1fr, which works in every
+     current browser and reverses smoothly if clicked again mid-way. aria-expanded on the
+     button; the closed panel is inert so its links are not tabbable.
+  2. <details>: uses ::details-content with interpolate-size: allow-keywords as an
+     enhancement (Chromium); elsewhere it opens instantly, which is fine.
+  Keyboard: Enter or Space on the question. Reduced motion: open and close instantly.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accordion with height animation (micro-accordion)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f5f1ea; color: #1f1b16; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 44rem; margin: 0 auto; padding: 12vh 1.5rem; }
+h1 { font: 400 clamp(2rem, 4vw, 3rem)/1.05 "Iowan Old Style", Georgia, serif; margin: 0 0 2rem; }
+h2 { font: 600 14px/1 "Avenir Next", sans-serif; color: #6d6257; margin: 3rem 0 .75rem; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --ease-in-out: cubic-bezier(.65,0,.35,1); --t-base: 320ms; }
+.acc { border-top: 1px solid #1f1b1626; }
+.acc-item { border-bottom: 1px solid #1f1b1626; }
+.acc-q { all: unset; box-sizing: border-box; width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 0; cursor: pointer; font: 600 1.05rem/1.35 "Avenir Next", sans-serif; }
+.acc-q:focus-visible { outline: 2px solid #b4532a; outline-offset: 4px; border-radius: 2px; }
+.acc-icon { position: relative; flex: none; width: 14px; height: 14px; }
+.acc-icon::before, .acc-icon::after { content: ""; position: absolute; left: 0; top: 6px; width: 14px; height: 2px; background: currentColor; transition: rotate var(--t-base) var(--ease-out); }
+.acc-icon::after { rotate: 90deg; }
+[aria-expanded="true"] .acc-icon::after, details[open] .acc-icon::after { rotate: 0deg; }
+.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--t-base) var(--ease-in-out); }
+.acc-panel > div { overflow: hidden; }
+.acc-panel p { margin: 0 0 1.2rem; max-width: 36rem; color: #4a4139; }
+.acc-q[aria-expanded="true"] + .acc-panel { grid-template-rows: 1fr; }
+
+/* details version */
+details.acc-item summary { list-style: none; }
+details.acc-item summary::-webkit-details-marker { display: none; }
+@supports (interpolate-size: allow-keywords) {
+  .acc-details { interpolate-size: allow-keywords; }
+  .acc-details details::details-content { block-size: 0; overflow: clip;
+    transition: block-size var(--t-base) var(--ease-in-out), content-visibility var(--t-base) allow-discrete; }
+  .acc-details details[open]::details-content { block-size: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .acc-panel, .acc-icon::before, .acc-icon::after { transition: none; }
+  .acc-details details::details-content { transition: none !important; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Before your first lesson</h1>
+  <h2>Button and region (animates everywhere)</h2>
+  <!-- argus:copy-start html -->
+  <div class="acc" data-acc>
+    <div class="acc-item">
+      <button class="acc-q" type="button" aria-expanded="false" aria-controls="a1" id="q1">What should I bring?<span class="acc-icon" aria-hidden="true"></span></button>
+      <div class="acc-panel" id="a1" role="region" aria-labelledby="q1" inert><div><p>Comfortable shoes and a water bottle. Harps, tuning keys and music stands are provided for the first six weeks.</p></div></div>
+    </div>
+    <div class="acc-item">
+      <button class="acc-q" type="button" aria-expanded="false" aria-controls="a2" id="q2">Can I cancel a lesson?<span class="acc-icon" aria-hidden="true"></span></button>
+      <div class="acc-panel" id="a2" role="region" aria-labelledby="q2" inert><div><p>Yes, up to 24 hours before at no charge. After that we keep the fee, because your teacher still turns up. <a href="?terms">Read the terms</a>.</p></div></div>
+    </div>
+  </div>
+  <!-- argus:copy-end html -->
+  <h2>Details element (animates in Chromium, opens instantly elsewhere)</h2>
+  <!-- argus:copy-start html -->
+  <div class="acc acc-details">
+    <details class="acc-item"><summary class="acc-q">Do you teach adults?<span class="acc-icon" aria-hidden="true"></span></summary><p style="margin:0 0 1.2rem;color:#4a4139">Most of our students are adults. The oldest started at 71.</p></details>
+    <details class="acc-item"><summary class="acc-q">Where are lessons held?<span class="acc-icon" aria-hidden="true"></span></summary><p style="margin:0 0 1.2rem;color:#4a4139">At the studio on Wharf Street, or online if you have your own harp.</p></details>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+document.querySelectorAll('[data-acc] .acc-q').forEach(q => {
+  const panel = document.getElementById(q.getAttribute('aria-controls'));
+  q.addEventListener('click', () => {
+    const open = q.getAttribute('aria-expanded') !== 'true';
+    q.setAttribute('aria-expanded', String(open));
+    panel.inert = !open;
+  });
+});
+// argus:copy-end js
+if (location.search.includes('demo')) setTimeout(() => { document.querySelector('.acc-q').click(); document.querySelector('details summary').click(); }, 250);
+</script>
+</body>
+</html>

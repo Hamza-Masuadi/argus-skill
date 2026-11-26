@@ -47,7 +47,8 @@ exports.main = main;
  * Installing only copies the skill folder into the place each AI coding tool
  * reads skills from: no downloads, no network calls, no hooks, no settings
  * changes, no prompts. The tools make no network calls either, except
- * `photos`, which searches free-licence image sources, and only when it is run.
+ * `photos`, which searches free-licence image sources (or, with `photos add`,
+ * reads the Unsplash or Pexels photo pages it is given), and only when it is run.
  *
  *   npx argus-skill install            install into this project
  *   npx argus-skill install --global   install for your user account
@@ -56,7 +57,10 @@ exports.main = main;
  *   npx argus-skill uninstall
  *   npx argus-skill list               show supported tools and where each reads skills
  *
- * Tools: shot, check, inventory, lint, contrast, compare, rules, photos.
+ * Tools: shot, check, inventory, lint, rules, photos, deal.
+ * shot and check take --tap and --hover to reach a sheet, a later screen or a hover state before
+ * capturing or checking, and --reduced-motion; shot takes --frames and --scroll-frames;
+ * check and lint take --app for app prototypes.
  */
 const fs = __importStar(require("node:fs"));
 const os = __importStar(require("node:os"));
@@ -98,7 +102,7 @@ exports.TOOLS = [
 const ALIASES = { codex: 'agents', amp: 'agents', vscode: 'copilot', github: 'copilot', windsurf: 'devin', 'claude-code': 'claude' };
 const DEFAULTS = ['claude', 'agents'];
 /** Helper scripts that run through this command. */
-const HELPERS = { lint: 'lint.js', contrast: 'contrast.js', shot: 'shot.js', compare: 'compare.js', photos: 'photos.js' };
+const HELPERS = { lint: 'lint.js', shot: 'shot.js', photos: 'photos.js', deal: 'deal.js' };
 function parse(argv) {
     const o = { cmd: null, global: false, tools: null, all: false, force: false, dry: false, bad: [] };
     for (const a of argv) {
@@ -178,16 +182,34 @@ function help() {
         'Tools (the same scripts the skill uses):',
         '  npx argus-skill shot <url-or-file> [--full] [--wait MS]  screenshots at phone and desktop widths',
         '  npx argus-skill check <url-or-file>            run the checker in a real browser at each width',
+        '      shot and check also take --height N, --scheme light|dark, --reduced-motion, --tap TARGET',
+        '      and --hover TARGET (repeatable: tap, or move the mouse onto, a CSS selector or text=Label',
+        '      first, to reach a sheet or later screen or a hover state) and (check) --app for app',
+        '      prototypes. shot also takes --frames N [--every MS] (screenshots in quick succession,',
+        '      to see arrivals and loops) and --scroll-frames N (screenshots down the page)',
         '  npx argus-skill inventory <url-or-file>        measure the design system a page actually uses',
         '  npx argus-skill inventory <new> --against <old>  list what a new page uses that an existing page does not',
-        '  npx argus-skill lint <file-or-folder>          scan source for common design slips',
-        '  npx argus-skill contrast "#text/#background"   check colour contrast',
-        '  npx argus-skill compare <before> <after>       build a before-and-after page from two screenshots',
+        '  npx argus-skill lint <file-or-folder> [--app]  scan source for common design slips (--app: an',
+        '      app prototype, where one h1 per hash-routed screen is fine)',
         '  npx argus-skill rules [--json]                 list every rule check and lint apply',
+        '  npx argus-skill deal directions --n 3 --tone calm|lively|bold [--trade W] [--history FILE]',
+        '      deal design directions (hero, type pairing, ground, shape, sections) that differ',
+        '      from each other and from the history; also deal list <library> [--tag X], deal show <id>,',
+        '      deal record --history FILE <ids...>; deal --help for every option',
         '  npx argus-skill photos "<words>" [--count N]   find and download free-licence photographs, with credits',
+        '      also --orientation, --min-width N, --best, --source LIST (stocksnap, rawpixel, wikimedia,',
+        '      europeana, cleveland, met, nasa, smithsonian...), --creator NAME, --page N; set',
+        '      PEXELS_API_KEY or PIXABAY_API_KEY to search Pexels or Pixabay as well',
+        '  npx argus-skill photos add <photo-page-url>... [--out DIR] [--width N]',
+        '      take photographs you chose on unsplash.com or pexels.com: reads each page\'s',
+        '      photographer and image, downloads it N pixels wide (default 2000), adds credits',
+        '  npx argus-skill photos series <unsplash-or-pexels-url> --out DIR   one photographer\'s set',
+        '  npx argus-skill photos sheet|grade|deliver|cutout ...   contact sheet, one grade for the set,',
+        '      page-ready AVIF/WebP/JPEG with <picture> markup, background removal (photos <cmd> --help)',
         '',
         'The installer and these tools make no network calls, except photos, which searches',
-        'Openverse and Wikimedia Commons, and only when you run it.',
+        'Openverse and Wikimedia Commons (and Pexels when PEXELS_API_KEY is set), or reads the',
+        'Unsplash and Pexels pages given to photos add or series, and only when you run it.',
         '',
         'Install options:',
         '  --global           install for your user account instead of this project',
@@ -237,9 +259,25 @@ function main(raw, home = os.homedir(), cwd = process.cwd()) {
         return printRules(raw.slice(1));
     if (first === 'check') {
         if (wantsHelp) {
-            console.log('Usage: npx argus-skill check [<url-or-file> [--widths LIST]]');
+            console.log('Usage: npx argus-skill check [<url-or-file> [--widths LIST] [--height N] [--scheme light|dark] [--reduced-motion] [--tap TARGET]... [--hover TARGET]... [--app]]');
             console.log('With a page: runs the checker in a real browser at each width and prints the findings.');
             console.log('With none: prints the checker script, to evaluate in a browser tool or the devtools console.');
+            console.log('  --height N      viewport height in CSS pixels at every width');
+            console.log('  --scheme S      light or dark: emulate prefers-color-scheme (default: follow this computer)');
+            console.log('  --tap TARGET    tap a CSS selector, or text=Label (a visible button, link or tab), before');
+            console.log('                  checking, with real mouse events; repeat to tap several in order. A target');
+            console.log('                  that is not found stops with an error naming it; one hidden until it scrolls');
+            console.log('                  into view is given 2s to show');
+            console.log('  --hover TARGET  move the real mouse onto TARGET (same syntax as --tap) before checking;');
+            console.log('                  runs in order with --tap');
+            console.log('  --reduced-motion  emulate prefers-reduced-motion: reduce');
+            console.log('At 1024px and wider the check also reads the page\'s flow: blank-band, lopsided-section and');
+            console.log('repeated-layout.');
+            console.log('  --app           the page is an app prototype (hash-routed screens, modal sheets): relaxes');
+            console.log('                  the web-page rules that misfire there (open sheets and their scrim, drawn');
+            console.log('                  status bars, floating tab bars, 10px tab labels, lists of cards, focus rings');
+            console.log('                  on a row, pictures for a 2x screen) and prints which. For the printed');
+            console.log('                  script, set window.__argusCheckOptions = { app: true } before evaluating it.');
             return 0;
         }
         // With a page to check, run the checker in a real browser. With none, print

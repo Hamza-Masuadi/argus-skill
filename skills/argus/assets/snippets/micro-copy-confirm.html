@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  micro-copy-confirm: a "Copy" button beside a code or reference copies it; its label
+  rolls up to "Copied" with a small tick and the copied text flashes a highlight, then
+  after 1.6s the label rolls back. If the clipboard is blocked, the text is selected and
+  the label says "Press Ctrl+C" (or Cmd+C) instead of pretending.
+  Mechanism: navigator.clipboard.writeText with a selection fallback; the label is two
+  stacked spans in an overflow-clipped box (transform only); aria-live announces it.
+  Keyboard: Enter or Space. Reduced motion: labels swap without rolling.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copy to clipboard confirmation (micro-copy-confirm)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #11161c; color: #e5ebf1; font: 400 16px/1.5 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.box { width: min(34rem, 92vw); display: grid; gap: 1rem; }
+.box h1 { font: 600 1.4rem/1.2 "Avenir Next", sans-serif; margin: 0; }
+.box p { margin: 0; color: #9aa6b2; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-base: 320ms; }
+.copyrow { display: flex; align-items: center; gap: .5rem; background: #1b232c; border: 1px solid #ffffff1a; border-radius: 8px; padding: .4rem .4rem .4rem 1rem; }
+.copyrow code { flex: 1; font: 500 15px/1.4 "Menlo", ui-monospace, monospace; color: #e5ebf1; border-radius: 3px; transition: background-color 600ms var(--ease-out); overflow-x: auto; white-space: nowrap; }
+.copyrow code.is-flash { background-color: #3f8cff44; transition-duration: 0s; }
+.copybtn { all: unset; cursor: pointer; height: 40px; padding: 0 .9rem; border-radius: 6px; background: #e5ebf1; color: #11161c; font: 600 14px/1 "Avenir Next", sans-serif; display: grid; overflow: clip; }
+.copybtn:focus-visible { outline: 2px solid #3f8cff; outline-offset: 2px; }
+.copybtn span { grid-area: 1 / 1; display: flex; align-items: center; justify-content: center; gap: .35rem; transition: translate var(--t-base) var(--ease-out); }
+.copybtn .done { translate: 0 100%; }
+.copybtn.is-done .idle { translate: 0 -100%; }
+.copybtn.is-done .done { translate: 0 0; }
+@media (prefers-reduced-motion: reduce) { .copybtn span { transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main class="box">
+  <h1>Your API key is ready</h1>
+  <p>Use it in the Authorization header. It is shown here once; store it somewhere safe.</p>
+  <!-- argus:copy-start html -->
+  <div class="copyrow">
+    <code id="key">sk_test_4f9a2c7e1b8d6035</code>
+    <button class="copybtn" type="button" data-copy="#key"><span class="idle">Copy</span><span class="done" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2"/></svg><b>Copied</b></span></button>
+  </div>
+  <span class="sr" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></span>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+document.querySelectorAll('[data-copy]').forEach(btn => {
+  const src = document.querySelector(btn.dataset.copy);
+  const live = btn.closest('.copyrow').nextElementSibling;
+  const doneLabel = btn.querySelector('.done b');
+  let timer = 0;
+  btn.addEventListener('click', async () => {
+    let ok = true;
+    try { await navigator.clipboard.writeText(src.textContent); }
+    catch { ok = false; }
+    if (!ok) { // select the text so the visitor can copy it themselves
+      const r = document.createRange(); r.selectNodeContents(src);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    }
+    doneLabel.textContent = ok ? 'Copied' : (/Mac/.test(navigator.platform) ? 'Press ⌘C' : 'Press Ctrl+C');
+    live.textContent = ok ? 'Copied to clipboard.' : 'Selected. Press Control C to copy.';
+    src.classList.add('is-flash'); requestAnimationFrame(() => requestAnimationFrame(() => src.classList.remove('is-flash')));
+    btn.classList.add('is-done');
+    clearTimeout(timer);
+    timer = setTimeout(() => btn.classList.remove('is-done'), 1600);
+  });
+});
+// argus:copy-end js
+if (location.search.includes('demo')) setTimeout(() => document.querySelector('.copybtn').click(), 250);
+</script>
+</body>
+</html>

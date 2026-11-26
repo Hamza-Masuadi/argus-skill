@@ -1,0 +1,128 @@
+<!doctype html>
+<!--
+  text-odometer: a figure arrives by rolling each digit up its own reel to the right
+  number, rightmost reel last, like a mechanical counter. When the value changes later,
+  only the digits that change roll, the short way round.
+  Instead of a counting text node: no reflow (tabular figures, fixed reels), and screen
+  readers get the final figure once (visually hidden text; reels are aria-hidden).
+  Trigger: once on view; the demo buttons change the value. Touch and keyboard: the same.
+  Reduced motion: the figure is shown without rolling.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Odometer numerals (text-odometer)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #0f1a2b; color: #f1f4f8; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { min-height: 100vh; max-width: 72rem; margin: 0 auto; padding: 1.5rem clamp(1.25rem, 4vw, 3rem); display: grid; grid-template-rows: auto 1fr auto; }
+.top { display: flex; justify-content: space-between; font-size: 14px; color: #9fb0c8; }
+.stat { align-self: center; display: grid; gap: 1rem; }
+.label { margin: 0; font-size: 15px; color: #9fb0c8; max-width: 30rem; }
+.controls { display: flex; gap: .75rem; }
+.controls button { font: 600 14px/1 "Avenir Next", sans-serif; padding: .8rem 1.1rem; border-radius: 6px; border: 1px solid #f1f4f84d; background: none; color: inherit; cursor: pointer; }
+.controls button:hover { background: #f1f4f814; }
+.controls button:focus-visible { outline: 2px solid #ffc94a; outline-offset: 2px; }
+.foot { font-size: 14px; color: #9fb0c8; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-page: 900ms; --stagger-line: 70ms; }
+.odo {
+  display: inline-flex; align-items: flex-start;
+  font: 600 clamp(4.5rem, 15vw, 13rem)/1 "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums; letter-spacing: -.04em; color: #ffc94a;
+}
+.odo { --h: 1.12em; }
+.odo .reel {
+  display: inline-block; height: var(--h); overflow: clip;
+  /* soft top and bottom edges, like a counter window */
+  mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+}
+.odo .strip { display: flex; flex-direction: column; transition: translate var(--t-page) var(--ease-out); transition-delay: var(--d, 0ms); }
+.odo .strip span { height: var(--h); line-height: var(--h); }
+.odo .sep { line-height: var(--h); }
+.odo .sep { display: inline-block; }
+@media (prefers-reduced-motion: reduce) { .odo .strip { transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><strong>Riverside Food Bank</strong><span>Annual report 2026</span></div>
+  <section class="stat">
+    <p class="label">Meals handed out this year, counted at the door every Saturday.</p>
+    <!-- argus:copy-start html -->
+    <div class="odo" data-odometer data-value="48210"></div>
+    <!-- argus:copy-end html -->
+    <div class="controls">
+      <button type="button" data-add="137">Add a Saturday (+137)</button>
+      <button type="button" data-add="-850">Correct a month (−850)</button>
+    </div>
+  </section>
+  <p class="foot">Figures from our volunteer tally sheets, January to November.</p>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const fmt = new Intl.NumberFormat('en-GB');
+  function build(el, value) {
+    const text = fmt.format(value);
+    el.textContent = '';
+    const sr = document.createElement('span');
+    sr.className = 'sr';
+    sr.textContent = text;
+    const vis = document.createElement('span');
+    vis.setAttribute('aria-hidden', 'true');
+    vis.style.display = 'contents';
+    Array.from(text).forEach(ch => {
+      if (!/\d/.test(ch)) { const s = document.createElement('span'); s.className = 'sep'; s.textContent = ch; vis.append(s); return; }
+      const reel = document.createElement('span'); reel.className = 'reel';
+      const strip = document.createElement('span'); strip.className = 'strip';
+      for (let d = 0; d <= 9; d++) { const n = document.createElement('span'); n.textContent = d; strip.append(n); }
+      strip.dataset.digit = ch;
+      reel.append(strip); vis.append(reel);
+    });
+    el.append(sr, vis);
+    el._sr = sr;
+  }
+  function roll(el, value, fromZero) {
+    const text = fmt.format(value);
+    const strips = el.querySelectorAll('.strip');
+    if (strips.length !== text.replace(/\D/g, '').length) build(el, value); // digit count changed
+    el._sr.textContent = text;
+    const list = [...el.querySelectorAll('.strip')];
+    const digits = text.replace(/\D/g, '');
+    list.forEach((strip, i) => {
+      const d = +digits[i];
+      // Rightmost reels finish last, like a mechanical counter.
+      strip.style.setProperty('--d', (fromZero ? i : (list.length - 1 - i) * 0.3) * 70 + 'ms');
+      strip.style.translate = `0 calc(${-d} * var(--h))`;
+    });
+    el.dataset.value = value;
+  }
+  document.querySelectorAll('[data-odometer]').forEach(el => {
+    const target = +el.dataset.value;
+    build(el, target);
+    el.querySelectorAll('.strip').forEach(s => (s.style.translate = '0 0'));
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      requestAnimationFrame(() => roll(el, target, true));
+    }, { threshold: 0.5 });
+    io.observe(el);
+    el._roll = v => roll(el, v, false);
+  });
+})();
+// argus:copy-end js
+</script>
+<script>
+// Demo controls: el._roll(newValue) rolls only the digits that change.
+const odo = document.querySelector('[data-odometer]');
+document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => odo._roll(Math.max(0, +odo.dataset.value + +b.dataset.add))));
+</script>
+</body>
+</html>

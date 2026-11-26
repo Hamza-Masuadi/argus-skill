@@ -1,0 +1,119 @@
+<!doctype html>
+<!--
+  svg-data-chart: a small chart drawn from real figures, made for the page rather than
+  taken from a charting library; here a cider farm's litres pressed each month this year
+  as bars, with last year as a line that draws across them. Bars rise once when the chart
+  comes into view.
+  Mechanism: the figures live in a real <table> in the markup; the script reads them into
+  an array and draws the SVG (bars as rects, last year as one path with pathLength="1").
+  Bars grow with transform: scaleY (transform-box: fill-box, origin at the baseline),
+  staggered; the line draws with stroke-dashoffset. An IntersectionObserver plays it once.
+  Fallback and reduced motion: without script the table is shown as a plain table; under
+  prefers-reduced-motion the chart is drawn complete.
+  Touch and keyboard: nothing to operate. The SVG is aria-hidden; the table (visually
+  hidden once the chart is drawn) carries the figures for screen readers.
+  A technique to redraw for the subject (tide heights, loaves sold by hour, rainfall on the
+  vineyard), not a decoration to paste: keep the mechanism, draw your own figures.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Small chart drawn from data (svg-data-chart)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f6f3e9; color: #262113; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.pad { min-height: 75vh; max-width: 72rem; margin: 0 auto; padding: 2rem clamp(1.25rem, 4vw, 3rem); display: grid; align-content: end; }
+.pad h1 { font: 600 clamp(2.25rem, 5vw, 4.5rem)/1 "Avenir Next", sans-serif; letter-spacing: -.03em; margin: 0 0 1rem; max-width: 16ch; }
+.pad p { margin: 0; max-width: 32rem; color: #5a5440; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-slow: 640ms; --t-page: 900ms; --stagger-line: 70ms; }
+.chart { max-width: 72rem; margin: 0 auto; padding: 8vh clamp(1.25rem, 4vw, 3rem); }
+.chart h2 { font: 600 clamp(1.5rem, 3vw, 2.2rem)/1.15 "Avenir Next", sans-serif; margin: 0 0 .4rem; }
+.chart .key { display: flex; gap: 1.5rem; margin: 0 0 1.5rem; color: #5a5440; font-size: 15px; }
+.chart .key span::before { content: ""; display: inline-block; width: 14px; height: 14px; margin-right: .45rem; vertical-align: -2px; border-radius: 2px; background: #b5642a; }
+.chart .key span + span::before { height: 3px; vertical-align: 4px; background: #262113; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .bar { fill: #b5642a; transform-box: fill-box; transform-origin: 50% 100%; }
+.chart .last { fill: none; stroke: #262113; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chart .axis { stroke: #26211333; stroke-width: 1; }
+.chart .tick { font: 500 14px "Avenir Next", sans-serif; fill: #5a5440; }
+.chart table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.chart th, .chart td { padding: .3rem 1rem .3rem 0; text-align: left; }
+.chart.is-drawn-ready table { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .chart-ready .chart .bar { transform: scaleY(0); transition: transform var(--t-slow) var(--ease-out); transition-delay: calc(min(var(--n), 6) * var(--stagger-line)); }
+  .chart-ready .chart .last { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--t-page) var(--ease-out) 500ms; }
+  .chart-ready .chart.is-in .bar { transform: none; }
+  .chart-ready .chart.is-in .last { stroke-dashoffset: 0; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<section class="pad"><h1>Pressed on the farm, from our own trees</h1><p>Hollow Lane Cider grows eleven varieties on forty acres outside Ledbury, and presses everything on site.</p></section>
+<!-- argus:copy-start html -->
+<section class="chart" aria-labelledby="chart-t">
+  <h2 id="chart-t">Litres pressed, August to December</h2>
+  <p class="key" aria-hidden="true"><span>This year</span><span>Last year</span></p>
+  <svg viewBox="0 0 640 300" aria-hidden="true" focusable="false"></svg>
+  <table>
+    <caption>Litres of juice pressed each month</caption>
+    <thead><tr><th scope="col">Month</th><th scope="col">This year</th><th scope="col">Last year</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Aug</th><td>1,800</td><td>2,400</td></tr>
+      <tr><th scope="row">Sep</th><td>9,600</td><td>8,100</td></tr>
+      <tr><th scope="row">Oct</th><td>14,200</td><td>11,900</td></tr>
+      <tr><th scope="row">Nov</th><td>7,300</td><td>8,800</td></tr>
+      <tr><th scope="row">Dec</th><td>1,100</td><td>2,000</td></tr>
+    </tbody>
+  </table>
+</section>
+<!-- argus:copy-end html -->
+<section class="pad"><p>The shop opens for tastings on Saturdays from September.</p></section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (name, attrs, text) => { const n = document.createElementNS(NS, name); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text) n.textContent = text; return n; };
+  document.querySelectorAll('.chart').forEach(box => {
+    const svg = box.querySelector('svg');
+    // The table is the source of truth: read it into an array.
+    const data = [...box.querySelectorAll('tbody tr')].map(tr => {
+      const cells = tr.querySelectorAll('th, td');
+      const num = i => Number(cells[i].textContent.replace(/[^\d.]/g, ''));
+      return { label: cells[0].textContent.trim(), now: num(1), last: num(2) };
+    });
+    if (!data.length) return;
+    const W = 640, H = 300, top = 20, base = 260, max = Math.max(...data.flatMap(d => [d.now, d.last])) * 1.1;
+    const step = W / data.length, barW = step * 0.5;
+    const y = v => base - (v / max) * (base - top);
+    svg.append(el('line', { class: 'axis', x1: 0, x2: W, y1: base, y2: base }));
+    data.forEach((d, i) => {
+      const x = i * step + (step - barW) / 2;
+      svg.append(el('rect', { class: 'bar', x, y: y(d.now), width: barW, height: base - y(d.now), rx: 3, style: `--n:${i}` }));
+      svg.append(el('text', { class: 'tick', x: i * step + step / 2, y: H - 8, 'text-anchor': 'middle' }, d.label));
+    });
+    const pts = data.map((d, i) => `${(i * step + step / 2).toFixed(1)} ${y(d.last).toFixed(1)}`);
+    svg.append(el('path', { class: 'last', pathLength: 1, d: 'M' + pts.join(' L') }));
+    box.classList.add('is-drawn-ready'); // the table now only needs to reach screen readers
+
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || document.visibilityState === 'hidden' || !('IntersectionObserver' in window)) return;
+    requestAnimationFrame(() => {
+      document.documentElement.classList.add('chart-ready');
+      const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } }), { threshold: 0.4 });
+      io.observe(box);
+      setTimeout(() => { if (box.getBoundingClientRect().top < innerHeight) box.classList.add('is-in'); }, 1000);
+    });
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

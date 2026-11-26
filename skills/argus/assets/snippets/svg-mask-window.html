@@ -1,0 +1,106 @@
+<!doctype html>
+<!--
+  svg-mask-window: a picture opens through a shape taken from the subject when it comes
+  into view; here a guest house shows its sea view through the round-topped arch of its
+  own front windows. The arch grows from its sill while the view settles from a slight
+  zoom.
+  Mechanism: the picture sits inside an SVG, clipped by a <clipPath> whose path is the arch.
+  The arch path is never reshaped: it is scaled with a CSS transform (transform-box:
+  fill-box, origin at the sill), which is cheaper and more reliable than changing its path
+  data. The outline of the
+  arch is drawn on top. An IntersectionObserver adds .is-open once. For a soft or textured
+  edge, use a <mask> with a white shape instead of the clipPath; the mechanism is the same.
+  In a real page put the photograph in as <image href="view.jpg" preserveAspectRatio=
+  "xMidYMid slice">; the painted stand-in here only avoids a network file.
+  Fallback and reduced motion: without script, if the observer never fires (a timer opens
+  it), or under prefers-reduced-motion, the window is open.
+  Touch and keyboard: nothing to operate; the picture has role="img" and an aria-label.
+  A technique to redraw for the subject (a bottle, a leaf, a keyhole, a shop's own
+  doorway), not a decoration to paste: keep the mechanism, draw your own shape.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picture through a shaped window (svg-mask-window)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f2efe9; color: #1e2a33; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.pad { min-height: 80vh; max-width: 72rem; margin: 0 auto; padding: 2rem clamp(1.25rem, 4vw, 3rem); display: grid; align-content: end; }
+.pad h1 { font: 400 clamp(2.25rem, 5vw, 4.5rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0 0 1rem; max-width: 16ch; }
+.pad p { margin: 0; max-width: 32rem; color: #50606b; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-page: 900ms; }
+.window { max-width: 72rem; margin: 0 auto; padding: 8vh clamp(1.25rem, 4vw, 3rem); display: grid; grid-template-columns: 5fr 6fr; gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
+.window svg { width: 100%; max-width: 30rem; height: auto; display: block; }
+.window .arch-shape, .window .view { transform-box: fill-box; }
+.window .arch-shape { transform-origin: 50% 100%; }
+.window .view { transform-origin: 50% 60%; }
+.window .frame { fill: none; stroke: #1e2a33; stroke-width: 4; }
+.window h2 { font: 400 clamp(1.6rem, 3vw, 2.4rem)/1.1 "Iowan Old Style", Georgia, serif; margin: 0 0 1rem; }
+.window p { margin: 0 0 1rem; color: #50606b; }
+@media (prefers-reduced-motion: no-preference) {
+  .window-ready .window .arch-shape { transform: scale(.4, .25); transition: transform var(--t-page) var(--ease-out); }
+  .window-ready .window .view { transform: scale(1.12); transition: transform 1200ms var(--ease-out); }
+  .window-ready .window .frame { opacity: 0; transition: opacity 400ms var(--ease-out) 600ms; }
+  .window-ready .window.is-open .arch-shape, .window-ready .window.is-open .view { transform: none; }
+  .window-ready .window.is-open .frame { opacity: 1; }
+}
+@media (max-width: 700px) { .window { grid-template-columns: 1fr; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<section class="pad"><h1>Six rooms above the harbour</h1><p>Gull Cottage is a guest house on the front at Mousehole, in the same family since 1962.</p></section>
+<!-- argus:copy-start html -->
+<section class="window" aria-labelledby="window-t">
+  <svg viewBox="0 0 400 500" role="img" aria-label="The view from room four: the harbour wall, the bay and St Clement's Isle, seen through the arched window">
+    <defs>
+      <clipPath id="arch-clip"><path class="arch-shape" d="M40 480 V200 A160 160 0 0 1 360 200 V480 Z"/></clipPath>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d9b8"/><stop offset="1" stop-color="#a9c6d6"/></linearGradient>
+    </defs>
+    <g clip-path="url(#arch-clip)">
+      <g class="view">
+        <!-- stand-in for the photograph: replace with <image href="view.jpg" x="0" y="0" width="400" height="500" preserveAspectRatio="xMidYMid slice"/> -->
+        <rect width="400" height="500" fill="url(#sky)"/>
+        <path d="M0 300 C 90 280, 160 296, 230 286 S 360 270, 400 282 V500 H0 Z" fill="#3f6f86"/>
+        <path d="M250 290 c 10 -22, 40 -24, 52 -2 Z" fill="#2e4a58"/>
+        <path d="M0 390 H260 L300 410 H0 Z" fill="#7a6a5a"/>
+        <path d="M0 410 H400 V500 H0 Z" fill="#2d4f60"/>
+      </g>
+    </g>
+    <path class="frame" d="M40 480 V200 A160 160 0 0 1 360 200 V480 Z M200 40 V480 M40 300 H360"/>
+  </svg>
+  <div>
+    <h2 id="window-t">Room four, the bay window</h2>
+    <p>A double bed facing the sea, a window seat and a shower room. Breakfast is served until ten.</p>
+    <p>From £135 a night, two nights minimum in summer.</p>
+  </div>
+</section>
+<!-- argus:copy-end html -->
+<section class="pad"><p>Parking is at the top of the village; we carry the bags down.</p></section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const windows = document.querySelectorAll('.window');
+  if (!windows.length || document.visibilityState === 'hidden' || !('IntersectionObserver' in window)) return;
+  requestAnimationFrame(() => {
+    document.documentElement.classList.add('window-ready');
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('is-open');
+      io.unobserve(e.target);
+    }), { threshold: 0.35 });
+    windows.forEach(w => io.observe(w));
+    setTimeout(() => windows.forEach(w => { if (w.getBoundingClientRect().top < innerHeight) w.classList.add('is-open'); }), 1000);
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

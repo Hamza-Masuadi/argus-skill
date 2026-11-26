@@ -1,0 +1,203 @@
+<!doctype html>
+<!--
+  scene-dial: an oven thermostat that answers the pointer. Hovering the dial shows a ghost mark
+  and the heat you would get; pressing sets it (the knob turns on a spring), dragging turns it
+  continuously, and the guide beside it says what to bake at that heat and for how long.
+  Mechanism: the angle from the dial's cached centre (atan2), clamped to a 270-degree sweep and
+  snapped to 10 degrees C. One transition, retargeted on every change, so it can be interrupted.
+  Pointer: hover previews, press or drag sets. Keyboard: the knob is role="slider"; arrows move
+  10 degrees, Page Up and Down 30, Home and End go to the ends; aria-valuetext reads the dish.
+  Touch: tap or drag on the dial (touch-action: none on the dial only).
+  Reduced motion: the knob jumps to the new heat without turning through the arc.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dial that answers the pointer (scene-dial)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #cddfe2; color: #17324a; font: 400 17px/1.5 "Futura", "Century Gothic", "Trebuchet MS", sans-serif; }
+main { width: min(1100px, 100%); margin: 0 auto; padding: 4rem 2rem; display: grid; grid-template-columns: auto 1fr; gap: 4.5rem; align-items: center; }
+.intro { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: end; gap: 2rem; flex-wrap: wrap; }
+h1 { font: 500 clamp(2rem, 4vw, 3.2rem)/1.02 "Futura", "Century Gothic", sans-serif; margin: 0; letter-spacing: -.01em; }
+.intro p { margin: 0; max-width: 22rem; color: #3b5568; }
+@media (max-width: 760px) { main { grid-template-columns: 1fr; justify-items: center; } }
+
+/* argus:copy-start css */
+.dial {
+  --size: 340px; --a: 0deg; --ghost: 0deg;
+  position: relative; width: var(--size); height: var(--size); border-radius: 50%;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.dial-ticks, .dial-ghost { position: absolute; inset: 0; pointer-events: none; }
+.dial-tick { position: absolute; left: 50%; top: 0; width: 2px; height: 50%; margin-left: -1px; transform-origin: 50% 100%; }
+.dial-tick::before { content: ""; position: absolute; top: 6px; left: 0; width: 2px; height: 12px; background: #17324a; border-radius: 1px; }
+.dial-tick.is-major::before { height: 20px; width: 3px; left: -.5px; }
+.dial-num { position: absolute; font: 500 14px/1 "Futura", "Century Gothic", sans-serif; transform: translate(-50%, -50%); }
+.dial-ghost { transform: rotate(var(--ghost)); opacity: 0; transition: opacity var(--t-base) var(--ease-out); }
+.dial-ghost::before { content: ""; position: absolute; left: 50%; top: 4px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #c2462b; }
+.dial.is-hover .dial-ghost { opacity: 1; transition-duration: var(--t-fast); }
+.dial-knob {
+  position: absolute; inset: 22%; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #45484a, #1b1c1d 62%);
+  box-shadow: 0 10px 22px rgb(23 50 74 / .35), inset 0 -4px 8px rgb(0 0 0 / .5), inset 0 2px 3px rgb(255 255 255 / .12);
+  cursor: grab;
+}
+/* only the marker turns, so the knob's light stays where the room light is */
+.dial-knob::before {
+  content: ""; position: absolute; left: 50%; top: 8%; width: 6px; height: 30%; margin-left: -3px; border-radius: 3px; background: #f3e9d2;
+  transform-origin: 50% 140%;            /* the knob's centre, measured from the marker */
+  transform: rotate(var(--a));
+  transition: transform var(--t-slow) var(--spring);
+}
+.dial.is-dragging .dial-knob { cursor: grabbing; }
+.dial.is-dragging .dial-knob::before { transition: none; }
+.dial-knob:focus-visible { outline: 3px solid #17324a; outline-offset: 6px; }
+.dial-read { min-width: 18rem; }
+.dial-temp { font: 500 clamp(4rem, 10vw, 7.5rem)/.9 "Futura", "Century Gothic", sans-serif; letter-spacing: -.03em; margin: 0; font-variant-numeric: tabular-nums; }
+.dial-temp small { font-size: .35em; letter-spacing: 0; vertical-align: .9em; margin-left: .1em; }
+.dial-dish { font-size: 1.5rem; margin: 1rem 0 .25rem; }
+.dial-time { margin: 0; color: #3b5568; }
+.dial-hint { margin: 1.5rem 0 0; font-size: 14px; color: #3b5568; min-height: 1.5em; }
+@media (prefers-reduced-motion: reduce) {
+  .dial-knob::before, .dial-ghost { transition: none; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="intro">
+    <h1>What goes in<br>at this heat?</h1>
+    <p>The Fieldfare Kitchen oven guide. Turn the dial; we tell you what bakes best there and for how long, fan off.</p>
+  </div>
+  <!-- argus:copy-start html -->
+  <div class="dial" data-dial data-min="100" data-max="250" data-step="10" data-value="180">
+    <div class="dial-ticks" aria-hidden="true"></div>
+    <div class="dial-ghost" aria-hidden="true"></div>
+    <div class="dial-knob" role="slider" tabindex="0" aria-label="Oven temperature" aria-valuemin="100" aria-valuemax="250" aria-valuenow="180"></div>
+  </div>
+  <div class="dial-read" aria-live="polite">
+    <p class="dial-temp"><span data-temp>180</span><small>°C</small></p>
+    <p class="dial-dish" data-dish>Victoria sponge</p>
+    <p class="dial-time" data-time>25 minutes, middle shelf</p>
+    <p class="dial-hint" data-hint aria-hidden="true"></p>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const GUIDE = [
+    [100, 'Dried orange slices', '2 hours 30, door ajar'],
+    [120, 'Meringues', '1 hour 30, then leave to cool inside'],
+    [140, 'Slow-roast tomatoes', '2 hours, low shelf'],
+    [160, 'Rich fruit cake', '2 hours 15, lined tin'],
+    [180, 'Victoria sponge', '25 minutes, middle shelf'],
+    [190, 'Brownies', '22 minutes, still soft in the middle'],
+    [200, 'Roast potatoes', '50 minutes, turn once'],
+    [220, 'Focaccia', '22 minutes, top shelf'],
+    [230, 'Sourdough boule', '40 minutes, lid off at 20'],
+    [250, 'Pizza on a stone', '7 minutes, stone heated for 45'],
+  ];
+  const dish = (v) => GUIDE.reduce((best, g) => (Math.abs(g[0] - v) < Math.abs(best[0] - v) ? g : best));
+
+  document.querySelectorAll('[data-dial]').forEach((dial) => {
+    const MIN = +dial.dataset.min, MAX = +dial.dataset.max, STEP = +dial.dataset.step, SWEEP = 135;
+    const knob = dial.querySelector('.dial-knob');
+    const read = dial.nextElementSibling;
+    const out = { temp: read.querySelector('[data-temp]'), dish: read.querySelector('[data-dish]'), time: read.querySelector('[data-time]'), hint: read.querySelector('[data-hint]') };
+    const angleOf = (v) => ((v - MIN) / (MAX - MIN)) * SWEEP * 2 - SWEEP;
+    const valueOf = (deg) => Math.round((MIN + ((deg + SWEEP) / (SWEEP * 2)) * (MAX - MIN)) / STEP) * STEP;
+
+    // ticks and numerals, built once
+    const ticks = dial.querySelector('.dial-ticks');
+    for (let v = MIN; v <= MAX; v += STEP) {
+      const t = document.createElement('span');
+      t.className = 'dial-tick' + (v % 50 === 0 ? ' is-major' : '');
+      t.style.transform = `rotate(${angleOf(v)}deg)`;
+      ticks.append(t);
+      if (v % 50 === 0) {
+        const n = document.createElement('span');
+        const rad = (angleOf(v) * Math.PI) / 180;
+        n.className = 'dial-num'; n.dataset.v = v; n.textContent = v;
+        n.style.left = 50 + Math.sin(rad) * 35.5 + '%'; n.style.top = 50 - Math.cos(rad) * 35.5 + '%';
+        ticks.append(n);
+      }
+    }
+
+    let value = +dial.dataset.value;
+    const set = (v) => {
+      value = Math.min(MAX, Math.max(MIN, v));
+      dial.style.setProperty('--a', angleOf(value) + 'deg');   // a transition retargets mid-turn
+      const [, name, time] = dish(value);
+      out.temp.textContent = value; out.dish.textContent = name; out.time.textContent = time;
+      knob.setAttribute('aria-valuenow', value);
+      knob.setAttribute('aria-valuetext', `${value} degrees: ${name}, ${time}`);
+    };
+    set(value);
+
+    let c = null, dragging = false;
+    const measure = () => { const r = dial.getBoundingClientRect(); c = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+    const angleAt = (e) => {
+      let deg = (Math.atan2(e.clientX - c.x, c.y - e.clientY) * 180) / Math.PI;   // 0 at the top, clockwise
+      return Math.max(-SWEEP, Math.min(SWEEP, deg));          // the gap at the bottom snaps to the nearer end
+    };
+    dial.addEventListener('pointerenter', (e) => { measure(); if (e.pointerType === 'mouse') dial.classList.add('is-hover'); });
+    dial.addEventListener('pointerleave', () => { dial.classList.remove('is-hover'); out.hint.textContent = ''; });
+    dial.addEventListener('pointermove', (e) => {
+      if (!c) measure();
+      const v = valueOf(angleAt(e));
+      if (dragging) { if (v !== value) set(v); return; }
+      if (e.pointerType !== 'mouse') return;
+      dial.style.setProperty('--ghost', angleOf(v) + 'deg');
+      out.hint.textContent = v === value ? '' : `Press for ${v}°C: ${dish(v)[1].toLowerCase()}`;
+    }, { passive: true });
+    dial.addEventListener('pointerdown', (e) => {
+      measure();
+      dial.setPointerCapture(e.pointerId);
+      set(valueOf(angleAt(e)));                                   // spring to the pressed heat
+      knob.focus({ preventScroll: true });
+      out.hint.textContent = '';
+      // only switch off the transition once the pointer actually travels
+      const start = e.clientX + e.clientY;
+      const onMove = (m) => { if (Math.abs(m.clientX + m.clientY - start) > 4) { dragging = true; dial.classList.add('is-dragging'); dial.removeEventListener('pointermove', onMove); } };
+      dial.addEventListener('pointermove', onMove);
+      const end = () => { dragging = false; dial.classList.remove('is-dragging'); dial.removeEventListener('pointermove', onMove); };
+      dial.addEventListener('pointerup', end, { once: true });
+      dial.addEventListener('pointercancel', end, { once: true });
+    });
+    knob.addEventListener('keydown', (e) => {
+      const map = { ArrowRight: STEP, ArrowUp: STEP, ArrowLeft: -STEP, ArrowDown: -STEP, PageUp: STEP * 3, PageDown: -STEP * 3 };
+      if (e.key in map) set(value + map[e.key]);
+      else if (e.key === 'Home') set(MIN);
+      else if (e.key === 'End') set(MAX);
+      else return;
+      e.preventDefault();
+    });
+    addEventListener('scroll', () => { c = null; }, { passive: true });
+    addEventListener('resize', () => { c = null; });
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

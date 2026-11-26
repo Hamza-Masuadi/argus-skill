@@ -1,0 +1,158 @@
+<!doctype html>
+<!--
+  card-clip-second: a second photograph (the boot worn, not flat) wipes in from the side the pointer entered, and wipes out through the side it left.
+  Pointer: the entry edge is found once on pointerenter from a cached rectangle; clip-path inset() opens from that edge in t-fast on --ease-out and closes in t-base.
+  Keyboard: :focus-visible opens the second picture from the left.
+  Touch: a small "On foot" toggle button under the picture swaps the views (aria-pressed).
+  Reduced motion: the second picture cross-fades instead of wiping.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clip reveal of a second image from the entry side (card-clip-second)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #c9d6df; color: #16212b; font: 400 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+main { max-width: 70rem; margin: 0 auto; padding: 4.5rem 2rem 6rem; }
+h1 { margin: 0 0 2.5rem; font: 500 clamp(1.75rem, 3vw, 2.5rem)/1.1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+h1 span { color: #4c5d6b; font-style: italic; }
+
+/* argus:copy-start css */
+.shelf { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.75rem; }
+.dual { position: relative; }
+.dual-link { display: block; color: inherit; text-decoration: none; border-radius: 3px; }
+.dual-pics { position: relative; display: block; aspect-ratio: 1; overflow: hidden; border-radius: 3px; background: #e6ecf0; }
+.dual-pics svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.dual-b {
+  clip-path: inset(0 100% 0 0);          /* closed toward the right edge by default */
+  transition: clip-path var(--t-base) var(--ease-in-out);
+}
+.dual[data-from="left"]   .dual-b { clip-path: inset(0 100% 0 0); }
+.dual[data-from="right"]  .dual-b { clip-path: inset(0 0 0 100%); }
+.dual[data-from="top"]    .dual-b { clip-path: inset(0 0 100% 0); }
+.dual[data-from="bottom"] .dual-b { clip-path: inset(100% 0 0 0); }
+.dual.is-on .dual-b { clip-path: inset(0 0 0 0); transition-duration: var(--t-fast); transition-timing-function: var(--ease-out); }
+.dual.no-anim .dual-b { transition: none; }
+.dual-meta { display: flex; justify-content: space-between; gap: 1rem; padding-top: .8rem; }
+.dual-meta b { font-weight: 600; }
+.dual-meta s { color: #4c5d6b; text-decoration: none; }
+.dual-link:focus-visible { outline: 2px solid #16212b; outline-offset: 4px; }
+.dual-toggle {
+  display: none; position: absolute; top: .6rem; right: .6rem; z-index: 2;
+  font: 600 12px/1 inherit; font-family: inherit; padding: .55rem .75rem; border-radius: 99px;
+  border: 0; background: #16212b; color: #fff;
+}
+.dual-toggle[aria-pressed="true"] { background: #fff; color: #16212b; }
+@media (hover: none), (pointer: coarse) { .dual-toggle { display: block; } }
+@media (prefers-reduced-motion: reduce) {
+  .dual .dual-b, .dual[data-from] .dual-b { clip-path: none; opacity: 0; transition: opacity var(--t-base) linear; }
+  .dual.is-on .dual-b { opacity: 1; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Ferro boots, <span>resoled for life</span></h1>
+  <!-- argus:copy-start html -->
+  <ul class="shelf">
+    <li class="dual">
+      <a class="dual-link" href="#harbour">
+        <span class="dual-pics" role="img" aria-label="Harbour Chelsea boot in tan, flat and worn">
+          <svg class="dual-a" viewBox="0 0 300 300" aria-hidden="true"><rect width="300" height="300" fill="#e6ecf0"/><path d="M70 90 h70 v95 q40 5 80 30 q15 12 0 25 h-150 z" fill="#a8683d"/><rect x="70" y="240" width="160" height="14" rx="4" fill="#3b2618"/><rect x="100" y="90" width="40" height="70" fill="#7d4a2a" opacity=".55"/></svg>
+          <svg class="dual-b" viewBox="0 0 300 300" aria-hidden="true"><rect width="300" height="300" fill="#7f8f78"/><rect y="0" width="300" height="300" fill="#8e9d86"/><rect x="95" y="0" width="70" height="140" fill="#2f3b4a"/><path d="M95 140 h70 v60 q35 6 60 24 q10 10 0 18 h-130 z" fill="#a8683d"/><rect x="95" y="240" width="135" height="12" rx="4" fill="#3b2618"/><rect y="252" width="300" height="48" fill="#5d6b57"/></svg>
+        </span>
+        <span class="dual-meta"><b>Harbour Chelsea</b><s>£245</s></span>
+      </a>
+      <button class="dual-toggle" type="button" aria-pressed="false">On foot</button>
+    </li>
+    <li class="dual">
+      <a class="dual-link" href="#fell">
+        <span class="dual-pics" role="img" aria-label="Fell derby boot in oxblood, flat and worn">
+          <svg class="dual-a" viewBox="0 0 300 300" aria-hidden="true"><rect width="300" height="300" fill="#e6ecf0"/><path d="M60 110 h80 v80 q50 2 90 25 q12 12 0 25 h-170 z" fill="#5e1f24"/><rect x="60" y="240" width="172" height="16" rx="4" fill="#1d1a17"/><path d="M110 120 l30 0 M108 135 l34 0 M106 150 l38 0" stroke="#e6ecf0" stroke-width="3"/></svg>
+          <svg class="dual-b" viewBox="0 0 300 300" aria-hidden="true"><rect width="300" height="300" fill="#b9a68b"/><rect x="100" y="0" width="74" height="150" fill="#3e4c3a"/><path d="M100 150 h74 v50 q40 6 62 24 q10 10 0 18 h-136 z" fill="#5e1f24"/><rect x="100" y="240" width="140" height="13" rx="4" fill="#1d1a17"/><rect y="253" width="300" height="47" fill="#8c7a61"/></svg>
+        </span>
+        <span class="dual-meta"><b>Fell Derby</b><s>£265</s></span>
+      </a>
+      <button class="dual-toggle" type="button" aria-pressed="false">On foot</button>
+    </li>
+    <li class="dual">
+      <a class="dual-link" href="#tor">
+        <span class="dual-pics" role="img" aria-label="Tor hiker in dark brown suede, flat and worn">
+          <svg class="dual-a" viewBox="0 0 300 300" aria-hidden="true"><rect width="300" height="300" fill="#e6ecf0"/><path d="M75 80 h70 v105 q45 4 80 28 q14 13 0 27 h-150 z" fill="#4a3426"/><rect x="72" y="238" width="160" height="20" rx="5" fill="#16120f"/><circle cx="135" cy="100" r="4" fill="#c9a36a"/><circle cx="135" cy="125" r="4" fill="#c9a36a"/><circle cx="135" cy="150" r="4" fill="#c9a36a"/></svg>
+          <svg class="dual-b" viewBox="0 0 300 300" aria-hidden="true"><rect width="300" height="300" fill="#9fb3c4"/><path d="M0 210 L80 120 L150 180 L230 100 L300 170 V300 H0 Z" fill="#6f8496"/><rect x="92" y="0" width="72" height="140" fill="#353e2c"/><path d="M92 140 h72 v58 q38 6 62 24 q10 10 0 18 h-134 z" fill="#4a3426"/><rect x="90" y="238" width="142" height="16" rx="5" fill="#16120f"/></svg>
+        </span>
+        <span class="dual-meta"><b>Tor Hiker</b><s>£289</s></span>
+      </a>
+      <button class="dual-toggle" type="button" aria-pressed="false">On foot</button>
+    </li>
+  </ul>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const fine = matchMedia('(hover: hover) and (pointer: fine)');
+  // nearest edge of a rectangle to a point
+  const edge = (r, x, y) => {
+    const d = { left: x - r.left, right: r.right - x, top: y - r.top, bottom: r.bottom - y };
+    return Object.keys(d).reduce((a, b) => (d[a] <= d[b] ? a : b));
+  };
+  // jump the closed clip to a side without animating, then let the next change transition
+  const setSide = (card, side) => {
+    card.classList.add('no-anim');
+    card.dataset.from = side;
+    card.offsetWidth; // one forced style flush, on enter or leave only
+    card.classList.remove('no-anim');
+  };
+  document.querySelectorAll('.dual').forEach((card) => {
+    const pics = card.querySelector('.dual-pics');
+    const link = card.querySelector('.dual-link');
+    const btn = card.querySelector('.dual-toggle');
+    link.addEventListener('pointerenter', (e) => {
+      if (!fine.matches) return;
+      const r = pics.getBoundingClientRect();
+      if (!card.classList.contains('is-on')) setSide(card, edge(r, e.clientX, e.clientY));
+      requestAnimationFrame(() => card.classList.add('is-on'));
+      card._r = r;
+    });
+    link.addEventListener('pointerleave', (e) => {
+      if (!fine.matches || !card._r) return;
+      card.dataset.from = edge(card._r, e.clientX, e.clientY); // closes toward the exit edge
+      card.classList.remove('is-on');
+      card._r = null;
+    });
+    link.addEventListener('focus', () => { if (link.matches(':focus-visible')) { setSide(card, 'left'); card.classList.add('is-on'); } });
+    link.addEventListener('blur', () => { card.dataset.from = 'right'; card.classList.remove('is-on'); });
+    btn.addEventListener('click', () => {
+      const on = btn.getAttribute('aria-pressed') !== 'true';
+      if (on) setSide(card, 'left');
+      btn.setAttribute('aria-pressed', String(on));
+      card.classList.toggle('is-on', on);
+    });
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

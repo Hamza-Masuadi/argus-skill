@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture app sheet</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.4 -apple-system, Helvetica, Arial, sans-serif; color: #1a1a1a; background: #f4f4f4; }
+  /* A drawn phone status bar and home indicator: decoration, hidden from assistive technology. */
+  .status { position: fixed; top: 0; left: 0; right: 0; height: 54px; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; background: #fff; z-index: 10; }
+  .status span { font-size: 10px; color: #aaa; }
+  .status .sig { display: inline-block; width: 14px; height: 10px; background: #ccc; }
+  .home { position: fixed; left: 0; right: 0; bottom: 0; height: 34px; z-index: 30; }
+  .home i { display: block; width: 134px; height: 5px; margin: 20px auto 0; border-radius: 3px; background: #111; }
+  .titlebar { position: sticky; top: 54px; height: 70px; padding: 20px 16px; background: #f4f4f4; z-index: 5; }
+  h1 { font-size: 28px; margin: 0; }
+  main { padding: 54px 16px 120px; }
+  .banner { display: block; width: 200px; height: 20px; margin: 12px 0; }
+  .field { margin: 16px 0; padding: 12px; border-radius: 12px; background: #fff; }
+  .field:focus-within { box-shadow: 0 0 0 3px #2b6cb0; }
+  .field label { display: block; font-size: 14px; }
+  .field input { width: 100%; min-height: 44px; border: 0; padding: 0; font-size: 16px; background: transparent; outline: none; }
+  .cards { list-style: none; margin: 0; padding: 0; }
+  .card { height: 400px; margin-bottom: 12px; padding: 16px; border-radius: 16px; background: #fff; }
+  .add { min-height: 44px; min-width: 44px; padding: 0 20px; font-size: 16px; }
+  /* A floating, translucent tab bar. */
+  .tabbar { position: fixed; left: 12px; right: 12px; bottom: 20px; height: 80px; display: flex; border-radius: 24px; background: rgba(255,255,255,.8); backdrop-filter: blur(20px); z-index: 20; }
+  .tabbar a { flex: 1; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 12px; font-size: 10px; color: #333; text-decoration: none; }
+  /* One scrim shared by every sheet, kept at the top of the page, away from the sheet itself. */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 40; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; height: 55vh; padding: 20px; border-radius: 16px 16px 0 0; background: #fff; z-index: 50; }
+  .sheet button { min-height: 44px; padding: 0 20px; font-size: 16px; }
+  .sheet button:active { background: #ddd; }
+  #pressed { font-size: 9px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="scrim" id="scrim" hidden></div>
+<div class="status" aria-hidden="true"><span>9:41</span><span><span class="sig" role="button" aria-label="Signal"></span> 100%</span></div>
+<main>
+  <div class="titlebar"><h1>Cabins</h1></div>
+  <img class="banner" src="app-banner.png" alt="A strip of warm colour">
+  <div class="field"><label>Search cabins <input type="search" placeholder="Name or place"></label></div>
+  <button class="add" type="button" id="add">Add to trip</button>
+  <ul class="cards">
+    <li class="card">Cabin by the river</li>
+    <li class="card">Cabin in the mist</li>
+    <li class="card">Cabin on the shore</li>
+    <li class="card">Cabin below the snow</li>
+    <li class="card">Stone cabin in a storm</li>
+    <li class="card">White cabin in the glen</li>
+  </ul>
+</main>
+<nav class="tabbar" aria-label="Tabs">
+  <a href="#cabins">Cabins</a><a href="#trips">Trips</a><a href="#saved">Saved</a>
+</nav>
+<div class="home" aria-hidden="true"><i></i></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <h2 id="sheet-title">Add to trip</h2>
+  <p id="pressed">Not pressed yet</p>
+  <button type="button" id="confirm">Confirm dates</button>
+</div>
+<script>
+  // Opened by a click, as a person would open it.
+  document.getElementById('add').addEventListener('click', function () {
+    document.getElementById('scrim').hidden = false;
+    document.getElementById('sheet').hidden = false;
+    document.querySelector('main').inert = true;
+    document.querySelector('nav').inert = true;
+  });
+  // Shows that the tap arrived as a real pointer press: pointerdown, then click.
+  let down = false;
+  document.getElementById('confirm').addEventListener('pointerdown', function () { down = true; });
+  document.getElementById('confirm').addEventListener('click', function () {
+    document.getElementById('pressed').textContent = down ? 'Pressed with a pointer' : 'Clicked without a pointer';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<!--
+  svg-filter-texture: a small, sparing texture from an SVG filter, used where it means
+  something; here a letterpress printer's mark has the uneven edge of real ink on paper,
+  and "Pull another" prints it again with a different impression, as every pull differs.
+  Mechanism: an SVG filter of feTurbulence (fractal noise) feeding feDisplacementMap,
+  applied to one small group (the mark: a ring and two words of real <text>). The button
+  changes the turbulence seed, which redraws the filter once; nothing animates
+  continuously. The press is a short scale on the mark.
+  Cost: these two primitives repaint every pixel they cover, on every change. Keep the
+  filtered area small (a mark, a heading, a stamp), never full-screen, never behind
+  scrolling text, and never animate baseFrequency or scale in a loop.
+  Fallback and reduced motion: without script the mark is printed once; under
+  prefers-reduced-motion the press does not scale (the new impression still appears).
+  Touch and keyboard: a real button; the mark has role="img" and an aria-label.
+  A technique to redraw for the subject (a rubber stamp on a parcel label, chalk on a
+  board, a watercolour edge), not a decoration to paste: keep the mechanism, make your
+  own mark.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sparing filter texture (svg-filter-texture)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f4f0e6; color: #1f1c1a; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { width: min(56rem, 100%); padding: 2rem clamp(1.25rem, 4vw, 3rem); display: grid; grid-template-columns: auto 1fr; gap: clamp(1.5rem, 4vw, 3.5rem); align-items: center; }
+main h1 { font: 400 clamp(2rem, 4vw, 3.25rem)/1.05 "Iowan Old Style", Georgia, serif; margin: 0 0 1rem; }
+main p { margin: 0 0 1rem; color: #59524b; }
+@media (max-width: 700px) { main { grid-template-columns: 1fr; } }
+
+/* argus:copy-start css */
+:root { --spring-soft: cubic-bezier(.3,1.25,.5,1); --t-base: 320ms; --t-fast: 180ms; --ease-out: cubic-bezier(.22,1,.36,1); }
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring-soft: linear(0, 0.071, 0.229, 0.415, 0.593, 0.742, 0.858, 0.939, 0.992, 1.022, 1.035, 1.038, 1.035, 1.029, 1.021, 1.015, 1.009, 1.005, 1.002, 1, 0.999, 0.999, 0.999, 0.999, 1); }
+}
+.press { display: grid; justify-items: center; gap: 1rem; }
+.press svg { width: clamp(9rem, 22vw, 13rem); height: auto; }
+.press .mark { transform-box: fill-box; transform-origin: 50% 50%; transition: transform var(--t-base) var(--spring-soft); }
+.press .mark.is-pressed { transform: scale(.96); transition-duration: 90ms; }
+.press .ink { fill: none; stroke: #b3261e; stroke-width: 6; }
+.press .word { font: 700 30px "Iowan Old Style", Georgia, serif; fill: #b3261e; letter-spacing: .04em; }
+.press .small { font: 600 15px "Avenir Next", sans-serif; fill: #b3261e; letter-spacing: .18em; }
+.press button { font: 600 15px/1 "Avenir Next", sans-serif; color: #1f1c1a; background: none; border: 1.5px solid #1f1c1a; border-radius: 6px; padding: .8rem 1rem; min-height: 44px; cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out); }
+.press button:hover { background: #1f1c1a14; }
+.press button:focus-visible { outline: 2px solid #b3261e; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .press .mark, .press .mark.is-pressed { transform: none; transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <!-- argus:copy-start html -->
+  <div class="press">
+    <svg viewBox="0 0 220 220" role="img" aria-label="Printed mark: Fenwick Press, Norwich, since 1974">
+      <defs>
+        <filter id="ink-edge" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="grain"/>
+          <feDisplacementMap in="SourceGraphic" in2="grain" scale="3.5" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </defs>
+      <g class="mark" filter="url(#ink-edge)">
+        <circle class="ink" cx="110" cy="110" r="96"/>
+        <circle class="ink" cx="110" cy="110" r="82" style="stroke-width:2"/>
+        <text class="word" x="110" y="104" text-anchor="middle">Fenwick</text>
+        <text class="word" x="110" y="138" text-anchor="middle">Press</text>
+        <text class="small" x="110" y="170" text-anchor="middle">NORWICH 1974</text>
+      </g>
+    </svg>
+    <button type="button">Pull another</button>
+  </div>
+  <!-- argus:copy-end html -->
+  <div>
+    <h1>Printed by hand on a 1960s Heidelberg</h1>
+    <p>Wedding stationery, business cards and posters, set in metal and wood type in our Norwich workshop.</p>
+    <p>Business cards from £120 for 250, on 600gsm cotton board.</p>
+  </div>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  document.querySelectorAll('.press').forEach(box => {
+    const turb = box.querySelector('feTurbulence');
+    const mark = box.querySelector('.mark');
+    const btn = box.querySelector('button');
+    if (!turb || !btn) return;
+    btn.addEventListener('click', () => {
+      turb.setAttribute('seed', String(1 + Math.floor(Math.random() * 999)));
+      mark.classList.add('is-pressed');
+      setTimeout(() => mark.classList.remove('is-pressed'), 90);
+    });
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

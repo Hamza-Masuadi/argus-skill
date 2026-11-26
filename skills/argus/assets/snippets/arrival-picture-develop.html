@@ -1,0 +1,77 @@
+<!doctype html>
+<!--
+  arrival-picture-develop: on load the picture develops like a print in a tray: it comes up
+  from the page's ground tone to its full colour and contrast, easing from 1.03 to 1 as it
+  does. The headline and the action are there, still, from the first frame. About 1s, once
+  per page load.
+  Mechanism: CSS only. A class on <html> (set by a one-line inline script before paint)
+  arms the start state; @keyframes fade out a layer in the ground colour laid over the
+  picture (opacity on a layer, not a filter, so it stays on the compositor) and scale the
+  picture. Without JS the picture is simply there.
+  Touch and keyboard: the same. Reduced motion: no scale; a 1ms fade.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picture that develops (arrival-picture-develop)</title>
+<!-- argus:copy-start html -->
+<script>document.documentElement.classList.add('arrive');</script>
+<!-- argus:copy-end html -->
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f3f1ec; color: #1b1c1e; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.top { display: flex; justify-content: space-between; padding: 1.5rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+.hero { display: grid; grid-template-columns: 5fr 7fr; align-items: center; gap: clamp(1.5rem, 5vw, 4rem); padding: 2vh clamp(1.25rem, 4vw, 3rem) 6vh; min-height: calc(100vh - 70px); }
+.hero h1 { font: 600 clamp(2.4rem, 5vw, 4.25rem)/1.04 "Avenir Next", "Helvetica Neue", Arial, sans-serif; letter-spacing: -.02em; margin: 0; }
+.hero p { max-width: 36ch; margin: 1.25rem 0 1.75rem; }
+.hero .btn { display: inline-block; padding: .85rem 1.4rem; background: #2d5b4a; color: #fff; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 999px; }
+.hero .btn:focus-visible { outline: 2px solid #2d5b4a; outline-offset: 3px; }
+.hero figure { margin: 0; aspect-ratio: 7 / 6; border-radius: 4px; }
+.hero figure svg { width: 100%; height: 100%; display: block; }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; align-content: start; } .hero figure { order: -1; aspect-ratio: 3 / 2; } }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-page: 900ms; }
+/* The layer takes the page's ground colour; set --dev-ground to it. */
+.dev-pic { position: relative; overflow: hidden; --dev-ground: #f3f1ec; }
+.dev-pic::after { content: ""; position: absolute; inset: 0; background: var(--dev-ground); opacity: 0; pointer-events: none; }
+.arrive .dev-pic::after { animation: dev-up 1000ms var(--ease-out) both; animation-delay: 80ms; }
+.arrive .dev-pic > :first-child { animation: dev-settle 1200ms var(--ease-out) both; }
+@keyframes dev-up { from { opacity: .85; } }
+@keyframes dev-settle { from { transform: scale(1.03); } }
+@media (prefers-reduced-motion: reduce) {
+  .arrive .dev-pic::after, .arrive .dev-pic > :first-child { animation: dev-none 1ms both; }
+  @keyframes dev-none { from { opacity: .99; } }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Larch Physio</strong><span>Sports and back care, Bristol</span></header>
+<main>
+  <!-- argus:copy-start html -->
+  <section class="hero">
+    <div>
+      <h1>Back on the bike in weeks, not months.</h1>
+      <p>Forty-minute sessions with a chartered physio, a plan you can do at home, and evening slots twice a week.</p>
+      <a class="btn" href="?book">Book an assessment</a>
+    </div>
+    <figure class="dev-pic">
+      <svg viewBox="0 0 700 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A treatment room with a couch by a tall window">
+        <rect width="700" height="600" fill="#c9d3cf"/>
+        <rect x="430" y="40" width="200" height="380" fill="#eef3f1"/>
+        <rect x="0" y="440" width="700" height="160" fill="#9fae9f"/>
+        <rect x="90" y="330" width="330" height="40" rx="10" fill="#2d5b4a"/>
+        <rect x="110" y="370" width="14" height="90" fill="#3a3f3d"/>
+        <rect x="385" y="370" width="14" height="90" fill="#3a3f3d"/>
+        <circle cx="560" cy="300" r="46" fill="#7a9184"/>
+      </svg>
+    </figure>
+  </section>
+  <!-- argus:copy-end html -->
+</main>
+</body>
+</html>

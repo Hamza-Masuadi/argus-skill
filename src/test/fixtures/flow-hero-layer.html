@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture flow, hero picture out of flow</title>
+<meta name="description" content="A hero whose photograph is absolutely positioned behind its words.">
+<!--
+  A full-screen hero whose photograph is a ::before layer placed absolutely behind its words: out of
+  flow, and not an element, but on screen all the same. blank-band must not call the hero empty.
+  Variants in flow-browser.test.ts set the photograph as a fixed picture clipped to the hero
+  (also left alone), and take the photograph away (the empty hero is reported).
+-->
+<style>
+  * { box-sizing: border-box; }
+  /* One embedded face, so text wraps the same on every system and the bands measure the same everywhere. */
+  @font-face { font-family: "Fixture Sans"; src: url(face.woff2) format("woff2"); font-display: block; }
+  body { margin: 0; background: #f6f7fa; color: #15171a; font: 18px/1.5 "Fixture Sans", sans-serif; }
+  section { padding: 64px; }
+  h1 { font-size: 64px; line-height: 1; margin: 0 0 24px; }
+  h2 { font-size: 44px; line-height: 1.1; margin: 0 0 24px; }
+  p { margin: 0 0 16px; max-width: 56ch; }
+  .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; padding: 64px; color: #fff; overflow: hidden; }
+  .hero picture, .hero picture img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hero picture { z-index: -1; }
+  .hero > div { position: relative; max-width: 40ch; }
+  .hero { isolation: isolate; } .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url(app-banner.png) center / cover; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .two img { width: 100%; height: 420px; object-fit: cover; border-radius: 16px; display: block; }
+  footer { padding: 48px 64px; border-top: 1px solid #d5d8de; }
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    
+    <div><h1>Bikes that leave here ready.</h1><p>Serviced, fitted and road-tested in one visit.</p></div>
+  </section>
+  <section class="two">
+    <div><h2>What a service covers.</h2><p>Brakes bled, gears indexed, wheels trued, every bolt to torque.</p><p>You get a written list of what we did and what can wait.</p><p>Most bikes are ready the same day.</p></div>
+    <img src="app-banner.png" alt="A wheel being trued" width="1440" height="640">
+  </section>
+  <section class="two">
+    <img src="app-banner.png" alt="A fitting" width="1440" height="640">
+    <div><h2>Fitted to you.</h2><p>Saddle, reach and bars set to how you ride, measured on the bike.</p><p>Bring the shoes you ride in.</p><p><a href="#book">Book a fitting</a></p></div>
+  </section>
+</main>
+<footer><p>Spoke &amp; Chain, Bristol.</p></footer>
+</body>
+</html>

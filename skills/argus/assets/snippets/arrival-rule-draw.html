@@ -1,0 +1,81 @@
+<!doctype html>
+<!--
+  arrival-rule-draw: on load a hairline rule draws across under the headline from the left
+  edge, and the small details beside it (place, hours) settle in after it. The headline, the
+  picture and the action are there from the first frame; only the rule and the details move.
+  About 900ms in all, once per page load. The quietest arrival in the kit.
+  Mechanism: CSS only. A class on <html> (set by a one-line inline script before paint)
+  arms the start state; @keyframes run on load (scaleX on the rule, opacity on the details).
+  Without JS everything is simply visible.
+  Touch and keyboard: the same. Reduced motion: no drawing or travel; a 1ms fade.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hairline that draws in (arrival-rule-draw)</title>
+<!-- argus:copy-start html -->
+<script>document.documentElement.classList.add('arrive');</script>
+<!-- argus:copy-end html -->
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f6f4ef; color: #1d1c1a; font: 400 17px/1.6 "Iowan Old Style", "Palatino", Georgia, serif; }
+.top { display: flex; justify-content: space-between; padding: 1.5rem clamp(1.25rem, 4vw, 3rem); font: 500 14px/1.4 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.hero { min-height: calc(100vh - 70px); display: grid; grid-template-columns: 6fr 5fr; align-items: center; gap: clamp(1.5rem, 5vw, 4rem); padding: 0 clamp(1.25rem, 4vw, 3rem) 6vh; }
+.hero h1 { font-weight: 400; font-size: clamp(2.5rem, 5.5vw, 4.75rem); line-height: 1.05; letter-spacing: -.015em; margin: 0; max-width: 14ch; }
+.hero p { max-width: 38ch; margin: 1.25rem 0 1.75rem; }
+.hero .btn { display: inline-block; padding: .85rem 1.4rem; background: #1d1c1a; color: #f6f4ef; text-decoration: none; font: 600 15px/1 "Avenir Next", "Helvetica Neue", Arial, sans-serif; border-radius: 3px; }
+.hero .btn:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 3px; }
+.hero figure { margin: 0; aspect-ratio: 4 / 5; border-radius: 3px; overflow: hidden; }
+.hero figure svg { width: 100%; height: 100%; display: block; }
+.details { display: flex; gap: 2rem; font: 500 13px/1.4 "Avenir Next", "Helvetica Neue", Arial, sans-serif; letter-spacing: .02em; color: #5c5850; padding-top: .9rem; }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; align-items: start; } .hero figure { aspect-ratio: 3 / 2; } }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --ease-in-out: cubic-bezier(.65,0,.35,1); --t-slow: 640ms; --t-page: 900ms; --stagger-line: 70ms; }
+.arr-rule { display: block; height: 1px; margin-top: 1.75rem; background: currentColor; opacity: .35; transform-origin: 0 50%; }
+.arrive .arr-rule { animation: arr-draw var(--t-page) var(--ease-in-out) both; animation-delay: 120ms; }
+.arrive .arr-detail { animation: arr-settle var(--t-slow) var(--ease-out) both; animation-delay: calc(560ms + var(--i, 0) * var(--stagger-line)); }
+@keyframes arr-draw { from { transform: scaleX(0); } }
+@keyframes arr-settle { from { opacity: 0; transform: translateY(.35rem); } }
+@media (prefers-reduced-motion: reduce) {
+  .arrive .arr-rule, .arrive .arr-detail { animation: arr-none 1ms both; }
+  @keyframes arr-none { from { opacity: .99; } }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Fenwick &amp; Daughters</strong><span>Upholstery, Leith</span></header>
+<main>
+  <!-- argus:copy-start html -->
+  <section class="hero">
+    <div>
+      <h1>Your grandmother's chair, sitting right again.</h1>
+      <p>Frames re-glued, springs re-tied by hand, covered in a cloth you choose in the workshop. A fixed quote before we start.</p>
+      <a class="btn" href="?quote">Book a free quote</a>
+      <span class="arr-rule" aria-hidden="true"></span>
+      <div class="details">
+        <span class="arr-detail" style="--i:0">14 Coburg Street, Leith</span>
+        <span class="arr-detail" style="--i:1">Open today 9-5</span>
+      </div>
+    </div>
+    <figure>
+      <svg viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A wingback chair with new linen cover in the workshop">
+        <rect width="400" height="500" fill="#d9d2c4"/>
+        <rect y="380" width="400" height="120" fill="#b9ad98"/>
+        <path d="M110 130 Q200 90 290 130 L300 330 L100 330 Z" fill="#6d7a6a"/>
+        <rect x="80" y="260" width="240" height="90" rx="18" fill="#7d8a79"/>
+        <rect x="70" y="220" width="50" height="140" rx="20" fill="#5f6b5c"/>
+        <rect x="280" y="220" width="50" height="140" rx="20" fill="#5f6b5c"/>
+        <rect x="105" y="350" width="12" height="60" fill="#5a4636"/>
+        <rect x="283" y="350" width="12" height="60" fill="#5a4636"/>
+      </svg>
+    </figure>
+  </section>
+  <!-- argus:copy-end html -->
+</main>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blend</title>
+<style>
+  body { margin: 0; font: 18px/1.5 system-ui, sans-serif; color: #111; background: #fff; }
+  .hero { position: relative; display: grid; min-height: 60vh; }
+  .hero > * { grid-area: 1 / 1; }
+  .plate { background: #1a1a1a; width: 50%; justify-self: end; }
+  /* The ink flips over the dark half: white text, difference blend, on a white page. */
+  h1 { mix-blend-mode: difference; color: #fff; font-size: 96px; margin: 0; align-self: center; }
+  .pale { color: #ddd; }
+</style>
+</head>
+<body>
+  <div class="hero"><div class="plate"></div><h1 id="flip">Crosses the plate</h1></div>
+  <p class="pale" id="pale">This pale line really is too faint.</p>
+</body>
+</html>

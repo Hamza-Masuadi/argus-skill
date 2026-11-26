@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture flow, dense and varied</title>
+<meta name="description" content="A dense page for the flow rules: a bento grid, a full-bleed picture, an oversized type line.">
+<!--
+  A page the flow rules must leave alone at 1440: every section uses a different layout, the
+  bento grid and the stats band are dense, the full-bleed picture fills its band, and the
+  oversized type line is a deliberate statement. Cards lift on hover, so the page is not still.
+-->
+<style>
+  * { box-sizing: border-box; }
+  /* One embedded face, so text wraps the same on every system and the bands measure the same everywhere. */
+  @font-face { font-family: "Fixture Sans"; src: url(face.woff2) format("woff2"); font-display: block; }
+  body { margin: 0; background: #fbfbfa; color: #1b1c1e; font: 18px/1.5 "Fixture Sans", sans-serif; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 20px 64px; }
+  header a { color: inherit; }
+  .wrap { max-width: 1312px; margin: 0 auto; padding: 0 64px; }
+  section { padding: 72px 0; }
+  h1 { font-size: 80px; line-height: 1; margin: 0 0 24px; letter-spacing: -0.02em; }
+  h2 { font-size: 44px; line-height: 1.1; margin: 0 0 24px; }
+  p { margin: 0 0 16px; max-width: 60ch; }
+  .btn { display: inline-block; padding: 12px 22px; border-radius: 8px; background: #1d4d3a; color: #fff; text-decoration: none; }
+  .hero .wrap { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; }
+  .hero .art { height: 520px; border-radius: 16px; background: #d9e4dc; }
+  .bento { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 220px; gap: 16px; }
+  .bento > div { border-radius: 16px; background: #eceee9; padding: 24px; transition: transform .2s; }
+  .bento > div:hover { transform: translateY(-4px); }
+  .bento .big { grid-column: span 2; grid-row: span 2; background: #1d4d3a; color: #fff; }
+  .bento .tall { grid-row: span 2; }
+  .bento .wide { grid-column: span 2; }
+  .bento b { display: block; font-size: 40px; line-height: 1; margin-bottom: 8px; }
+  .bleed { padding: 0; }
+  .bleed img { display: block; width: 100%; height: 640px; object-fit: cover; }
+  .statement { padding: 56px 0; }
+  .statement p { font-size: 168px; line-height: 1; font-weight: 700; letter-spacing: -0.04em; margin: 0; max-width: none; }
+  .split .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+  .split .shot { height: 460px; border-radius: 16px; background: #c9d6e8; }
+  .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .stats .wrap > div { border-radius: 12px; background: #eceee9; padding: 24px; }
+  .stats b { display: block; font-size: 56px; line-height: 1; }
+  .stats h2 { grid-column: 1 / -1; }
+  footer { padding: 48px 64px; border-top: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<header><strong>Fieldwork</strong><nav><a href="#work">Work</a> · <a href="#contact">Contact</a></nav></header>
+<main>
+  <section class="hero"><div class="wrap">
+    <div><h1>Gardens that look after themselves.</h1><p>We design, plant and keep small gardens across the city, and we come back each season to put them right.</p><a class="btn" href="#contact">Book a visit</a></div>
+    <div class="art" role="img" aria-label="A planted courtyard"></div>
+  </div></section>
+
+  <section id="work"><div class="wrap">
+    <h2>What a season with us covers</h2>
+    <div class="bento">
+      <div class="big"><b>4 visits</b>Spring planting, a summer cut, autumn clearing and a winter check, each written up for you.</div>
+      <div><b>£480</b>A year, for a garden under 60 square metres.</div>
+      <div class="tall"><b>212</b>Gardens kept this year, most of them courtyards and roof terraces.</div>
+      <div><b>1 gardener</b>The same person at every visit.</div>
+      <div class="wide"><b>No contract</b>Stop after any season and keep every plan we drew.</div>
+      <div><b>48 hours</b>To come back if something dies.</div>
+      <div><b>Peat free</b>Every bag of compost we bring.</div>
+    </div>
+  </div></section>
+
+  <section class="bleed" aria-label="A finished garden"><img src="app-banner.png" alt="A finished courtyard garden in late summer" width="1440" height="640"></section>
+
+  <section class="statement"><div class="wrap"><p>Plant once.</p></div></section>
+
+  <section class="split"><div class="wrap">
+    <div class="shot" role="img" aria-label="A planting plan"></div>
+    <div><h2>A plan you can keep</h2><p>Every garden starts with a drawn plan: what goes where, how big it gets, and when it needs us. It is yours, whether you stay with us or not.</p><p>We draw it on the first visit, with you in the garden, and send it the same week.</p><a class="btn" href="#contact">See a plan</a></div>
+  </div></section>
+
+  <section class="stats"><div class="wrap">
+    <h2>Since 2014</h2>
+    <div><b>1,900</b>gardens planted</div><div><b>96%</b>still with us after a year</div><div><b>11</b>gardeners on the team</div><div><b>4.9</b>from 640 reviews</div>
+  </div></section>
+
+  <section id="contact"><div class="wrap">
+    <h2>Book a first visit</h2>
+    <p>Tell us where the garden is and roughly how big. We ring back within a day to find a time that suits you.</p>
+    <a class="btn" href="mailto:hello@example.com">Email us</a>
+  </div></section>
+</main>
+<footer>Fieldwork Gardens, sample content for a test page.</footer>
+</body>
+</html>

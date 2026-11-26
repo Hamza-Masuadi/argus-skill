@@ -1,0 +1,201 @@
+<!doctype html>
+<!--
+  smooth-scroll-scene: Lenis smooth scroll driven from GSAP's ticker, and one pinned scene in three
+  beats (a pot is thrown, dried, fired) on a single scrubbed ScrollTrigger timeline.
+
+  Level: showpiece (smooth scroll). For a "moment" page, keep the scene and drop Lenis: delete the
+  block marked "smooth scroll" and everything else still works on native scroll.
+
+  Libraries (pinned):
+    lenis 1.3.28 (MIT)        vendor/lenis-1.3.28.min.js + .css, vendored (licence in vendor/lenis-LICENSE.txt)
+    gsap 3.15.1 + ScrollTrigger (GSAP Standard "no charge" licence) from jsDelivr:
+      https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js
+      https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js
+    GSAP is loaded from the CDN, not vendored: its licence grants use on sites, and does not plainly
+    grant shipping its files inside another package. Self-host it in the site you build.
+  JS on the wire: about 52 KB gzipped (gsap 28.5 + ScrollTrigger 18 + Lenis 5.5).
+
+  Fallbacks:
+    no JS or no GSAP   the three beats are plain stacked sections, all visible (the markup's own layout)
+    reduced motion     Lenis stays native (respectReducedMotion), no pin, no scrub: stacked beats, end states
+    phone (< 768px)    no pin; each beat's drawing settles as it comes into view, a short tween, not scrubbed
+    touch              Lenis leaves touch native (syncTouch off), so nothing scroll-jacks on a phone
+  Registers window.__argus = { timelines: { beats }, scenes: [{ name, scrollTrigger }], lenis } so
+  shot.js --scenes and --timeline beats can step it.
+  Copy the marked blocks (the copy markers below).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smooth scroll and a pinned three-beat scene (smooth-scroll-scene)</title>
+<!-- argus:copy-start smooth-scroll-scene head -->
+<link rel="stylesheet" href="vendor/lenis-1.3.28.css">
+<script src="vendor/lenis-1.3.28.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/ScrollTrigger.min.js" defer></script>
+<!-- argus:copy-end smooth-scroll-scene head -->
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #efe9e1; color: #2a2420; font: 400 18px/1.6 "Avenir Next", "Segoe UI", system-ui, sans-serif; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid #b4532a; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; align-items: baseline; padding: 1.5rem clamp(1.25rem, 4vw, 3rem); font-size: 15px; }
+.top nav { display: flex; gap: 1.5rem; }
+.intro { min-height: 82vh; display: grid; align-content: end; padding: 0 clamp(1.25rem, 4vw, 3rem) 10vh; }
+.intro h1 { font: 400 clamp(3rem, 8vw, 7.5rem)/.95 "Iowan Old Style", "Palatino Linotype", Georgia, serif; letter-spacing: -.03em; margin: 0 0 1.5rem; max-width: 12ch; }
+.intro p { max-width: 34rem; margin: 0; }
+.after { padding: 18vh clamp(1.25rem, 4vw, 3rem); max-width: 48rem; }
+.after h2 { font: 400 clamp(2rem, 4vw, 3rem)/1.05 "Iowan Old Style", Georgia, serif; margin: 0 0 1rem; }
+.cta { display: inline-block; margin-top: 1.5rem; padding: .9rem 1.4rem; background: #2a2420; color: #efe9e1; text-decoration: none; border-radius: 2px; }
+
+/* argus:copy-start smooth-scroll-scene css */
+/* Default (no JS, reduced motion, phones): the beats stacked, every one readable. */
+.beats { padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.beat { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; min-height: 70vh; padding: 6vh 0; border-top: 1px solid #2a242022; }
+.beat figure { margin: 0; }
+.beat svg { width: 100%; height: auto; max-height: 72vh; display: block; overflow: visible; }
+.beat h2 { font: 400 clamp(2rem, 4.5vw, 3.5rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0 0 1rem; }
+.beat .n { display: block; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .75rem; font-variant-numeric: tabular-nums; }
+.beat p { max-width: 30rem; margin: 0; }
+@media (max-width: 767px) { .beat { grid-template-columns: 1fr; min-height: 0; } }
+
+/* Pinned (desktop, motion allowed, set by script): one stage, the three texts on top of each other. */
+.beats.is-pinned { height: 100vh; display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
+.beats.is-pinned .beat { display: contents; }
+.beats.is-pinned .beat figure:not(.stage) { display: none; }
+.beats.is-pinned .stage { grid-column: 1; grid-row: 1; }
+.beats.is-pinned .copy { grid-column: 2; grid-row: 1; align-self: center; }
+/* argus:copy-end smooth-scroll-scene css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Kiln &amp; Hollow</strong><nav><a href="#beats">Process</a><a href="#visit">Visit</a></nav></header>
+<main>
+  <section class="intro">
+    <h1>Every bowl goes through fire.</h1>
+    <p>A two-person pottery in Leith. Scroll to watch one bowl go from wet clay to the kiln.</p>
+  </section>
+
+  <!-- argus:copy-start smooth-scroll-scene html -->
+  <!-- One drawing per beat in the markup, so the stacked version shows each state; when pinned,
+       the first drawing becomes the stage and the timeline moves it through all three. -->
+  <section class="beats" id="beats" aria-label="How a bowl is made, in three steps">
+    <article class="beat">
+      <figure class="stage" aria-hidden="true">
+        <svg viewBox="60 100 280 160">
+          <defs><radialGradient id="kiln-glow"><stop offset="0" stop-color="#f08a3c" stop-opacity=".55"/><stop offset="1" stop-color="#f08a3c" stop-opacity="0"/></radialGradient></defs>
+          <ellipse cx="200" cy="234" rx="128" ry="14" fill="#2a242014"/>
+          <g class="pot">
+            <path class="bowl" d="M90 150 Q200 300 310 150 Z" fill="#9c8b7a"/>
+            <ellipse class="rim" cx="200" cy="150" rx="110" ry="18" fill="#b5a493"/>
+          </g>
+          <g class="glow" opacity="0"><ellipse cx="200" cy="190" rx="200" ry="150" fill="url(#kiln-glow)"/></g>
+        </svg>
+      </figure>
+      <div class="copy">
+        <div class="step"><span class="n">01 / 03</span><h2>Thrown wet</h2><p>Six hundred grams of stoneware, centred and opened on the wheel in under four minutes.</p></div>
+      </div>
+    </article>
+    <article class="beat">
+      <figure aria-hidden="true"><svg viewBox="60 100 280 160"><ellipse cx="200" cy="234" rx="128" ry="14" fill="#2a242014"/><g transform="translate(20 22.5) scale(.9)"><path d="M90 150 Q200 300 310 150 Z" fill="#cdbfae"/><ellipse cx="200" cy="150" rx="110" ry="18" fill="#ddd2c4"/></g></svg></figure>
+      <div class="copy"><div class="step"><span class="n">02 / 03</span><h2>Dried slowly</h2><p>A week under cloth, turned daily, until it rings when tapped and has lost a tenth of its size.</p></div></div>
+    </article>
+    <article class="beat">
+      <figure aria-hidden="true"><svg viewBox="60 100 280 160"><ellipse cx="200" cy="234" rx="128" ry="14" fill="#2a242014"/><g transform="translate(20 22.5) scale(.9)"><path d="M90 150 Q200 300 310 150 Z" fill="#3e5c58"/><ellipse cx="200" cy="150" rx="110" ry="18" fill="#577a74"/></g></svg></figure>
+      <div class="copy"><div class="step"><span class="n">03 / 03</span><h2>Fired to 1280&#8239;°C</h2><p>Twelve hours in the kiln, and the grey slip turns the deep green it is named for.</p></div></div>
+    </article>
+  </section>
+  <!-- argus:copy-end smooth-scroll-scene html -->
+
+  <section class="after" id="visit">
+    <h2>Open studio on Saturdays</h2>
+    <p>Come and watch a firing, or take a bowl home from the shelf.</p>
+    <a class="cta" href="#visit">Plan a visit</a>
+  </section>
+</main>
+
+<!-- argus:copy-start smooth-scroll-scene js -->
+<script>
+addEventListener('DOMContentLoaded', () => {
+  const reg = (window.__argus = window.__argus || { timelines: {}, scenes: [] });
+  // No GSAP (offline, blocked CDN): leave the stacked layout as it is. Nothing was hidden.
+  if (!window.gsap || !window.ScrollTrigger) return;
+  gsap.registerPlugin(ScrollTrigger);
+  ScrollTrigger.config({ ignoreMobileResize: true });
+
+  // ---- smooth scroll: Lenis on GSAP's ticker (one rAF loop), touch left native ----
+  if (window.Lenis) {
+    const lenis = new Lenis({ anchors: true, lerp: 0.1 }); // respectReducedMotion and syncTouch:false are the defaults
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((t) => lenis.raf(t * 1000));
+    gsap.ticker.lagSmoothing(0);
+    reg.lenis = lenis;
+  }
+
+  const section = document.querySelector('.beats');
+  const steps = gsap.utils.toArray('.beats .step');
+  const mm = gsap.matchMedia();
+
+  // Desktop with motion: one pinned stage, three beats on one scrubbed timeline.
+  mm.add('(prefers-reduced-motion: no-preference) and (min-width: 768px)', () => {
+    section.classList.add('is-pinned');
+    // Move every beat's text into the first copy column, stacked on one grid cell.
+    const column = section.querySelector('.copy');
+    steps.forEach((s, i) => { if (i) column.appendChild(s); s.style.gridArea = '1 / 1'; });
+    column.style.display = 'grid';
+    gsap.set(steps.slice(1), { autoAlpha: 0, y: 32 }); // start states set here, never in CSS
+
+    const bowl = section.querySelector('.bowl');
+    const rim = section.querySelector('.rim');
+    const glow = section.querySelector('.glow');
+    const pot = section.querySelector('.pot');
+    const tl = gsap.timeline({
+      defaults: { ease: 'power2.inOut', duration: 1 },
+      scrollTrigger: { trigger: section, start: 'top top', end: '+=200%', pin: true, scrub: 0.8 },
+    });
+    // Beat 1 -> 2: the clay dries pale while the text hands over; the next starts before the last has gone.
+    tl.addLabel('dry')
+      .to(bowl, { fill: '#cdbfae' }, 'dry')
+      .to(rim, { fill: '#ddd2c4' }, 'dry')
+      .to(pot, { scale: 0.9, svgOrigin: '200 225' }, 'dry') // it loses a tenth of its size as it dries
+      .to(steps[0], { autoAlpha: 0, y: -32, duration: 0.4 }, 'dry')
+      .to(steps[1], { autoAlpha: 1, y: 0, duration: 0.6 }, 'dry+=0.2')
+      // Beat 2 -> 3: the kiln's glow rises and falls, and the glaze comes out green.
+      .addLabel('fire', '+=0.4')
+      .to(glow, { opacity: 1, duration: 0.6 }, 'fire')
+      .to(glow, { opacity: 0, duration: 0.6 }, 'fire+=0.6')
+      .to(bowl, { fill: '#3e5c58' }, 'fire+=0.3')
+      .to(rim, { fill: '#577a74' }, 'fire+=0.3')
+      .to(steps[1], { autoAlpha: 0, y: -32, duration: 0.4 }, 'fire')
+      .to(steps[2], { autoAlpha: 1, y: 0, duration: 0.6 }, 'fire+=0.2')
+      .to({}, { duration: 0.3 }); // a short hold on the last beat before the pin releases
+
+    reg.timelines.beats = tl;
+    reg.scenes.push({ name: 'three-beats', scrollTrigger: tl.scrollTrigger });
+    return () => { // matchMedia reverts the inline styles; put the texts back where they came from
+      section.classList.remove('is-pinned');
+      section.querySelectorAll('.beat .copy').forEach((c, i) => { c.style.display = ''; if (steps[i]) c.appendChild(steps[i]); });
+      steps.forEach((s) => { s.style.gridArea = ''; });
+      delete reg.timelines.beats;
+      reg.scenes = reg.scenes.filter((s) => s.name !== 'three-beats');
+    };
+  });
+
+  // Phones with motion: no pin; each drawing settles as it arrives. Short, once, not tied to scroll speed.
+  mm.add('(prefers-reduced-motion: no-preference) and (max-width: 767px)', () => {
+    gsap.utils.toArray('.beat figure').forEach((f) => {
+      gsap.from(f, { y: 24, opacity: 0, duration: 0.7, ease: 'expo.out', scrollTrigger: { trigger: f, start: 'top 85%', once: true } });
+    });
+  });
+  // Reduced motion: nothing added; the stacked beats are the finished state.
+
+  // Measure after fonts and pictures, or the pin starts in the wrong place.
+  document.fonts.ready.then(() => ScrollTrigger.refresh());
+  addEventListener('load', () => ScrollTrigger.refresh());
+});
+</script>
+<!-- argus:copy-end smooth-scroll-scene js -->
+</body>
+</html>

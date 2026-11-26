@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture flow, sticky and pinned</title>
+<meta name="description" content="Sticky scenes, a pinned sideways gallery and a questions list beside a sticky column.">
+<!--
+  Every screen of this page is filled as it scrolls, though the page laid out flat is not: a
+  sticky picture stage beside tall steps, a section pinned for 240vh whose gallery slides sideways
+  with the scroll, and a questions list beside a sticky side column. At 1920 the last section's
+  content is capped at 1000px, centred, with two balanced columns. The flow rules must leave it all
+  alone. Variants in flow-browser.test.ts break it on purpose: a scene that ends in an empty
+  stretch, and a short sticky tag with its column bare under it.
+-->
+<style>
+  * { box-sizing: border-box; }
+  /* One embedded face, so text wraps the same on every system and the bands measure the same everywhere. */
+  @font-face { font-family: "Fixture Sans"; src: url(face.woff2) format("woff2"); font-display: block; }
+  body { margin: 0; background: #f6f7fa; color: #15171a; font: 18px/1.5 "Fixture Sans", sans-serif; }
+  .top { position: sticky; top: 0; z-index: 5; height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; background: rgb(246 247 250 / .9); }
+  .top a { color: inherit; }
+  section { padding: 64px; }
+  h1 { font-size: 72px; line-height: 1; margin: 0 0 24px; }
+  h2 { font-size: 44px; line-height: 1.1; margin: 0 0 24px; }
+  p { margin: 0 0 16px; max-width: 56ch; }
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  .hero img, .stage img, .card img, .side img { display: block; width: 100%; object-fit: cover; border-radius: 16px; }
+  .hero img { height: 560px; }
+  .scene { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .stage { position: sticky; top: 88px; height: calc(100vh - 128px); display: flex; align-items: center; }
+  .stage img { height: 100%; }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .steps li { min-height: 60vh; display: flex; flex-direction: column; justify-content: center; }
+  .steps b { display: block; font-size: 32px; line-height: 1.2; margin-bottom: 12px; }
+  .bikes { height: 240vh; padding: 0; view-timeline: --bikes; }
+  .pin { position: sticky; top: 64px; height: calc(100vh - 64px); overflow: hidden; display: flex; flex-direction: column; justify-content: center; padding: 24px 64px; }
+  .track { display: flex; gap: 20px; width: max-content; animation: slide linear both; animation-timeline: --bikes; animation-range: contain 0% contain 100%; }
+  .card { width: 520px; margin: 0; }
+  .card img { height: calc(100vh - 280px); }
+  @keyframes slide { to { translate: -1800px 0; } }
+  .faq { display: grid; grid-template-columns: .8fr 1.2fr; gap: 96px; }
+  .side { position: sticky; top: 96px; align-self: start; }
+  .side img { aspect-ratio: 4 / 3; margin-top: 24px; }
+  details { border-top: 1px solid #d5d8de; padding: 22px 0; }
+  summary { font-size: 20px; font-weight: 600; }
+  .capped > * { max-width: 1000px; margin-inline: auto; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .cols ul { margin: 0; padding: 0; list-style: none; }
+  .cols li { padding: 10px 0; font-size: 20px; }
+  .names b { display: block; font-size: 56px; line-height: 1.1; }
+  footer { padding: 48px 64px; border-top: 1px solid #d5d8de; }
+</style>
+</head>
+<body>
+<header class="top"><strong>Pinwheel</strong><nav><a href="#how">How</a> · <a href="#faq">Questions</a></nav></header>
+<main>
+  <section class="hero">
+    <div><h1>Invoices that chase themselves.</h1><p>Send it once. Reminders go out on your schedule, signed by you, and the tax is put aside the minute it is paid.</p></div>
+    <img src="app-banner.png" alt="An invoice on a phone" width="1440" height="640">
+  </section>
+
+  <section id="how">
+    <h2>How it gets paid</h2>
+    <div class="scene">
+      <div><div class="stage"><img src="app-banner.png" alt="The invoice as it moves along" width="1440" height="640"></div></div>
+      <ol class="steps">
+        <li><b>Draft it from a quote.</b><p>Start from the quote you already sent, or from the hours on your timer.</p></li>
+        <li><b>Send it in a tap.</b><p>It goes out as a link and a PDF, with your logo and your terms.</p></li>
+        <li><b>The reminder goes for you.</b><p>Three days before it is due, a friendly note in your words.</p></li>
+        <li class="last"><b>The tax goes aside.</b><p>The moment it is paid, a slice moves to your tax pot.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="bikes" aria-labelledby="g-h">
+    <div class="pin">
+      <h2 id="g-h">Made for people who work for themselves.</h2>
+      <div class="track">
+        <figure class="card"><img src="app-banner.png" alt="A designer" width="1440" height="640"></figure>
+        <figure class="card"><img src="app-banner.png" alt="An electrician" width="1440" height="640"></figure>
+        <figure class="card"><img src="app-banner.png" alt="A copywriter" width="1440" height="640"></figure>
+        <figure class="card"><img src="app-banner.png" alt="A photographer" width="1440" height="640"></figure>
+        <figure class="card"><img src="app-banner.png" alt="A tutor" width="1440" height="640"></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="faq">
+    <div class="side"><h2>Questions before you start.</h2><img src="app-banner.png" alt="A desk with a laptop" width="1440" height="640"></div>
+    <div class="qa">
+      <details><summary>Will the reminders annoy my clients?</summary><p>They are short and polite, and you choose when they go.</p></details>
+      <details><summary>Is it really free?</summary><p>Up to ten invoices a month.</p></details>
+      <details><summary>Can I bring my old invoices?</summary><p>Yes, from a spreadsheet.</p></details>
+      <details><summary>What about VAT?</summary><p>Add it per line or per invoice.</p></details>
+      <details><summary>Where is my money held?</summary><p>With a regulated partner bank.</p></details>
+      <details><summary>Can I stop any time?</summary><p>Yes, and you keep every invoice.</p></details>
+      <details><summary>Does it work on a phone?</summary><p>It was made there first.</p></details>
+      <details><summary>Who reads my data?</summary><p>Nobody but you.</p></details>
+    </div>
+  </section>
+
+  <section class="capped" aria-labelledby="t-h">
+    <h2 id="t-h">The team behind it.</h2>
+    <div class="cols">
+      <div class="names"><b>Ana Ruiz</b><b>Tom Hale</b><b>Priya Shah</b><b>Dan Cole</b></div>
+      <ul><li>Design, research and the words on every screen</li><li>Engineering, from the phone app to the bank link</li><li>Support, by phone and email, seven days</li><li>Money: the partner bank and the tax pots</li></ul>
+    </div>
+  </section>
+</main>
+<footer><p>Pinwheel, a sample business for a test page.</p></footer>
+</body>
+</html>

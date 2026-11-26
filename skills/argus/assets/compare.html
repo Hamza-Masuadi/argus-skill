@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- shot.js --full captures this page in one tall viewport, so every preview is painted (iframes outside the viewport are not). -->
+<meta name="argus-capture" content="tall">
 <title>Choose a direction</title>
 <style>
   :root {
@@ -40,6 +42,8 @@
   .preview { position: relative; overflow: hidden; background: #0f1011; border-bottom: 1px solid var(--line); }
   .preview .screen { position: absolute; top: 0; overflow: hidden; background: #fff; }
   .preview iframe { border: 0; display: block; transform-origin: 0 0; }
+  .preview .missing { position: absolute; inset: 0; display: grid; align-content: center; gap: 8px; padding: 24px; background: #2a1f1f; color: var(--fg); }
+  .preview .missing p { margin: 0; max-width: 60ch; }
   .body { padding: 16px 18px 18px; display: grid; gap: 10px; }
   .tagrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 24px; }
   .letter { font-weight: 650; color: var(--muted); }
@@ -90,17 +94,26 @@
 </main>
 <footer>Want a different set? Ask for a new set, safer or bolder.</footer>
 <script>
-  // The directions to show. Write them here, or in directions.json beside this page (same shape).
-  // Paths are relative to this file. tag is "wildcard", "pick", "wildcard pick" (the chance choice that also won) or "".
-  //   { "file": "a.html", "name": "The Workshop Manual", "idea": "one sentence a visitor would repeat",
+  // This page is copied to .argus/roughs/index.html, beside the roughs a.html, b.html and c.html (never
+  // among the site's own pages, such as work/). Open it as a file, or serve the project root or the
+  // roughs folder itself; a server for the site's own folder cannot reach .argus/. The directions to show. Write them HERE, in the list between the argus:directions markers: that
+  // works when the page is opened as a file (file://), where a browser will not read directions.json.
+  // directions.json beside this page (same shape) is read only when the folder is served over http.
+  // Paths are relative to this file and name the rough's .html file ("a.html"). A folder ("a/", or "a"
+  // with no extension) is opened as its index.html (for "a", then a.html), never as a folder listing;
+  // a file that cannot be loaded shows a message naming the paths tried. kind is "minimal", "picture-led" or "expressive"; tag is "pick" or ""
+  // (an older "wildcard" tag is still shown).
+  //   { "file": "a.html", "kind": "minimal", "name": "The Workshop Manual", "idea": "one sentence a visitor would repeat",
   //     "palette": ["#0f3d2e", "#f4f1e8", "#d9472b"], "type": "Archivo Black over Source Sans 3",
   //     "risk": "one line on what could go wrong", "tag": "pick" }
   // A list written here is used first, which also works when the page is opened as a file.
   // Without one, the page reads directions.json, then file names in the address (index.html?a.html,b.html),
   // then this folder's listing from a static server.
   // Add #phone to the address (index.html#phone) to open in the Phone view, for phone-first apps.
-  const directions = [
-  ];
+  // For an app, directions.json, or the list written here, may instead be an object: { "surface": "app", "directions": [ ... ] }.
+  // Then the page opens in the Phone view and speaks of each direction's main screen.
+  const directions = /* argus:directions */ [
+  ] /* /argus:directions */;
 
   const VIEWS = { desktop: { w: 1440, h: 900 }, phone: { w: 390, h: 844 } };
   const TAGS = { wildcard: "Wildcard", pick: "Argus's pick" };
@@ -111,6 +124,56 @@
   const copyMix = document.getElementById("copyMix");
   let view = location.hash === "#phone" ? "phone" : "desktop";
   let items = [];
+
+  // A folder address opened from a file (or a plain static server) shows a directory listing, not the
+  // rough: a path ending in "/" or with no file extension is tried as its index.html (and "a" as a.html).
+  function candidates(file) {
+    const clean = file.split(/[?#]/)[0];
+    if (/\/$/.test(clean)) return [clean + "index.html"];
+    const last = clean.split("/").pop() || "";
+    if (!/\.[a-z0-9]+$/i.test(last)) return [clean + "/index.html", clean + ".html"];
+    return [file];
+  }
+  const LISTING = /^\s*(index of|directory listing for)\b/i;
+  const probing = new Set();
+  // Under file:// nothing can be fetched, so the file is loaded as a script only to learn whether it
+  // exists: an HTML file never parses as script, so nothing in it runs, and the parse error is hushed.
+  window.addEventListener("error", function (e) { if (probing.has(e.filename)) e.preventDefault(); }, true);
+  function exists(url) {
+    if (location.protocol === "file:") {
+      return new Promise(function (resolve) {
+        const abs = new URL(url, location.href).href;
+        const s = document.createElement("script");
+        probing.add(abs);
+        s.onload = function () { s.remove(); resolve(true); };
+        s.onerror = function () { s.remove(); probing.delete(abs); resolve(false); };
+        s.src = abs;
+        document.head.appendChild(s);
+      });
+    }
+    return fetch(url, { cache: "no-store" }).then(function (res) {
+      if (!res.ok) return false;
+      return res.text().then(function (t) {
+        const m = /<title[^>]*>([^<]*)<\/title>/i.exec(t);
+        return !(m && LISTING.test(m[1]));
+      });
+    }).catch(function () { return false; });
+  }
+  function firstThatLoads(list) {
+    return list.reduce(function (found, url) {
+      return found.then(function (hit) { return hit || exists(url).then(function (ok) { return ok ? url : null; }); });
+    }, Promise.resolve(null));
+  }
+  function missing(box, tried) {
+    const screen = box.querySelector(".screen");
+    if (screen) screen.hidden = true;
+    if (box.querySelector(".missing")) return;
+    const note = el("div", "missing");
+    note.setAttribute("role", "note");
+    note.appendChild(el("p", null, "This rough could not be loaded. Tried: " + tried.join(", ") + " (relative to this page)."));
+    note.appendChild(el("p", null, "Write the rough's .html file in the directions list, for example \"a.html\", with the file beside this page in .argus/roughs/."));
+    box.appendChild(note);
+  }
 
   function el(tag, cls, text) {
     const n = document.createElement(tag);
@@ -130,6 +193,7 @@
         palette: Array.isArray(d.palette) ? d.palette.filter(function (c) { return typeof c === "string" && CSS.supports("color", c); }) : [],
         type: typeof d.type === "string" ? d.type : "",
         risk: typeof d.risk === "string" ? d.risk : "",
+        kind: typeof d.kind === "string" ? d.kind.trim() : "",
         tags: typeof d.tag === "string" ? d.tag.split(/\s+/).filter(function (t) { return t === "wildcard" || t === "pick"; }) : []
       };
     });
@@ -141,9 +205,22 @@
       if (!res.ok) throw new Error("status " + res.status);
       return res.json();
     }).then(function (data) {
+      if (data && !Array.isArray(data) && typeof data === "object" && Array.isArray(data.directions)) {
+        if (data.surface === "app") useAppSurface();
+        return data.directions;
+      }
       if (!Array.isArray(data)) throw new Error("not a list");
       return data;
     });
+  }
+  // "surface": "app" in directions.json: phone view unless the address asks for another, and app wording.
+  function useAppSurface() {
+    if (location.hash !== "#desktop") {
+      view = "phone";
+      document.querySelectorAll("button[data-view]").forEach(function (o) { o.setAttribute("aria-pressed", String(o.dataset.view === view)); });
+    }
+    const help = document.querySelector("header .help");
+    if (help) help.textContent = "Each card is a rough of one direction: its main screen. Open any of them full size, then press \"Choose this\", or tick \"Mix\" on two cards to combine them.";
   }
   function fromAddress() {
     return decodeURIComponent(location.search.slice(1)).split(",").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -244,7 +321,9 @@
       const box = el("div", "preview");
       const screen = el("div", "screen");
       const frame = document.createElement("iframe");
-      frame.src = d.file;
+      // Eager: every preview loads at once, never only when scrolled to.
+      frame.loading = "eager";
+      const tried = candidates(d.file);
       frame.title = "Preview of direction " + letter(i) + ": " + d.name;
       frame.setAttribute("tabindex", "-1");
       screen.appendChild(frame);
@@ -254,6 +333,7 @@
       const body = el("div", "body");
       const tagrow = el("div", "tagrow");
       tagrow.appendChild(el("span", "letter", letter(i)));
+      if (d.kind) tagrow.appendChild(el("span", "tag kind", d.kind));
       d.tags.forEach(function (t) { tagrow.appendChild(el("span", "tag " + t, TAGS[t])); });
       body.appendChild(tagrow);
       const h = el("h2", null, d.name);
@@ -307,7 +387,7 @@
       });
       actions.appendChild(choose);
       const open = el("a", null, "Open full size");
-      open.href = d.file;
+      open.href = tried[0];
       open.target = "_blank";
       open.rel = "noopener";
       actions.appendChild(open);
@@ -326,6 +406,17 @@
       grid.appendChild(card);
       fit(card);
       if (observer) observer.observe(box);
+      firstThatLoads(tried).then(function (url) {
+        if (!url) return missing(box, tried);
+        open.href = url;
+        frame.addEventListener("load", function () {
+          // Served from one origin the loaded document can be read: a folder listing is never shown as a rough.
+          let doc = null;
+          try { doc = frame.contentDocument; } catch (e) { doc = null; }
+          if (doc && LISTING.test(doc.title || "")) missing(box, [url]);
+        });
+        frame.src = url;
+      });
     });
     updateMix();
   }
@@ -360,6 +451,9 @@
       "Serve this folder over http (any static server) for the last two.";
     box.appendChild(p1);
     box.appendChild(p2);
+    if (location.protocol === "file:") {
+      box.appendChild(el("p", null, "This page was opened as a file, so it cannot read directions.json or the folder: write the list into the page itself, between the argus:directions markers in its script."));
+    }
     grid.appendChild(box);
   }
   function show(list) {
@@ -368,8 +462,12 @@
     render();
   }
 
-  if (directions.length) {
-    show(directions);
+  // The list written here: a plain list, or the app's object form.
+  const inline = Array.isArray(directions) ? directions
+    : directions && typeof directions === "object" && Array.isArray(directions.directions) ? directions.directions : [];
+  if (inline.length) {
+    if (!Array.isArray(directions) && directions.surface === "app") useAppSurface();
+    show(inline);
   } else {
     grid.textContent = "Looking for directions...";
     fromJson().then(show).catch(function () {

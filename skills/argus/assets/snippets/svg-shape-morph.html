@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+  svg-shape-morph: one drawn shape changes into another when a control is pressed; here a
+  pottery studio's three forms (bowl, vase, tumbler) are one profile that reshapes itself,
+  and the size, price and glaze beside it change with it.
+  Mechanism: the three states are compatible paths (the same commands in the same order,
+  drawn from one master profile, only the numbers move). A SMIL <animate attributeName="d">
+  with begin="indefinite" is restarted with beginElement() from the current shape to the
+  next, eased with keySplines; the path's own d attribute is set to the target too, so the
+  base value is always right. SMIL works in every current browser; CSS d: path()
+  transitions do not work in Safari, so they are not used here. The glaze colour is a CSS
+  transition on fill.
+  Fallback and reduced motion: without script the first form and its text are shown; under
+  prefers-reduced-motion the shape swaps at once (a 1ms animation) and the fill does not
+  fade.
+  Touch and keyboard: three real buttons with aria-pressed; the change of text is
+  announced through aria-live.
+  A technique to redraw for the subject (a loaf proving, a tyre tread, a cut of meat), not a
+  decoration to paste: keep the mechanism, draw your own compatible paths.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shape morph on a control (svg-shape-morph)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5efe8; color: #2a1f1a; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { width: min(64rem, 100%); padding: 2rem clamp(1.25rem, 4vw, 3rem); }
+main > h1 { font: 400 clamp(2rem, 4.5vw, 3.75rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0 0 2rem; max-width: 18ch; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-slow: 640ms; --t-fast: 180ms; }
+.forms { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
+.forms svg { width: 100%; max-width: 26rem; height: auto; }
+.forms .pot { fill: #9fb3a6; stroke: #2a1f1a; stroke-width: 3; stroke-linejoin: round; transition: fill var(--t-slow) var(--ease-out); }
+.forms .ground { stroke: #2a1f1a; stroke-width: 3; stroke-linecap: round; }
+.forms .choose { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1.5rem; padding: 0; border: 0; }
+.forms .choose legend { font-weight: 600; margin-bottom: .5rem; }
+.forms button { font: 600 15px/1 "Avenir Next", sans-serif; color: #2a1f1a; background: none; border: 1.5px solid #2a1f1a; border-radius: 99px; padding: .8rem 1.1rem; min-height: 44px; cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+.forms button[aria-pressed="true"] { background: #2a1f1a; color: #f5efe8; }
+.forms button:focus-visible { outline: 2px solid #2a1f1a; outline-offset: 3px; }
+.forms .detail h2 { font: 400 1.75rem/1.1 "Iowan Old Style", Georgia, serif; margin: 0 0 .5rem; }
+.forms .detail p { margin: 0 0 .5rem; color: #5b4a40; }
+@media (prefers-reduced-motion: reduce) { .forms .pot, .forms button { transition: none; } }
+@media (max-width: 700px) { .forms { grid-template-columns: 1fr; } .forms svg { max-width: 18rem; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Thrown in our Lewes studio, one at a time</h1>
+  <!-- argus:copy-start html -->
+  <div class="forms">
+    <svg viewBox="0 0 300 300" role="img" aria-label="Profile of the chosen piece">
+      <path class="pot" d="M35 170 C35 182 40 186 40 200 C40 260 105 270 105 270 L195 270 C195 270 260 260 260 200 C260 186 265 182 265 170 Z">
+        <animate attributeName="d" begin="indefinite" dur="640ms" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".22 1 .36 1"/>
+      </path>
+      <path class="ground" d="M20 272 H280"/>
+    </svg>
+    <div>
+      <fieldset class="choose">
+        <legend>Choose a form</legend>
+        <button type="button" aria-pressed="true" data-name="Serving bowl" data-glaze="#9fb3a6" data-text="28cm across, celadon glaze. £64." data-d="M35 170 C35 182 40 186 40 200 C40 260 105 270 105 270 L195 270 C195 270 260 260 260 200 C260 186 265 182 265 170 Z">Bowl</button>
+        <button type="button" aria-pressed="false" data-name="Bud vase" data-glaze="#c98b5e" data-text="24cm tall, iron-red glaze. £48." data-d="M122 50 C122 120 62 130 62 190 C62 250 100 270 100 270 L200 270 C200 270 238 250 238 190 C238 130 178 120 178 50 Z">Vase</button>
+        <button type="button" aria-pressed="false" data-name="Tumbler" data-glaze="#d9cdb8" data-text="Holds 350ml, oatmeal glaze. £22." data-d="M82 110 C82 140 78 150 78 190 C78 240 84 270 84 270 L216 270 C216 270 222 240 222 190 C222 150 218 140 218 110 Z">Tumbler</button>
+      </fieldset>
+      <div class="detail" aria-live="polite">
+        <h2>Serving bowl</h2>
+        <p>28cm across, celadon glaze. £64.</p>
+      </div>
+    </div>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  document.querySelectorAll('.forms').forEach(box => {
+    const pot = box.querySelector('.pot');
+    const anim = pot.querySelector('animate');
+    const title = box.querySelector('.detail h2');
+    const text = box.querySelector('.detail p');
+    const buttons = box.querySelectorAll('button[data-d]');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    let current = pot.getAttribute('d');
+    buttons.forEach(b => b.addEventListener('click', () => {
+      const next = b.dataset.d;
+      buttons.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      title.textContent = b.dataset.name;
+      text.textContent = b.dataset.text;
+      pot.style.fill = b.dataset.glaze;
+      if (next === current) return;
+      pot.setAttribute('d', next);
+      if (anim && typeof anim.beginElement === 'function') {
+        anim.setAttribute('from', current);
+        anim.setAttribute('to', next);
+        anim.setAttribute('dur', reduce.matches ? '1ms' : '640ms');
+        anim.beginElement();
+      }
+      current = next;
+    }));
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

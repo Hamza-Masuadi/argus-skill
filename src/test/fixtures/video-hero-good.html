@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Video hero</title>
+<style>
+  body { margin: 0; font: 18px/1.5 system-ui, sans-serif; }
+  .hero { position: relative; height: 90vh; background: #234; }
+  video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #345; }
+  .words { position: relative; padding: 18vh 8vw 0; color: #fff; max-width: 34rem; }
+  h1 { font-size: 64px; margin: 0 0 16px; }
+  main section { padding: 64px 8vw; }
+</style></head>
+<body>
+<main>
+  <section class="hero">
+    <!-- Finished: muted, playsinline, a poster and a pause button. -->
+    <video id="good" autoplay muted loop playsinline poster="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" aria-hidden="true"></video><button type="button" style="position:absolute;right:16px;bottom:16px">Pause</button>
+    <div class="words"><h1>Paddle the bay at dawn</h1><p>Guided sea kayak trips from the harbour, two hours, all kit included.</p><a href="#book">Book a trip</a></div>
+  </section>
+  <section id="book"><h2>Book</h2><p>Trips leave at six, eight and ten every morning from the slipway.</p></section>
+</main>
+</body></html>

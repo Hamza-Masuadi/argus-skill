@@ -1,0 +1,39 @@
+
+Check at 390px: 0 broken (P0), 0 likely problems (P1), 12 rough (P2), 3 minor or to confirm (P3), 0 tells
+  P2   span.meta "Ready in 5 min"  Text is 10px; below 12px is hard to read.  [small-text]
+  P2   a "Home"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "Order"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "Account"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a.row "Flat white Ready in 5 min"  Link to "#order" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a.row "Past orders"  Link to "#history" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a.row "Account"  Link to "#account" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Home"  Link to "#home" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Order"  Link to "#order" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Account"  Link to "#account" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   page  Nothing on the page moves outside prefers-reduced-motion: no arrival, no reveals, no transition beyond a colour change. Every page gets the baseline unless the owner chose still (motion.md, "How much"): an arrival for the first screen, reveals as sections enter, hover, focus and press states that show something, and one choreographed moment. If the owner asked for no motion, set data-argus-motion="still" on <html>.  [motionless-page]
+  P3   page  The page has no meta description.  [page-basics]
+  P3   page  The page links no icon, so its tab shows a blank or default one.  [page-basics]
+  P3   page  The page has no og:image, so a shared link shows no picture (finish.md, 2).  [page-basics]
+  P2   nav.tabbar "Home Order Account"  Fixed and sticky bars cover 100% of the screen height at this width; keep them well under a quarter.  [fixed-cover]
+  note: Sideways overflow is only measured at the current width (390px). Run again at 320.
+  note: Not checked: keyboard order, states, whether forms complete, overlapping or colliding labels below the first screen, and anything about taste. Focus is checked on the first 40 controls only. Check the rest by hand.
+
+Check at 1440px: 0 broken (P0), 0 likely problems (P1), 12 rough (P2), 4 minor or to confirm (P3), 0 tells
+  P2   span.meta "Ready in 5 min"  Text is 10px; below 12px is hard to read.  [small-text]
+  P2   a "Home"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "Order"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a "Account"  Text is 11px; below 12px is hard to read.  [small-text]
+  P2   a.row "Flat white Ready in 5 min"  Link to "#order" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a.row "Past orders"  Link to "#history" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a.row "Account"  Link to "#account" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Home"  Link to "#home" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Order"  Link to "#order" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   a "Account"  Link to "#account" but nothing on the page has that id, so it goes nowhere; point it at a real section or remove it.  [missing-anchor]
+  P2   page  Nothing on the page moves outside prefers-reduced-motion: no arrival, no reveals, no transition beyond a colour change. Every page gets the baseline unless the owner chose still (motion.md, "How much"): an arrival for the first screen, reveals as sections enter, hover, focus and press states that show something, and one choreographed moment. If the owner asked for no motion, set data-argus-motion="still" on <html>.  [motionless-page]
+  P3   page  The page has no meta description.  [page-basics]
+  P3   page  The page links no icon, so its tab shows a blank or default one.  [page-basics]
+  P3   page  The page has no og:image, so a shared link shows no picture (finish.md, 2).  [page-basics]
+  P2   h1 "Orders"  The largest text on the first screen is 28px, only 1.8 times the 16px body text; a first-screen headline usually needs at least about 2.2 times (craft.md).  [timid-headline]
+  P3   page  The first screen has no picture covering at least 15% of it and no text of 44px or more, so nothing leads the eye (faults.md).  [first-screen-nothing-large]
+  note: Sideways overflow is only measured at the current width (1440px). Run again at 320.
+  note: Not checked: keyboard order, states, whether forms complete, overlapping or colliding labels below the first screen, and anything about taste. Focus is checked on the first 40 controls only. Check the rest by hand.

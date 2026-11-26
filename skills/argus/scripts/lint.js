@@ -37,6 +37,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.USAGE = void 0;
 exports.collect = collect;
+exports.h1Screens = h1Screens;
 exports.lint = lint;
 exports.main = main;
 /*
@@ -44,7 +45,12 @@ exports.main = main;
  * Scans HTML, CSS and component files for slips that are visible in source.
  * No dependencies, no network, reads only the files you name, changes nothing.
  *
- * Usage: node lint.js <file-or-folder> [more...]
+ * Usage: node lint.js <file-or-folder> [more...] [--app]
+ *
+ * --app: the files are an app prototype whose screens are switched by URL hash.
+ * Several h1 elements are then fine when each sits in its own screen (a hidden
+ * section, or one marked as a screen, view, page, route or tab panel), and h1s
+ * written inside scripts are the templates of screens drawn one at a time.
  *
  * It is most reliable on plain HTML and CSS. In component files it checks
  * less (utility-class and inline-style sizes are not read), so a quiet result
@@ -92,8 +98,65 @@ function each(text, re, fn) {
     while ((m = re.exec(text)))
         fn(m);
 }
+const VOID_TAGS = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/i;
+const SCREEN_WORD = /(^|[\s_-])(screen|view|page|route|panel|tabpanel|tab-panel)s?($|[\s_-])/i;
+/** Whether a tag's attributes mark it as one screen of an app: hidden, a screen-like class or id, a data-screen/route/view/page attribute, or a tab panel. */
+function isScreenTag(tag, attrs) {
+    if (/^template$/i.test(tag))
+        return true;
+    if (/(^|\s)hidden(\s|=|$)/i.test(attrs))
+        return true;
+    if (/\bdata-(screen|route|view|page)\b/i.test(attrs))
+        return true;
+    if (/\brole\s*=\s*["']?tabpanel\b/i.test(attrs))
+        return true;
+    for (const m of attrs.matchAll(/\b(class|id)\s*=\s*["']([^"']*)["']/gi))
+        if (SCREEN_WORD.test(m[2] ?? ''))
+            return true;
+    return false;
+}
+/**
+ * For lint --app: the h1 elements of an HTML file outside scripts, and whether each sits
+ * inside its own screen (no two in the same one, none outside a screen).
+ */
+function h1Screens(text) {
+    const blank = (s) => s.replace(/[^\n]/g, ' ');
+    const html = text.replace(/<!--[\s\S]*?-->/g, blank).replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, blank);
+    const stack = [];
+    const used = new Set();
+    let count = 0;
+    let separate = true;
+    for (const m of html.matchAll(/<(\/?)([a-z][\w-]*)([^>]*)>/gi)) {
+        const [, close, rawTag = '', attrs = ''] = m;
+        const tag = rawTag.toLowerCase();
+        if (close) {
+            // Close up to the matching open tag; unclosed tags inside it are closed with it.
+            for (let i = stack.length - 1; i >= 0; i--) {
+                if (stack[i]?.tag === tag) {
+                    stack.length = i;
+                    break;
+                }
+            }
+            continue;
+        }
+        if (tag === 'h1') {
+            count++;
+            let screen = null;
+            for (let i = stack.length - 1; i >= 0 && screen === null; i--)
+                screen = stack[i]?.screen ?? null;
+            if (screen === null || used.has(screen))
+                separate = false;
+            else
+                used.add(screen);
+        }
+        if (VOID_TAGS.test(tag) || attrs.trim().endsWith('/'))
+            continue;
+        stack.push({ tag, screen: isScreenTag(tag, attrs) ? m.index : null });
+    }
+    return { count, separate };
+}
 /** Check a set of source files. Pure: it reads nothing from disk. */
-function lint(files) {
+function lint(files, options = {}) {
     const findings = [];
     const counts = {};
     const add = (sev, rule, file, line, msg) => {
@@ -110,13 +173,14 @@ function lint(files) {
     const coverViewports = [];
     for (const { path: file, text } of files) {
         const isHtml = /\.html?$/i.test(file);
-        // Small text.
+        // Small text. --app: 11px is the platform's smallest text.
+        const minText = options.app ? 11 : 12;
         each(text, /font-size\s*:\s*([0-9.]+)(px|rem|em)\b/gi, (m) => {
             const value = parseFloat(m[1] ?? '');
             const unit = (m[2] ?? '').toLowerCase();
             const px = unit === 'px' ? value : unit === 'rem' ? value * 16 : null;
-            if (px !== null && px > 0 && px < 12)
-                add('P2', 'small-text', file, lineOf(text, m.index), `font-size ${m[1]}${m[2]} is under 12px.`);
+            if (px !== null && px > 0 && px < minText)
+                add('P2', 'small-text', file, lineOf(text, m.index), `font-size ${m[1]}${m[2]} is under ${minText}px.`);
         });
         // Motion and its reduced-motion counterpart. Only real animation counts:
         // a hover transition is feedback and needs no reduced-motion rule.
@@ -152,8 +216,11 @@ function lint(files) {
                 add('P2', 'lang', file, lineOf(text, html.index), 'The html element has no lang attribute.');
             const h1s = (text.match(/<h1[\s>]/gi) ?? []).length;
             const otherHeads = /<h[2-6][\s>]/i.test(text);
+            // --app: h1s in separate hash-routed screens, or in scripts that draw one screen at a time, are one per screen.
+            const appScreens = options.app && h1s > 1 ? h1Screens(text) : null;
+            const oneEachScreen = !!appScreens && (appScreens.count <= 1 || appScreens.separate);
             // An empty app shell has no headings at all; that is not this problem.
-            if (h1s > 1 || (h1s === 0 && otherHeads))
+            if ((h1s > 1 && !oneEachScreen) || (h1s === 0 && otherHeads))
                 add('P2', 'h1-count', file, 1, `Page has ${h1s} h1 elements; it should have one.`);
         }
         each(text, /user-scalable\s*=\s*(no|0)\b|maximum-scale\s*=\s*([0-9.]+)/gi, (m) => {
@@ -224,7 +291,7 @@ function lint(files) {
         each(text, /\btab[iI]ndex\s*=\s*["'{]?\s*([1-9]\d*)/g, (m) => {
             add('P2', 'tabindex-positive', file, lineOf(text, m.index), `tabindex="${m[1]}" pulls this element out of reading order for keyboard users; use 0 or -1.`);
         });
-        // A headline that is deliberately a control is fine when each control has its own accessible name (web.md).
+        // A headline that is deliberately a control is fine when each control has its own accessible name (craft.md).
         each(text, /<h[1-6]\b[^>]*>(?:(?!<\/h[1-6]>)[\s\S])*?<(select|button|input)\b([^>]*)>/gi, (m) => {
             if (/\baria-label(ledby)?\s*=/i.test(m[2] ?? ''))
                 return;
@@ -259,6 +326,39 @@ function lint(files) {
         });
         const visible = text.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ').replace(/<[^>]+>/g, ' ');
         const slop = SLOP.filter((w) => new RegExp('\\b' + w + '\\b', 'i').test(visible));
+        // A video that plays by itself (pictures.md): muted, playsinline, a poster, a pause control; and its file's weight.
+        each(text, /<video\b[^>]*>/gi, (m) => {
+            const tag = m[0];
+            if (!/\bautoplay\b|\bautoPlay\b/.test(tag))
+                return;
+            const line = lineOf(text, m.index);
+            if (!/\bmuted\b/i.test(tag))
+                add('P1', 'hero-video', file, line, 'A video that plays by itself has no muted attribute: phones will not autoplay it, and an opening never needs sound.');
+            const missing = [];
+            if (!/\bplaysinline\b/i.test(tag))
+                missing.push('playsinline');
+            if (!/\bposter\s*=/.test(tag))
+                missing.push('poster');
+            if (missing.length)
+                add('P2', 'hero-video', file, line, 'A video that plays by itself has no ' + missing.join(' and no ') + ' (pictures.md).');
+            if (!/\bcontrols\b/.test(tag) && !/(>|aria-label\s*=\s*["'{][^"'}]*)\s*(pause|stop)\b/i.test(text))
+                add('P2', 'hero-video', file, line, 'No pause control found in this file for a video that plays by itself (WCAG 2.2.2): add a visible pause button.');
+        });
+        each(text, /<(?:video|source)\b[^>]*\bsrc\s*=\s*["']([^"'{}]+\.(?:mp4|m4v|webm|mov|ogv))["']/gi, (m) => {
+            const ref = m[1] ?? '';
+            if (/^[a-z]+:|^\/\//i.test(ref))
+                return;
+            const onDisk = path.resolve(path.dirname(file), ref.split(/[?#]/)[0] ?? '');
+            let size = 0;
+            try {
+                size = fs.statSync(onDisk).size;
+            }
+            catch {
+                return;
+            }
+            if (size > 4 * 1024 * 1024)
+                add('P3', 'video-heavy', file, lineOf(text, m.index), ref + ' is ' + (size / 1048576).toFixed(1) + ' MB; aim for about 2-4 MB at 1080p and a smaller file for phones (photos.js loop; pictures.md).');
+        });
         if (isHtml && slop.length)
             add('tell', 'filler-words', file, 1, 'Marketing filler: ' + slop.join(', ') + '.');
         if (isHtml && /\p{Emoji_Presentation}/u.test(visible))
@@ -295,8 +395,20 @@ function lint(files) {
                 add('P3', 'font-display-missing', file, lineOf(text, m.index), '@font-face has no font-display; text can stay invisible while the font loads (use swap or optional).');
             }
         });
-        each(text, /letter-spacing\s*:\s*-0?\.(0[5-9]|[1-9])\d*em/gi, (m) => {
-            add('P2', 'tight-tracking', file, lineOf(text, m.index), 'Letter-spacing tighter than -0.04em hurts legibility.');
+        // Tighter than -0.04em hurts legibility; heavy display type at 96px and above may go to -0.05em (type.md).
+        // The size is the largest px value in the same rule's font-size (a clamp's maximum counts).
+        each(text, /letter-spacing\s*:\s*(-0?\.\d+)em/gi, (m) => {
+            const v = parseFloat(m[1] ?? '0');
+            if (v >= -0.0401)
+                return;
+            const open = text.lastIndexOf('{', m.index);
+            const close = text.indexOf('}', m.index);
+            const block = text.slice(open + 1, close < 0 ? undefined : close);
+            const sizeDecl = /font-size\s*:\s*([^;}]+)/i.exec(block) ?? /font\s*:\s*[^;}]*?([0-9.]+px|clamp\([^;}]*\))/i.exec(block);
+            const px = Math.max(0, ...(sizeDecl?.[1]?.match(/[0-9.]+(?=px)/g) ?? []).map(parseFloat));
+            if (v >= -0.0501 && px >= 96)
+                return;
+            add('P2', 'tight-tracking', file, lineOf(text, m.index), 'Letter-spacing of ' + v + 'em is tighter than -0.04em (-0.05em is allowed for display type at 96px and above), which hurts legibility.');
         });
     }
     const first = files[0];
@@ -316,25 +428,33 @@ function lint(files) {
     return { findings, counts };
 }
 exports.USAGE = [
-    'Usage: node lint.js <file-or-folder> [more...]',
+    'Usage: node lint.js <file-or-folder> [more...] [--app]',
     '',
     'Scans HTML, CSS and component files for design slips visible in source. Reads only the',
     'files named, changes nothing, makes no network calls. It cannot see layout: overflow,',
     'overlap and real contrast need a rendered page (shot.js --check).',
+    '',
+    '  --app   the files are an app prototype with screens switched by URL hash: several h1',
+    '          elements pass when each is in its own screen (a hidden section, or one whose',
+    '          class or id says screen, view, page, route or panel, a data-screen, data-route,',
+    '          data-view or data-page attribute, a tab panel or a template), and h1s inside',
+    '          scripts count as screens drawn one at a time',
 ].join('\n');
 function main(targets) {
     if (targets.includes('--help') || targets.includes('-h')) {
         console.log(exports.USAGE);
         return 0;
     }
+    const app = targets.includes('--app');
     const paths = [];
     for (const t of targets)
-        collect(t, paths);
+        if (t !== '--app')
+            collect(t, paths);
     if (!paths.length) {
         console.log(exports.USAGE);
         return 1;
     }
-    const { findings, counts } = lint(paths.map((p) => ({ path: p, text: fs.readFileSync(p, 'utf8') })));
+    const { findings, counts } = lint(paths.map((p) => ({ path: p, text: fs.readFileSync(p, 'utf8') })), { app });
     for (const f of findings)
         console.log(`${f.sev.padEnd(4)} ${f.where}  ${f.msg}  [${f.rule}]`);
     const extra = Object.entries(counts).filter(([, n]) => n > MAX_PER_RULE).map(([rule, n]) => `${rule} x${n}`);

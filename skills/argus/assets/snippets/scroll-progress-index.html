@@ -1,0 +1,118 @@
+<!doctype html>
+<!--
+  scroll-progress-index: a small fixed index in the corner shows the current section as
+  "03 / 07" with its name, and a hairline beside it fills with your progress through
+  the whole page. The number rolls when the section changes.
+  Mechanism: the hairline is a CSS scroll-driven animation on the page's scroll()
+  timeline (fallback: a passive scroll handler sets the same value). The section index
+  comes from cached heading offsets, read in the same rAF-throttled scroll handler.
+  The section name is a link to that section, so keyboard users can jump back to it.
+  Touch and keyboard: the same. Reduced motion: the number swaps without rolling.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scroll progress with section index (scroll-progress-index)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: #fff; color: #161616; font: 400 18px/1.65 "Charter", "Iowan Old Style", Georgia, serif; }
+article { max-width: 38rem; margin: 0 auto; padding: 18vh 1.5rem 40vh; }
+article h1 { font: 700 clamp(2.25rem, 5vw, 3.75rem)/1.05 "Avenir Next", "Helvetica Neue", sans-serif; letter-spacing: -.03em; margin: 0 0 1rem; }
+article h2 { font: 700 1.6rem/1.2 "Avenir Next", sans-serif; margin: 30vh 0 1rem; scroll-margin-top: 2rem; }
+article p { margin: 0 0 1rem; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-base: 320ms; }
+.pidx { position: fixed; left: clamp(1rem, 3vw, 2rem); bottom: clamp(1rem, 3vw, 2rem); z-index: 5; display: grid; grid-template-columns: auto 6rem; align-items: center; gap: .35rem 1rem;
+  font: 600 13px/1 "Avenir Next", "Helvetica Neue", sans-serif; font-variant-numeric: tabular-nums; color: #161616; background: #ffffffd9; padding: .6rem .8rem; border-radius: 6px; }
+.pidx-num { display: inline-grid; overflow: clip; height: 1.1em; vertical-align: bottom; }
+.pidx-num span { grid-area: 1 / 1; line-height: 1.1; }
+.pidx-name { grid-column: 1 / -1; font-weight: 500; color: #555; }
+.pidx-bar { height: 2px; background: #16161626; position: relative; overflow: hidden; }
+.pidx-bar::after { content: ""; position: absolute; inset: 0; background: #d1452c; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+@supports (animation-timeline: scroll()) {
+  .pidx-bar::after { animation: pidx-fill linear both; animation-timeline: scroll(root block); }
+  @keyframes pidx-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<!-- argus:copy-start html -->
+<nav class="pidx" aria-label="Sections">
+  <span class="pidx-count"><span class="pidx-num" aria-hidden="true"><span>01</span></span> / <span class="pidx-total">07</span></span>
+  <span class="pidx-bar" aria-hidden="true"></span>
+  <a class="pidx-name" href="#s1" style="text-decoration:none">Why we print slowly</a>
+</nav>
+<!-- argus:copy-end html -->
+<main>
+<article>
+  <h1 id="s1">Seven things we learned printing 4,000 books by hand</h1>
+  <p>Fifteen years at the Albion press, written down for the apprentices.</p>
+  <h2 id="s2" data-sec>Damp the paper the night before</h2><p>Dry paper takes ink badly. We wrap each ream in damp blotters and leave it overnight under a board.</p>
+  <h2 id="s3" data-sec>Ink less than you think</h2><p>Most bad impressions are too much ink, not too little. Roll the slab until it hisses, not until it shines.</p>
+  <h2 id="s4" data-sec>Lock up square</h2><p>A forme that is a degree off square will walk across the sheet over a run of two hundred.</p>
+  <h2 id="s5" data-sec>Make ready takes longer than printing</h2><p>Packing under the low letters is where the evening goes. Budget for it.</p>
+  <h2 id="s6" data-sec>Wash up the same night</h2><p>Oil-based ink left overnight on rollers will cost you a morning.</p>
+  <h2 id="s7" data-sec>Keep every spoiled sheet</h2><p>They become endpapers, notebooks and the backing for the next job.</p>
+</article>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const nav = document.querySelector('.pidx');
+  const num = nav.querySelector('.pidx-num');
+  const name = nav.querySelector('.pidx-name');
+  const bar = nav.querySelector('.pidx-bar');
+  const secs = [document.getElementById('s1'), ...document.querySelectorAll('[data-sec]')];
+  const pad = n => String(n).padStart(2, '0');
+  nav.querySelector('.pidx-total').textContent = pad(secs.length);
+  let current = 0;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const show = i => {
+    if (i === current) return;
+    const dir = i > current ? 1 : -1; current = i;
+    while (num.children.length > 1) num.firstElementChild.remove(); // drop any half-finished roll
+    const old = num.firstElementChild;
+    const next = document.createElement('span');
+    next.textContent = pad(i + 1);
+    num.append(next);
+    if (reduce.matches) old.remove();
+    else {
+      const opts = { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' };
+      old.animate([{ translate: '0 0' }, { translate: `0 ${-dir * 100}%` }], { ...opts, fill: 'forwards' });
+      next.animate([{ translate: `0 ${dir * 100}%` }, { translate: '0 0' }], opts).finished.then(() => old.remove(), () => {});
+    }
+    name.textContent = i === 0 ? 'Why we print slowly' : secs[i].textContent;
+    name.href = '#' + secs[i].id;
+  };
+  // Current section = the last heading above 45% of the screen (or the last one at the very end).
+  // Offsets are cached on load and resize, so the scroll handler does no layout reads.
+  let tops = [], maxY = 0, q = false;
+  const measure = () => {
+    tops = secs.map(s => s.getBoundingClientRect().top + scrollY);
+    maxY = document.documentElement.scrollHeight - innerHeight;
+    update();
+  };
+  const update = () => {
+    q = false;
+    const line = scrollY + innerHeight * 0.45;
+    let i = 0;
+    tops.forEach((t, j) => { if (t <= line) i = j; });
+    if (scrollY >= maxY - 2) i = secs.length - 1;
+    show(i);
+    if (!CSS.supports('animation-timeline: scroll()')) bar.style.setProperty('--p', (scrollY / Math.max(1, maxY)).toFixed(3));
+  };
+  addEventListener('scroll', () => { if (!q) { q = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener('resize', measure);
+  measure();
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

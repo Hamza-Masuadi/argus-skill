@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halden Systems</title>
+<link rel="icon" href="data:,">
+<style>
+  body { margin: 0; font: 18px/1.55 system-ui, sans-serif; color: #f2f1ee; background: #2f3a40; }
+  header, section { padding: 64px; }
+  h1 { font-size: 64px; line-height: 1.05; margin: 0 0 20px; }
+  h2 { font-size: 36px; line-height: 1.15; margin: 0 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .card { padding: 24px; background: #3b474e; border-radius: 6px; min-height: 160px; }
+  a { color: #f2f1ee; }
+  .button { display: inline-block; padding: 12px 20px; background: #f2f1ee; color: #1c1d1f; text-decoration: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    h1 { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+    .button { transition: transform .2s cubic-bezier(.2,.7,.2,1), background-color .2s; }
+    .button:hover { transform: translateY(-2px); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Sensors that keep ports running.</h1>
+  <p>Radar and sonar for harbour authorities, built and serviced in Bergen.</p>
+  <a class="button" href="#contact">Talk to an engineer</a>
+</header>
+<section>
+  <h2>Four product lines</h2>
+  <div class="grid">
+    <div class="card"><h3>Radar</h3><p>Coastal radar for traffic.</p></div>
+    <div class="card"><h3>Sonar</h3><p>Harbour floor survey.</p></div>
+    <div class="card"><h3>Buoys</h3><p>Moored sensor buoys.</p></div>
+    <div class="card"><h3>Software</h3><p>One map for all of it.</p></div>
+  </div>
+</section>
+<section>
+  <h2>Thirty harbours in the North Sea</h2>
+  <p>From Aberdeen to Esbjerg, each with a named engineer on call.</p>
+</section>
+<section>
+  <h2>Installed in a week</h2>
+  <p>Survey, fit, calibrate and hand over, with the harbour open throughout.</p>
+</section>
+<section id="contact">
+  <h2>Talk to an engineer</h2>
+  <p><a href="mailto:hello@example.com">hello@example.com</a></p>
+</section>
+</body>
+</html>

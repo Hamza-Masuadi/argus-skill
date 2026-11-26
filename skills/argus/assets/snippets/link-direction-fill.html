@@ -1,0 +1,115 @@
+<!doctype html>
+<!--
+  link-direction-fill: the fill comes in from the edge the pointer crossed and leaves through the edge it exits by.
+  Pointer: on enter and leave the nearest edge is worked out once (no reads during pointermove); the fill slides in t-fast on --ease-out and out t-base on --ease-in-out.
+  Keyboard: :focus-visible fills from the left.
+  Touch: tiles show their price and duration inline; tapping follows the link.
+  Reduced motion: the fill fades in and out instead of sliding.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction-aware fill (link-direction-fill)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #dfe6ea; color: #17212b; font: 400 16px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; display: grid; place-items: center; }
+main { width: min(1080px, 100% - 48px); padding: 64px 0; }
+h1 { font: 700 clamp(36px, 5vw, 64px)/1 "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: -.035em; margin: 0 0 12px; }
+.lede { margin: 0 0 40px; color: #3e4c59; max-width: 36rem; }
+.services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid #17212b; border-left: 1px solid #17212b; list-style: none; margin: 0; padding: 0; }
+@media (max-width: 760px) { .services { grid-template-columns: 1fr; } }
+.services li { border-right: 1px solid #17212b; border-bottom: 1px solid #17212b; }
+
+/* argus:copy-start css */
+.dfill {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: grid; gap: 28px; padding: 28px; min-height: 200px;
+  color: inherit; text-decoration: none;
+  transition: color var(--t-base) var(--ease-in-out);
+}
+.dfill::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: #17212b;
+  transform: translate(var(--fx, -101%), var(--fy, 0));
+  transition: transform var(--t-base) var(--ease-in-out);
+}
+.dfill.is-in { color: #dfe6ea; transition-duration: var(--t-fast); transition-timing-function: var(--ease-out); }
+.dfill.is-in::before { transform: translate(0, 0); transition-duration: var(--t-fast); transition-timing-function: var(--ease-out); }
+.dfill.no-anim::before { transition: none; }
+.dfill:focus-visible { outline: 3px solid #e2702b; outline-offset: -3px; }
+.dfill .dfill-name { font: 600 22px/1.15 "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: -.01em; }
+.dfill .dfill-meta { display: flex; justify-content: space-between; align-self: end; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+  .dfill::before { transform: none !important; opacity: 0; transition: opacity var(--t-fast) linear !important; }
+  .dfill.is-in::before { opacity: 1; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Spokesmith workshop</h1>
+  <p class="lede">Bring the bike in on a weekday morning and collect it the same evening. Prices include parts we fit from stock.</p>
+  <!-- argus:copy-start html -->
+  <ul class="services">
+    <li><a class="dfill" href="#tune"><span class="dfill-name">Safety check and tune</span><span class="dfill-meta"><span>From £45</span><span>1 hour</span></span></a></li>
+    <li><a class="dfill" href="#full"><span class="dfill-name">Full service, cables and pads</span><span class="dfill-meta"><span>From £120</span><span>Same day</span></span></a></li>
+    <li><a class="dfill" href="#wheel"><span class="dfill-name">Wheel true and spoke repair</span><span class="dfill-meta"><span>From £25</span><span>40 min</span></span></a></li>
+    <li><a class="dfill" href="#fit"><span class="dfill-name">Bike fit with saddle swap</span><span class="dfill-meta"><span>£90</span><span>90 min</span></span></a></li>
+    <li><a class="dfill" href="#ebike"><span class="dfill-name">E-bike motor diagnostics</span><span class="dfill-meta"><span>£60</span><span>2 hours</span></span></a></li>
+    <li><a class="dfill" href="#winter"><span class="dfill-name">Winter strip-down</span><span class="dfill-meta"><span>£210</span><span>2 days</span></span></a></li>
+  </ul>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  // Nearest edge to the point where the pointer crossed in or out, as a translate for the fill.
+  const OFF = { top: ['0', '-101%'], right: ['101%', '0'], bottom: ['0', '101%'], left: ['-101%', '0'] };
+  const edge = (el, e) => {
+    const r = el.getBoundingClientRect(); // read once per enter/leave, never per move
+    const d = { top: e.clientY - r.top, bottom: r.bottom - e.clientY, left: e.clientX - r.left, right: r.right - e.clientX };
+    return Object.keys(d).reduce((a, b) => (d[a] < d[b] ? a : b));
+  };
+  const place = (el, side) => { el.style.setProperty('--fx', OFF[side][0]); el.style.setProperty('--fy', OFF[side][1]); };
+  document.querySelectorAll('.dfill').forEach((el) => {
+    el.addEventListener('pointerenter', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      el.classList.add('no-anim'); // jump to the entry edge, then slide in
+      place(el, edge(el, e));
+      void el.offsetWidth;
+      el.classList.remove('no-anim');
+      el.classList.add('is-in');
+    });
+    el.addEventListener('pointerleave', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      place(el, edge(el, e));
+      el.classList.remove('is-in');
+    });
+    el.addEventListener('focus', () => { if (el.matches(':focus-visible')) { place(el, 'left'); el.classList.add('is-in'); } });
+    el.addEventListener('blur', () => { place(el, 'left'); el.classList.remove('is-in'); });
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

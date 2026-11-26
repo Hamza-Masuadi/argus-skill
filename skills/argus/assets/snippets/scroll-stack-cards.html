@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+  scroll-stack-cards: cards stick near the top one after another and stack like a dealt
+  hand; each card shrinks back a few percent and darkens as the next one lands on it,
+  so you can see the edges of the stack behind.
+  Mechanism: each card is position: sticky with a top offset that grows per card; the
+  shrink is a CSS scroll-driven animation on the list's view timeline, each card taking
+  its own slice of the range (--i / --n). Scrubbed and linear.
+  Fallback: without scroll timelines the cards still stack (sticky), without shrinking.
+  Touch and keyboard: the same. Reduced motion: an ordinary list, nothing sticks.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stacked cards that deal (scroll-stack-cards)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #ece9f5; color: #17132a; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.wrap { max-width: 64rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.intro { min-height: 60vh; display: grid; align-content: end; padding-bottom: 8vh; }
+.intro h1 { font: 600 clamp(2.5rem, 6vw, 5rem)/1 "Avenir Next", sans-serif; letter-spacing: -.03em; margin: 0 0 1rem; }
+.intro p { margin: 0; max-width: 32rem; color: #4d4767; }
+.outro { min-height: 80vh; padding-top: 10vh; }
+
+/* argus:copy-start css */
+.stack { --n: 4; list-style: none; margin: 0; padding: 0 0 10vh; view-timeline: --stack block; }
+.stack-card {
+  position: sticky; top: calc(10vh + var(--i) * 18px);
+  min-height: 62vh; margin-bottom: 12vh; border-radius: 20px; padding: clamp(1.5rem, 4vw, 3rem);
+  display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr auto; gap: 1rem;
+  transform-origin: 50% 0; box-shadow: 0 -1px 0 #ffffff55 inset;
+}
+.stack-card:last-child { margin-bottom: 0; }
+.stack-card .num { font: 600 14px/1 "Avenir Next", sans-serif; }
+.stack-card h2 { grid-column: 1 / -1; align-self: end; font: 600 clamp(2rem, 5vw, 4rem)/1 "Avenir Next", sans-serif; letter-spacing: -.03em; margin: 0; max-width: 14ch; }
+.stack-card p { grid-column: 1 / -1; margin: 0; max-width: 32rem; }
+@supports (animation-timeline: view()) {
+  .stack-card {
+    animation: stack-recede linear both;
+    animation-timeline: --stack;
+    /* card i shrinks while card i+1 travels up onto it */
+    animation-range: contain calc((var(--i) + .2) / var(--n) * 100%) contain calc((var(--i) + 1) / var(--n) * 100%);
+  }
+  .stack-card:last-child { animation: none; }
+  @keyframes stack-recede { to { scale: .94; filter: brightness(.82); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stack-card { position: relative; top: 0; animation: none; margin-bottom: 1.5rem; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="intro">
+    <h1>Four plans. Pick one, change any time.</h1>
+    <p>Plotline is accounting software for small farms. Every plan includes VAT returns and bank feeds.</p>
+  </section>
+  <!-- argus:copy-start html -->
+  <ol class="stack" style="--n:4">
+    <li class="stack-card" style="--i:0; background:#c9f27c"><span class="num">01</span><span>£9 a month</span><h2>Smallholding</h2><p>Up to 50 transactions a month, one bank account, the subsidy calendar.</p></li>
+    <li class="stack-card" style="--i:1; background:#ffcf5c"><span class="num">02</span><span>£24 a month</span><h2>Family farm</h2><p>Unlimited transactions, payroll for five, field-by-field margins.</p></li>
+    <li class="stack-card" style="--i:2; background:#ff9f7a"><span class="num">03</span><span>£48 a month</span><h2>Estate</h2><p>Several businesses under one login, holiday lets and diversification income.</p></li>
+    <li class="stack-card" style="--i:3; background:#a9c6ff"><span class="num">04</span><span>Ask us</span><h2>Co-operative</h2><p>Members' accounts, shared machinery costs, an accountant on call.</p></li>
+  </ol>
+  <!-- argus:copy-end html -->
+  <section class="outro"><p>All plans start with a 30-day trial. No card needed.</p></section>
+</main>
+</body>
+</html>

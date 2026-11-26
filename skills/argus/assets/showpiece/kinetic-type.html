@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  kinetic-type: one display statement that changes as you scroll past it: two lines draw apart
+  towards their own edges while their weight swells from hairline to black and the tracking closes up, then the
+  words settle and hold. For a jazz club's season page; the same mechanism suits any short, loud
+  claim (two to five words). Never for body text, never for anything that must be read while moving.
+
+  Level: moment or showpiece.
+
+  No library: CSS scroll-driven animations (animation-timeline on a named view timeline; Chrome 115+,
+  Safari 26+, Firefox 159+). Where they are missing, ten lines of script feed the same progress into
+  a custom property; with no script either, the statement shows in its finished state.
+  Variable weight needs a variable font. This demo uses the system font, which is variable on macOS
+  and Windows 11 (elsewhere the weight steps); in a build, load a variable webfont with a wide wght axis.
+
+  Rules it keeps:
+    - The words are real text, readable at every point of the scroll, and in the end state from the
+      moment the section is fully on screen until it leaves (the last third holds still).
+    - The pinned stage is as tall as its movement (180vh in all) and never changes scroll speed.
+    - Reduced motion: the finished state, no movement. No JS: the same.
+  Registers window.__argus.scenes (shot.js --scenes shows the progression).
+  Copy the marked blocks (the copy markers below).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kinetic, variable-weight statement on scroll (kinetic-type)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #14110f; color: #f4ede1; font: 400 17px/1.6 system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", sans-serif; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid #ff5a36; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+.intro { min-height: 70vh; display: grid; align-content: end; padding: 0 clamp(1.25rem, 4vw, 3rem) 8vh; }
+.intro h1 { font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 500; margin: 0 0 .5rem; }
+.intro p { margin: 0; color: #b7ad9f; max-width: 32rem; }
+.after { padding: 12vh clamp(1.25rem, 4vw, 3rem) 20vh; }
+.after a { display: inline-block; margin-top: 1rem; padding: .85rem 1.3rem; background: #ff5a36; color: #14110f; font-weight: 600; text-decoration: none; border-radius: 2px; }
+
+/* argus:copy-start kinetic-type css */
+.kt { height: 180vh; view-timeline: --kt block; }
+.kt-stage { position: sticky; top: 0; height: 100vh; display: grid; align-content: center; overflow: hidden; padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.kt-line { display: block; font-size: clamp(3.5rem, 15vw, 15rem); line-height: .86; white-space: nowrap; font-variant-numeric: tabular-nums;
+  /* The finished state is the default: no JS, reduced motion and old browsers all see this. */
+  font-weight: 900; letter-spacing: -.045em; translate: 0 0; }
+.kt-line.b { text-align: right; color: #ff5a36; }
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .kt-line { animation: kt-swell linear both; animation-timeline: --kt; animation-range: contain 0% contain 66%; }
+    .kt-line.a { animation-name: kt-swell, kt-from-left; }
+    .kt-line.b { animation-name: kt-swell, kt-from-right; }
+  }
+  /* Script fallback for browsers without scroll timelines: it sets --kt-p from 0 to 1. */
+  .kt-js .kt-line { font-weight: calc(200 + 700 * var(--kt-p, 1)); letter-spacing: calc(.02em - .065em * var(--kt-p, 1)); }
+  .kt-js .kt-line.a { translate: calc(12vw * (1 - var(--kt-p, 1))) 0; }
+  .kt-js .kt-line.b { translate: calc(-12vw * (1 - var(--kt-p, 1))) 0; }
+}
+@keyframes kt-swell { from { font-weight: 200; letter-spacing: .02em; } to { font-weight: 900; letter-spacing: -.045em; } }
+@keyframes kt-from-left { from { translate: 12vw 0; } to { translate: 0 0; } }
+@keyframes kt-from-right { from { translate: -12vw 0; } to { translate: 0 0; } }
+/* argus:copy-end kinetic-type css */
+</style>
+</head>
+<body>
+<header class="top"><strong>The Cellar Door</strong><a href="#season">Winter season</a></header>
+<main>
+  <section class="intro"><h1>Live jazz, six nights a week.</h1><p>Forty seats under a bookshop in Dundee. The winter season starts on 4 December.</p></section>
+  <!-- argus:copy-start kinetic-type html -->
+  <section class="kt" aria-label="Play it louder">
+    <div class="kt-stage" aria-hidden="true">
+      <span class="kt-line a">Play it</span>
+      <span class="kt-line b">louder.</span>
+    </div>
+  </section>
+  <!-- argus:copy-end kinetic-type html -->
+  <section class="after" id="season"><h2>Winter season, 4 Dec to 28 Feb</h2><p>Tickets &pound;12, members &pound;8. Doors at 7&nbsp;pm.</p><a href="#season">See the line-up</a></section>
+</main>
+<!-- argus:copy-start kinetic-type js -->
+<script>
+  (window.__argus = window.__argus || { timelines: {}, scenes: [] }).scenes.push({ name: 'kinetic', trigger: '.kt' });
+  // Only where CSS scroll timelines are missing: drive the same progress from scroll.
+  if (!CSS.supports('animation-timeline: view()') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('kt-js');
+    const kt = document.querySelector('.kt');
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const r = kt.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, -r.top / ((r.height - innerHeight) * 0.66)));
+      kt.style.setProperty('--kt-p', p.toFixed(3));
+    };
+    addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
+  }
+</script>
+<!-- argus:copy-end kinetic-type js -->
+</body>
+</html>

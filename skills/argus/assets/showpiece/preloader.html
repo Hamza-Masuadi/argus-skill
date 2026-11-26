@@ -1,0 +1,136 @@
+<!doctype html>
+<!--
+  preloader: a loader that waits for real things (web fonts and the hero picture, decoded), counts
+  them honestly, gives up after 3s, and hands off into the hero without a cut: the loader's panel
+  shrinks onto the hero picture's frame and opens to show it, while the headline rises. One GSAP
+  timeline from the last loader frame to the finished hero.
+
+  Level: showpiece. A business page does not get a preloader; it gets a fast first screen.
+
+  Libraries (pinned): gsap 3.15.1 (GSAP Standard "no charge" licence) from jsDelivr:
+      https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js
+  JS on the wire: about 29 KB gzipped.
+
+  Rules it keeps:
+    - The page's own background is the loader's colour, so there is no white flash before or after.
+    - The loader exists only when script runs (a class set in <head>); without script, or when
+      GSAP fails to load, the hero is simply there. A 3.5s failsafe removes the loader regardless.
+    - Shown once per session (sessionStorage); a return visit goes straight to the hero.
+    - Reduced motion: no loader at all, the hero as written.
+    - The count is real progress (assets done / assets waited for), never a fake timer, and the wait
+      is capped at 3s: a slow or failed picture does not hold the page hostage.
+    - The header's link and the action work from the first frame after the hand-off; the loader sets
+      pointer-events: none on itself while it leaves.
+  Registers window.__argus.timelines.handoff (seek it with shot.js --timeline handoff; record the
+  whole thing with --arrival).
+  Copy the marked blocks (the copy markers below).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preloader that hands off into the hero (preloader)</title>
+<!-- argus:copy-start preloader head -->
+<script>
+  // Decide before first paint, so the loader is there from the first frame or never.
+  (() => {
+    const seen = (() => { try { return sessionStorage.getItem('pl-seen') === '1'; } catch (e) { return false; } })();
+    if (seen || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const root = document.documentElement;
+    root.classList.add('pl-loading');
+    // Failsafe: if the hand-off has not begun by 3.5s (scripts blocked or broken), drop the loader.
+    setTimeout(() => { if (!window.__plHandoff) root.classList.remove('pl-loading'); }, 3500);
+  })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js" defer></script>
+<!-- argus:copy-end preloader head -->
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+/* argus:copy-start preloader css */
+:root { --pl-ground: #1f2421; } /* the loader's colour is the page's own ground: no flash at either end */
+html { background: var(--pl-ground); }
+.pl-loader { display: none; }
+.pl-loading .pl-loader { display: grid; position: fixed; inset: 0; z-index: 50; place-items: end start; padding: clamp(1.25rem, 4vw, 3rem); background: #c9c1b2; color: #1f2421; }
+.pl-count { font: 300 clamp(4rem, 14vw, 12rem)/.8 "Helvetica Neue", "Segoe UI", system-ui, sans-serif; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.pl-count small { font-size: .25em; letter-spacing: 0; margin-left: .2em; }
+/* argus:copy-end preloader css */
+body { margin: 0; color: #ece8df; font: 400 17px/1.6 "Helvetica Neue", "Segoe UI", system-ui, sans-serif; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid #c9c1b2; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+.hero { min-height: calc(100vh - 68px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: end; padding: 0 clamp(1.25rem, 4vw, 3rem) 7vh; }
+.hero h1 { font: 300 clamp(2.75rem, 6.5vw, 6.25rem)/.95 "Helvetica Neue", system-ui, sans-serif; letter-spacing: -.035em; margin: 0 0 1.5rem; }
+.hero p { margin: 0 0 1.5rem; max-width: 28rem; color: #c9c1b2; }
+.hero .go { font-weight: 600; text-underline-offset: .25em; }
+.hero figure { margin: 0; height: 72vh; overflow: hidden; }
+.hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .hero figure { height: 46vh; order: -1; } }
+</style>
+</head>
+<body>
+<!-- argus:copy-start preloader html -->
+<div class="pl-loader" aria-hidden="true"><div class="pl-count"><span class="pl-n">0</span><small>%</small></div></div>
+<!-- argus:copy-end preloader html -->
+<header class="top"><strong>Haldane Ross Architects</strong><a href="#work">Selected work</a></header>
+<main>
+  <section class="hero">
+    <div>
+      <h1 class="pl-head">Houses that sit low in the land.</h1>
+      <p>Twelve years of rural houses in the Highlands, built from the stone that was already there.</p>
+      <a class="go" href="#work">See the houses</a>
+    </div>
+    <figure>
+      <!-- The hero picture; data-preload marks what the loader waits for. -->
+      <img class="pl-hero" data-preload alt="A long, low stone house against a hillside at dusk" width="1200" height="900"
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 900'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23495a63'/%3E%3Cstop offset='1' stop-color='%23c9b79a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1200' height='900' fill='url(%23s)'/%3E%3Cpath d='M0 520 Q300 380 620 470 T1200 430 V900 H0Z' fill='%23535c4c'/%3E%3Crect x='300' y='520' width='560' height='120' fill='%238f8676'/%3E%3Cpath d='M280 520 L880 520 L840 480 L320 480Z' fill='%23323833'/%3E%3Crect x='380' y='560' width='70' height='50' fill='%23f2c97a'/%3E%3Crect x='700' y='560' width='110' height='50' fill='%23f2c97a'/%3E%3Cpath d='M0 700 Q400 620 1200 690 V900 H0Z' fill='%232f3530'/%3E%3C/svg%3E">
+    </figure>
+  </section>
+</main>
+
+<!-- argus:copy-start preloader js -->
+<script>
+addEventListener('DOMContentLoaded', () => {
+  const root = document.documentElement;
+  const reg = (window.__argus = window.__argus || { timelines: {}, scenes: [] });
+  if (!root.classList.contains('pl-loading')) return; // already seen, reduced motion, or failsafe fired
+  if (!window.gsap) { root.classList.remove('pl-loading'); return; }
+
+  const loader = document.querySelector('.pl-loader');
+  const n = document.querySelector('.pl-n');
+  const figure = document.querySelector('.pl-hero').closest('figure');
+
+  // What the first screen needs: web fonts, and each data-preload picture decoded.
+  const jobs = [document.fonts ? document.fonts.ready : Promise.resolve()];
+  document.querySelectorAll('img[data-preload]').forEach((img) => jobs.push(img.decode().catch(() => null)));
+  const shown = { value: 0 };
+  let done = 0;
+  const step = () => gsap.to(shown, { value: (done / jobs.length) * 100, duration: 0.4, ease: 'power2.out', onUpdate: () => { n.textContent = Math.round(shown.value); } });
+  jobs.forEach((j) => j.then(() => { done++; step(); }));
+  const ready = Promise.race([Promise.all(jobs), new Promise((r) => setTimeout(r, 3000))]); // the 3s cap
+
+  ready.then(() => {
+    if (!root.classList.contains('pl-loading')) return; // the failsafe already showed the page
+    window.__plHandoff = true;
+    // Hand-off: count to 100, then the panel shrinks onto the picture's frame and opens.
+    const r = figure.getBoundingClientRect();
+    const inset = `${r.top}px ${innerWidth - r.right}px ${innerHeight - r.bottom}px ${r.left}px`;
+    const tl = gsap.timeline({
+      defaults: { ease: 'expo.inOut' },
+      onComplete: () => { root.classList.remove('pl-loading'); try { sessionStorage.setItem('pl-seen', '1'); } catch (e) {} },
+    });
+    tl.to(shown, { value: 100, duration: 0.35, ease: 'power2.out', onUpdate: () => { n.textContent = Math.round(shown.value); } })
+      .set(loader, { pointerEvents: 'none' })
+      .to('.pl-count', { yPercent: 40, autoAlpha: 0, duration: 0.5, ease: 'power2.in' })
+      .to(loader, { clipPath: `inset(${inset})`, duration: 1 }, '<0.1')
+      .to(loader, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }, '-=0.15')
+      .from('.pl-hero', { scale: 1.08, duration: 1.2, ease: 'expo.out' }, '<')
+      .from('.pl-head', { y: 40, autoAlpha: 0, duration: 0.9, ease: 'expo.out' }, '-=1.1');
+    gsap.set(loader, { clipPath: 'inset(0px 0px 0px 0px)' });
+    reg.timelines.handoff = tl;
+  });
+});
+</script>
+<!-- argus:copy-end preloader js -->
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sizes</title>
+<style>
+  body { font: 18px/1.5 system-ui, sans-serif; margin: 0; padding: 24px; color: #111; background: #fff; }
+  nav a, button { display: inline-block; min-width: 44px; min-height: 44px; padding: 8px 12px; font: inherit; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .spacer { height: 1400px; }
+  #pressed { font-size: 9px; }
+</style>
+</head>
+<body>
+  <!-- A link whose text contains "m" is on the first screen; the size button "M" is far below it,
+       and its text carries a visually hidden word ("M medium"). -->
+  <nav><a href="#menu" id="menu-link">Menu</a> <a href="#maps">Maps and more</a></nav>
+  <h1>Pick a size</h1>
+  <p id="pressed">Not pressed yet</p>
+  <div class="spacer"></div>
+  <section id="menu">
+    <button type="button" data-size="S">S <span class="sr">small</span></button>
+    <button type="button" data-size="M">M <span class="sr">medium</span></button>
+  </section>
+  <section id="maps"></section>
+<script>
+  for (const el of document.querySelectorAll('a, button')) {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('pressed').textContent = 'Pressed ' + (el.dataset.size ? 'size ' + el.dataset.size : el.id || 'other');
+    });
+  }
+</script>
+</body>
+</html>

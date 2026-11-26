@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- A page that keeps moving for two seconds after load (a bar grows across the screen) and registers
+     a GSAP-like timeline adapter, so --arrival and --timeline see change. It also has one blank canvas. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Moving page</title>
+<style>
+body { margin: 0; font: 18px/1.5 system-ui, sans-serif; background: #f4f4f0; color: #222; }
+.bar { height: 40vh; background: #1d4ed8; transform-origin: left; animation: grow 2000ms linear both; }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.box { width: 30vw; height: 20vh; background: #b91c1c; margin: 2rem; }
+canvas { display: block; width: 300px; height: 150px; margin: 2rem; }
+</style></head>
+<body>
+<div class="bar"></div>
+<div class="box" id="box"></div>
+<canvas id="blank" width="300" height="150"></canvas>
+<script>
+  // A minimal timeline-like object: progress(p) moves the red box across the screen.
+  const box = document.getElementById('box');
+  let p = 0, paused = false;
+  window.__argus = { timelines: { slide: {
+    progress(v) { if (v === undefined) return p; p = v; box.style.transform = 'translateX(' + (p * 60) + 'vw)'; return this; },
+    pause() { paused = true; return this; },
+    paused(v) { if (v === undefined) return paused; paused = v; return this; },
+  } }, scenes: [] };
+</script>
+</body></html>

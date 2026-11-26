@@ -1,0 +1,126 @@
+<!doctype html>
+<!--
+  split-headline: the headline's lines rise out of masks one after another (GSAP SplitText, lines
+  with mask), and the rest of the first screen arrives overlapping them: the picture opens while the
+  last line is still rising, the details follow. About 1.3s in all, once per load.
+
+  Level: moment or showpiece. On a business page this can be the one moment.
+
+  Libraries (pinned): gsap 3.15.1 + SplitText (GSAP Standard "no charge" licence) from jsDelivr:
+      https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js
+      https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/SplitText.min.js
+    Not vendored (see smooth-scroll-scene.html for why); self-host them in the site you build.
+  JS on the wire: about 32 KB gzipped.
+
+  How it stays safe:
+    - The split runs after web fonts (autoSplit re-splits on font load and resize), so line breaks are
+      the real ones. aria: 'auto' (the default) keeps the heading read as one sentence.
+    - The headline is hidden only by a class script adds in <head>, and only until the split is ready;
+      if GSAP never arrives, a 1.5s failsafe shows it. Without script nothing is hidden.
+    - The action ("Book tickets") is a plain link present and usable from the first frame; it fades in
+      with the details but is never covered or moved.
+    - Reduced motion: no split and no travel; a 1ms fade, everything in place.
+    - Masks are padded (.sp-line-mask) so descenders are not clipped.
+  Registers window.__argus.timelines.arrival (shot.js --timeline arrival, or --arrival).
+  Copy the marked blocks (the copy markers below).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Split-line headline arrival (split-headline)</title>
+<!-- argus:copy-start split-headline head -->
+<script>
+  // Arm the hidden start state only when script runs and motion is allowed; a failsafe undoes it.
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('sp-arming');
+    setTimeout(() => document.documentElement.classList.remove('sp-arming'), 1500);
+  }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15.1/dist/SplitText.min.js" defer></script>
+<!-- argus:copy-end split-headline head -->
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #101418; color: #eef0ea; font: 400 17px/1.55 "Helvetica Neue", "Segoe UI", system-ui, sans-serif; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid #ffd166; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; letter-spacing: .02em; }
+.hero { min-height: calc(100vh - 68px); display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: end; padding: 0 clamp(1.25rem, 4vw, 3rem) 8vh; }
+.hero h1 { font: 700 clamp(3.25rem, 9vw, 9rem)/.9 "Helvetica Neue", "Arial Narrow", system-ui, sans-serif; letter-spacing: -.045em; margin: 0 0 2rem; text-wrap: balance; }
+.details { display: flex; flex-wrap: wrap; gap: 1rem 2.5rem; align-items: baseline; font-size: 15px; }
+.details .dates { font-variant-numeric: tabular-nums; }
+.book { display: inline-block; padding: .85rem 1.3rem; background: #ffd166; color: #101418; font-weight: 700; text-decoration: none; border-radius: 2px; }
+.book:hover { background: #ffe199; }
+.book:active { transform: scale(.97); }
+.still { margin: 0; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 2px; }
+.still svg { width: 100%; height: 100%; display: block; }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; align-items: start; padding-top: 4vh; } .still { aspect-ratio: 16 / 10; order: -1; } }
+
+/* argus:copy-start split-headline css */
+.sp-arming .sp-split { visibility: hidden; }
+/* SplitText's line masks: padded so descenders and accents are not cut. */
+.sp-split .sp-line-mask { padding-bottom: .1em; margin-bottom: -.1em; }
+/* argus:copy-end split-headline css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Northern Light Film Week</strong><span>Glasgow, 6&ndash;12 March</span></header>
+<main>
+  <!-- argus:copy-start split-headline html -->
+  <section class="hero">
+    <div>
+      <h1 class="sp-split">Seven nights of films made in the cold.</h1>
+      <div class="details sp-late">
+        <span class="dates">6&ndash;12 March 2027 &middot; 41 films</span>
+        <a class="book" href="#tickets">Book tickets</a>
+      </div>
+    </div>
+    <figure class="still sp-still" aria-hidden="true">
+      <svg viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice">
+        <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3b4f"/><stop offset=".6" stop-color="#6e8f9c"/><stop offset="1" stop-color="#d9d3c3"/></linearGradient></defs>
+        <rect width="400" height="500" fill="url(#sky)"/>
+        <path d="M0 360 L90 300 L160 340 L250 270 L330 320 L400 290 L400 500 L0 500 Z" fill="#26323a"/>
+        <path d="M0 420 L120 390 L220 420 L320 380 L400 400 L400 500 L0 500 Z" fill="#141b20"/>
+        <rect x="186" y="395" width="6" height="22" fill="#ffd166"/>
+      </svg>
+    </figure>
+  </section>
+  <!-- argus:copy-end split-headline html -->
+</main>
+
+<!-- argus:copy-start split-headline js -->
+<script>
+addEventListener('DOMContentLoaded', () => {
+  const root = document.documentElement;
+  const reg = (window.__argus = window.__argus || { timelines: {}, scenes: [] });
+  if (!window.gsap || !window.SplitText || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    root.classList.remove('sp-arming');
+    return; // reduced motion or no library: the finished first screen, as written
+  }
+  gsap.registerPlugin(SplitText);
+  const ease = 'expo.out'; // the page's one arrival curve
+
+  SplitText.create('.sp-split', {
+    type: 'lines',
+    mask: 'lines', // each line wrapped in a clipping box, class sp-line-mask
+    linesClass: 'sp-line',
+    autoSplit: true, // waits for fonts and re-splits on resize; onSplit runs each time
+    onSplit(split) {
+      root.classList.remove('sp-arming');
+      const tl = gsap.timeline({ defaults: { ease } });
+      tl.from(split.lines, { yPercent: 105, duration: 1, stagger: 0.08 })
+        // The picture opens while the last line is still rising: overlap, not a queue.
+        .from('.sp-still', { clipPath: 'inset(100% 0% 0% 0%)', duration: 1.1 }, 0.15)
+        .from('.sp-still svg', { scale: 1.12, duration: 1.4 }, 0.15)
+        .from('.sp-late', { autoAlpha: 0, y: 16, duration: 0.7 }, '-=0.9');
+      reg.timelines.arrival = tl;
+      return tl; // returned so a re-split carries the tween's progress over
+    },
+  });
+});
+</script>
+<!-- argus:copy-end split-headline js -->
+</body>
+</html>

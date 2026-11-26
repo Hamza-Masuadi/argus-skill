@@ -1,0 +1,66 @@
+<!doctype html>
+<!--
+  scroll-ground-shift: the whole page's ground and ink colours change as you pass from one
+  chapter to the next (night, dawn, day, dusk), easing over 600ms, so the page itself
+  marks the chapters instead of boxes around them.
+  Mechanism: each chapter carries data-ground and data-ink; an IntersectionObserver with
+  a band at the middle of the screen sets two custom properties on <html>, and body
+  transitions background-color and color. Pick pairs that each pass contrast on their own.
+  Without JS: the first pair stays. Touch and keyboard: the same.
+  Reduced motion: colours still change (they carry meaning) but instantly.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ground-colour chapter shift (scroll-ground-shift)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+.chapter { min-height: 100vh; max-width: 70rem; margin: 0 auto; padding: 14vh clamp(1.25rem, 4vw, 3rem); display: grid; align-content: center; gap: 1.25rem; }
+.chapter .n { font: 600 14px/1 "Avenir Next", sans-serif; letter-spacing: .02em; }
+.chapter h2 { font: 400 clamp(2.5rem, 7vw, 6.5rem)/.98 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0; max-width: 13ch; }
+.chapter p { margin: 0; max-width: 32rem; font: 400 18px/1.6 "Avenir Next", sans-serif; }
+
+/* argus:copy-start css */
+:root { --ease-in-out: cubic-bezier(.65,0,.35,1); --ground: #131a2b; --ink: #e8ecf5; }
+body {
+  margin: 0; background-color: var(--ground); color: var(--ink);
+  transition: background-color 600ms var(--ease-in-out), color 600ms var(--ease-in-out);
+}
+@media (prefers-reduced-motion: reduce) { body { transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <!-- argus:copy-start html -->
+  <section class="chapter" data-ground="#131a2b" data-ink="#e8ecf5">
+    <span class="n">4.30am</span><h2>The ovens are lit in the dark.</h2><p>Two deck ovens take ninety minutes to reach 260°C. The first dough has been proving since yesterday afternoon.</p>
+  </section>
+  <!-- argus:copy-end html -->
+  <section class="chapter" data-ground="#f2b48a" data-ink="#2b140a"><span class="n">6.15am</span><h2>First bake, sourdough and rye.</h2><p>Forty loaves go in at once. They come out darker than most bakeries dare.</p></section>
+  <section class="chapter" data-ground="#f6f1e4" data-ink="#1f1c16"><span class="n">8.00am</span><h2>The doors open on Mill Lane.</h2><p>By nine the croissants have usually gone. Order the day before and we will keep yours back.</p></section>
+  <section class="chapter" data-ground="#3c2a4d" data-ink="#f3e9f7"><span class="n">2.00pm</span><h2>Sold out, cleaned down, home.</h2><p>Whatever is left goes to the shelter on Cross Street at closing.</p></section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const root = document.documentElement;
+  const chapters = document.querySelectorAll('[data-ground]');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      root.style.setProperty('--ground', e.target.dataset.ground);
+      root.style.setProperty('--ink', e.target.dataset.ink);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.content = e.target.dataset.ground; // the browser chrome follows on phones
+    });
+  }, { rootMargin: '-50% 0px -50% 0px' }); // the chapter crossing the middle of the screen wins
+  chapters.forEach(c => io.observe(c));
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

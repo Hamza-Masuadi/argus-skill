@@ -1,0 +1,153 @@
+<!doctype html>
+<!--
+  card-sizes-rise: a panel rises from the bottom edge of the picture with the sizes still in stock and the price, each size a real button.
+  Pointer: on hover (or focus inside the card) the panel slides up in t-fast on --ease-out and the sizes follow with a 30ms stagger; it drops back in t-base.
+  Keyboard: :focus-within raises the panel, so tabbing reaches each size button.
+  Touch: the panel sits below the picture, always open, so sizes are one tap away.
+  Reduced motion: the panel appears in place with no travel.
+  CSS only, plus a tiny handler that marks the chosen size. Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sizes slide up (card-sizes-rise)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #b7c3ad; color: #1c2219; font: 400 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+main { max-width: 72rem; margin: 0 auto; padding: 4.5rem 2rem 6rem; }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 2rem; margin-bottom: 2.25rem; }
+.head h1 { margin: 0; font: 400 clamp(2rem, 4vw, 3rem)/1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.head p { margin: 0; color: #3f4a3a; }
+
+/* argus:copy-start css */
+.racks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1.5rem; }
+.knit { position: relative; }
+.knit-pic { position: relative; display: block; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 3px; }
+.knit-pic svg { display: block; width: 100%; height: 100%; }
+.knit-link { color: inherit; text-decoration: none; display: block; }
+.knit-link:focus-visible { outline: 2px solid #1c2219; outline-offset: 4px; border-radius: 3px; }
+.knit-name { display: flex; justify-content: space-between; gap: 1rem; padding-top: .7rem; }
+.knit-name span { color: #3f4a3a; }
+.knit-panel {
+  background: #f4f1e8; border-radius: 3px; padding: .75rem .8rem .8rem; margin-top: .5rem;
+}
+.knit-panel p { margin: 0 0 .5rem; font-size: 12px; color: #4b5545; }
+.knit-sizes { display: flex; gap: .35rem; flex-wrap: wrap; }
+.knit-sizes button {
+  min-width: 2.6rem; min-height: 2.25rem; padding: 0 .5rem; border-radius: 2px; border: 1px solid #c9c6b8;
+  background: transparent; color: #1c2219; font: 500 13px/1 "Helvetica Neue", Helvetica, Arial, sans-serif; cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+.knit-sizes button:hover { background: #1c2219; color: #f4f1e8; }
+.knit-sizes button[aria-pressed="true"] { background: #1c2219; color: #f4f1e8; border-color: #1c2219; }
+.knit-sizes button:disabled { color: #8a8d82; text-decoration: line-through; cursor: not-allowed; background: transparent; }
+.knit-sizes button:focus-visible { outline: 2px solid #1c2219; outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  /* the panel overlays the foot of the picture and hides below it until wanted */
+  .knit-pic-wrap { position: relative; overflow: hidden; border-radius: 3px; }
+  .knit-panel {
+    position: absolute; left: .5rem; right: .5rem; bottom: .5rem; margin: 0;
+    transform: translateY(calc(100% + .6rem));
+    transition: transform var(--t-base) var(--ease-in-out);
+  }
+  .knit-sizes button { opacity: 0; transform: translateY(6px); transition: opacity var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+  .knit:hover .knit-panel, .knit:focus-within .knit-panel { transform: none; transition-duration: var(--t-fast); transition-timing-function: var(--ease-out); }
+  .knit:hover .knit-sizes button, .knit:focus-within .knit-sizes button { opacity: 1; transform: none; transition-delay: calc(60ms + var(--i) * 30ms); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .knit-panel, .knit-sizes button { transition: opacity var(--t-fast) linear !important; }
+  .knit .knit-panel { transform: none; opacity: 0; }
+  .knit:hover .knit-panel, .knit:focus-within .knit-panel { opacity: 1; }
+  .knit-sizes button { transform: none !important; }
+}
+@media (prefers-reduced-motion: reduce) and (hover: none), (prefers-reduced-motion: reduce) and (pointer: coarse) { .knit .knit-panel { opacity: 1; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="head"><h1>Skerry knitwear</h1><p>Spun and knitted in Lerwick</p></div>
+  <!-- argus:copy-start html -->
+  <ul class="racks">
+    <li class="knit">
+      <div class="knit-pic-wrap">
+        <a class="knit-link" href="#fair-isle" aria-label="Fair Isle yoke, £195">
+          <span class="knit-pic" role="img" aria-label="Fair Isle yoke jumper in oatmeal, folded">
+            <svg viewBox="0 0 320 400" aria-hidden="true"><rect width="320" height="400" fill="#d7cdb8"/><rect x="60" y="120" width="200" height="170" rx="6" fill="#e9e0cb"/><rect x="60" y="120" width="200" height="40" fill="#8a3d2f"/><path d="M60 140 h200" stroke="#e9e0cb" stroke-width="6" stroke-dasharray="6 10"/><rect x="60" y="160" width="200" height="16" fill="#2f4a5a"/><rect x="60" y="278" width="200" height="12" fill="#cfc4ac"/></svg>
+          </span>
+        </a>
+        <div class="knit-panel">
+          <p>In stock, ships Monday</p>
+          <div class="knit-sizes" role="group" aria-label="Fair Isle yoke, choose a size">
+            <button type="button" style="--i:0" aria-pressed="false">XS</button><button type="button" style="--i:1" aria-pressed="false">S</button><button type="button" style="--i:2" aria-pressed="false">M</button><button type="button" style="--i:3" disabled>L</button><button type="button" style="--i:4" aria-pressed="false">XL</button>
+          </div>
+        </div>
+      </div>
+      <div class="knit-name"><b>Fair Isle yoke</b><span>£195</span></div>
+    </li>
+    <li class="knit">
+      <div class="knit-pic-wrap">
+        <a class="knit-link" href="#gansey" aria-label="Gansey, navy, £168">
+          <span class="knit-pic" role="img" aria-label="Navy gansey jumper, folded">
+            <svg viewBox="0 0 320 400" aria-hidden="true"><rect width="320" height="400" fill="#c3c9cc"/><rect x="60" y="120" width="200" height="170" rx="6" fill="#26344a"/><path d="M80 130 v150 M110 130 v150 M140 130 v150 M170 130 v150 M200 130 v150 M230 130 v150" stroke="#33455f" stroke-width="5"/><rect x="60" y="278" width="200" height="12" fill="#1d2939"/></svg>
+          </span>
+        </a>
+        <div class="knit-panel">
+          <p>Two left in M</p>
+          <div class="knit-sizes" role="group" aria-label="Gansey, choose a size">
+            <button type="button" style="--i:0" disabled>XS</button><button type="button" style="--i:1" aria-pressed="false">S</button><button type="button" style="--i:2" aria-pressed="false">M</button><button type="button" style="--i:3" aria-pressed="false">L</button><button type="button" style="--i:4" aria-pressed="false">XL</button>
+          </div>
+        </div>
+      </div>
+      <div class="knit-name"><b>Gansey, navy</b><span>£168</span></div>
+    </li>
+    <li class="knit">
+      <div class="knit-pic-wrap">
+        <a class="knit-link" href="#cardigan" aria-label="Shawl cardigan, moss, £210">
+          <span class="knit-pic" role="img" aria-label="Moss green shawl-collar cardigan, folded">
+            <svg viewBox="0 0 320 400" aria-hidden="true"><rect width="320" height="400" fill="#d9d4c6"/><rect x="60" y="120" width="200" height="170" rx="6" fill="#5d6b45"/><path d="M160 120 v170" stroke="#4a5636" stroke-width="4"/><circle cx="150" cy="170" r="5" fill="#c9b98f"/><circle cx="150" cy="210" r="5" fill="#c9b98f"/><circle cx="150" cy="250" r="5" fill="#c9b98f"/><rect x="60" y="278" width="200" height="12" fill="#4a5636"/></svg>
+          </span>
+        </a>
+        <div class="knit-panel">
+          <p>Made to order, 3 weeks</p>
+          <div class="knit-sizes" role="group" aria-label="Shawl cardigan, choose a size">
+            <button type="button" style="--i:0" aria-pressed="false">XS</button><button type="button" style="--i:1" aria-pressed="false">S</button><button type="button" style="--i:2" aria-pressed="false">M</button><button type="button" style="--i:3" aria-pressed="false">L</button><button type="button" style="--i:4" aria-pressed="false">XL</button>
+          </div>
+        </div>
+      </div>
+      <div class="knit-name"><b>Shawl cardigan, moss</b><span>£210</span></div>
+    </li>
+  </ul>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+document.querySelectorAll('.knit-sizes').forEach((group) => {
+  group.addEventListener('click', (e) => {
+    const b = e.target.closest('button:not(:disabled)');
+    if (!b) return;
+    group.querySelectorAll('button').forEach((x) => { if (!x.disabled) x.setAttribute('aria-pressed', String(x === b)); });
+  });
+});
+// argus:copy-end js
+</script>
+</body>
+</html>

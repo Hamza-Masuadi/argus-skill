@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  micro-field-float: a text field whose label sits inside it like a placeholder, then
+  floats up and shrinks when you focus or type; an underline draws out from the point
+  where you clicked (or from the left when you tab in).
+  Mechanism: CSS only for the label (:focus-within and :not(:placeholder-shown)); the
+  underline's transform-origin is set from the pointer's x on pointerdown (one rect read
+  per press). The label is a real <label>, always present, so nothing relies on motion.
+  Touch: the same. Reduced motion: label and underline change without travel.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floating label field (micro-field-float)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f4efe7; color: #231d17; font: 400 16px/1.5 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+form { width: min(28rem, 92vw); display: grid; gap: 1.25rem; }
+h1 { font: 400 2rem/1.1 "Iowan Old Style", Georgia, serif; margin: 0 0 .5rem; }
+.go { font: 600 15px/1 "Avenir Next", sans-serif; padding: 1rem; border: 0; border-radius: 4px; background: #231d17; color: #f4efe7; cursor: pointer; }
+.go:focus-visible { outline: 2px solid #c25a2c; outline-offset: 3px; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-fast: 180ms; --t-base: 320ms; }
+.ff { position: relative; }
+.ff input { width: 100%; font: 400 17px/1.2 "Avenir Next", sans-serif; color: inherit; background: #fffaf3; border: 0; border-bottom: 1px solid #231d1755;
+  border-radius: 4px 4px 0 0; padding: 1.55rem .9rem .55rem; outline: none; }
+.ff label { position: absolute; left: .9rem; top: 1.05rem; color: #6d6155; pointer-events: none; transform-origin: 0 0;
+  transition: translate var(--t-base) var(--ease-out), scale var(--t-base) var(--ease-out), color var(--t-fast); }
+.ff:focus-within label, .ff input:not(:placeholder-shown) + label { translate: 0 -.62rem; scale: .76; }
+.ff:focus-within label { color: #a8461f; }
+.ff .line { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #a8461f; transform: scaleX(0); transform-origin: var(--ox, 0) 50%;
+  transition: transform var(--t-base) var(--ease-out); }
+.ff:focus-within .line { transform: scaleX(1); }
+.ff input::placeholder { color: transparent; }
+.ff input:focus { background: #fff; } /* an immediate focus change; the drawn line follows */
+@media (prefers-reduced-motion: reduce) { .ff label, .ff .line { transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<form onsubmit="event.preventDefault()">
+  <h1>Reserve a table</h1>
+  <!-- argus:copy-start html -->
+  <div class="ff"><input id="f-name" name="name" placeholder=" " autocomplete="name"><label for="f-name">Your name</label><span class="line" aria-hidden="true"></span></div>
+  <!-- argus:copy-end html -->
+  <div class="ff"><input id="f-phone" name="tel" type="tel" placeholder=" " autocomplete="tel"><label for="f-phone">Phone number</label><span class="line" aria-hidden="true"></span></div>
+  <div class="ff"><input id="f-size" name="size" inputmode="numeric" placeholder=" " value="2"><label for="f-size">Guests</label><span class="line" aria-hidden="true"></span></div>
+  <button class="go" type="submit">Check Friday, 7.30pm</button>
+</form>
+</main>
+<script>
+// argus:copy-start js
+// The underline grows from where the field was pressed; from the left for keyboard focus.
+document.querySelectorAll('.ff').forEach(f => {
+  f.addEventListener('pointerdown', e => {
+    const r = f.getBoundingClientRect();
+    f.style.setProperty('--ox', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+  });
+  f.addEventListener('focusout', () => setTimeout(() => f.style.removeProperty('--ox'), 320));
+});
+// argus:copy-end js
+</script>
+</body>
+</html>

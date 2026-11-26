@@ -1,0 +1,122 @@
+<!doctype html>
+<!--
+  svg-pointer-parts: a drawn object made of parts that answer the pointer; here a fountain
+  pen maker's pen, drawn as an exploded view. Moving a fine pointer across it pulls the
+  parts further apart; pointing at a part, or choosing it from the list, marks it and
+  shows what it is made of.
+  Mechanism: each part is a <g> with --k, its place in the explode order; its transform is
+  translateX(--k times --spread). On pointermove (fine pointers only, no reduced motion)
+  the script caches the figure's rect on enter and writes --spread inside one
+  requestAnimationFrame; a CSS transition smooths it. The part list is real buttons; the
+  part under the pointer and the focused or pressed button share one state.
+  Fallback and reduced motion: the parts sit apart at a fixed spread and do not move; the
+  list still marks parts and shows their text.
+  Touch and keyboard: the pull-apart is decoration only; the information is in the
+  buttons (tap, Enter or Space), with the description announced through aria-live.
+  A technique to redraw for the subject (a watch movement, a sash window, a hiking boot's
+  layers), not a decoration to paste: keep the mechanism, draw your own parts.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SVG parts that answer the pointer (svg-pointer-parts)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #efeef0; color: #1b1a22; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { width: min(68rem, 100%); padding: 2rem clamp(1.25rem, 4vw, 3rem); }
+main > h1 { font: 600 clamp(2rem, 4.5vw, 3.5rem)/1.05 "Avenir Next", sans-serif; letter-spacing: -.02em; margin: 0 0 2rem; max-width: 20ch; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-base: 320ms; --t-fast: 180ms; }
+.parts { display: grid; gap: 1.5rem; }
+.parts svg { width: 100%; height: auto; --spread: 14; }
+.parts .part { transform: translateX(calc(var(--k) * var(--spread) * 1px)); transition: transform var(--t-base) var(--ease-out); }
+.parts .part > * { fill: #d8d4dc; stroke: #1b1a22; stroke-width: 3; stroke-linejoin: round; transition: fill var(--t-fast) var(--ease-out); }
+.parts .part.is-on > * { fill: #6d4bc4; }
+.parts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+.parts button { font: 600 15px/1 "Avenir Next", sans-serif; color: #1b1a22; background: #fff; border: 1.5px solid #1b1a22; border-radius: 6px; padding: .8rem 1rem; min-height: 44px; cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+.parts button[aria-pressed="true"] { background: #1b1a22; color: #fff; }
+.parts button:focus-visible { outline: 2px solid #6d4bc4; outline-offset: 3px; }
+.parts .says { margin: 0; min-height: 3.2em; max-width: 40rem; color: #4b4856; }
+@media (prefers-reduced-motion: reduce) { .parts .part, .parts .part > * { transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Five parts, all made in our Birmingham workshop</h1>
+  <!-- argus:copy-start html -->
+  <div class="parts">
+    <svg viewBox="-40 40 720 120" role="img" aria-label="Exploded drawing of the Number 3 fountain pen: nib, section, barrel, end cap and cap">
+      <g class="part" data-part="nib" style="--k:-2"><path d="M40 100 L104 88 V112 Z"/></g>
+      <g class="part" data-part="section" style="--k:-1"><rect x="110" y="89" width="56" height="22" rx="4"/></g>
+      <g class="part" data-part="barrel" style="--k:0"><rect x="172" y="83" width="250" height="34" rx="8"/></g>
+      <g class="part" data-part="end" style="--k:1"><rect x="428" y="85" width="44" height="30" rx="10"/></g>
+      <g class="part" data-part="cap" style="--k:2"><rect x="478" y="80" width="130" height="40" rx="10"/><path d="M500 80 V66 H560 V80"/></g>
+    </svg>
+    <ul>
+      <li><button type="button" aria-pressed="false" data-part="nib" data-says="Nib: 14 carat gold, ground to fine, medium or italic, and tested with ink before it ships.">Nib</button></li>
+      <li><button type="button" aria-pressed="false" data-part="section" data-says="Section: turned from ebonite, shaped to sit where your fingers rest.">Section</button></li>
+      <li><button type="button" aria-pressed="false" data-part="barrel" data-says="Barrel: hand-turned acrylic or walnut; it holds 1.6ml through the converter.">Barrel</button></li>
+      <li><button type="button" aria-pressed="false" data-part="end" data-says="End cap: unscrews to fill the pen as an eyedropper, if you prefer.">End cap</button></li>
+      <li><button type="button" aria-pressed="false" data-part="cap" data-says="Cap: a brass clip, and an inner seal that keeps the nib from drying out for weeks.">Cap</button></li>
+    </ul>
+    <p class="says" aria-live="polite">The Number 3, £185. Choose a part to see what it is made of.</p>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  document.querySelectorAll('.parts').forEach(box => {
+    const svg = box.querySelector('svg');
+    const groups = box.querySelectorAll('.part');
+    const buttons = box.querySelectorAll('button[data-part]');
+    const says = box.querySelector('.says');
+    // One state for the pointer, the focus and the press.
+    const mark = name => groups.forEach(g => g.classList.toggle('is-on', g.dataset.part === name));
+    const choose = b => {
+      buttons.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      mark(b.dataset.part);
+      says.textContent = b.dataset.says;
+    };
+    buttons.forEach(b => {
+      b.addEventListener('click', () => choose(b));
+      b.addEventListener('focus', () => mark(b.dataset.part));
+      b.addEventListener('blur', () => { const p = box.querySelector('button[aria-pressed="true"]'); mark(p ? p.dataset.part : ''); });
+    });
+    // Pointer: fine pointers with motion only. Decoration; the buttons carry the content.
+    const fine = matchMedia('(hover: hover) and (pointer: fine)');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    let rect = null, frame = 0, px = 0;
+    svg.addEventListener('pointerenter', () => { rect = svg.getBoundingClientRect(); }, { passive: true });
+    svg.addEventListener('pointermove', e => {
+      if (!fine.matches || reduce.matches) return;
+      if (!rect) rect = svg.getBoundingClientRect();
+      px = e.clientX;
+      const hit = e.target.closest && e.target.closest('.part');
+      if (hit) mark(hit.dataset.part);
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const t = Math.min(1, Math.max(0, (px - rect.left) / rect.width));
+        svg.style.setProperty('--spread', (6 + t * 30).toFixed(1));
+      });
+    }, { passive: true });
+    svg.addEventListener('pointerleave', () => {
+      rect = null;
+      svg.style.removeProperty('--spread');
+      const pressed = box.querySelector('button[aria-pressed="true"]');
+      mark(pressed ? pressed.dataset.part : '');
+    }, { passive: true });
+    addEventListener('scroll', () => { rect = null; }, { passive: true });
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

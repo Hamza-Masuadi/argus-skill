@@ -25,7 +25,7 @@ function place(from: string, to: string, source: string, executable: boolean): v
 
 place('build/bin/argus.js', 'bin/argus.js', 'src/bin/argus.ts', true);
 // rules.js is the rule catalogue; the command reads it from the skill folder for `argus-skill rules`.
-for (const name of ['check', 'inventory', 'lint', 'contrast', 'compare', 'shot', 'rules', 'photos']) {
+for (const name of ['check', 'inventory', 'lint', 'shot', 'rules', 'photos', 'video', 'deal']) {
   place(`build/scripts/${name}.js`, `skills/argus/scripts/${name}.js`, `src/scripts/${name}.ts`, false);
 }
 console.log('Synced bin/argus.js and skills/argus/scripts/*.js');

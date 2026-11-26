@@ -1,0 +1,109 @@
+<!doctype html>
+<!--
+  arrival-tabs-transition: switching tabs wipes the new panel in from the side of the tab
+  you chose (right if it is after the current tab, left if before), while the old panel
+  slides a little the other way and fades.
+  Mechanism: document.startViewTransition() around the panel swap, with the panel named
+  view-transition-name: tabpanel and a data-dir on <html> choosing the keyframes.
+  Real ARIA tabs: arrow keys, Home and End move between tabs; only the active tab is
+  in the tab order. Fallback: without View Transitions the panels swap instantly.
+  Reduced motion: a plain swap. Touch: the same as click.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tab wipe with startViewTransition (arrival-tabs-transition)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #0f1714; color: #e9efe9; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 64rem; margin: 0 auto; padding: 10vh clamp(1.25rem, 4vw, 3rem); }
+h1 { font: 500 clamp(2rem, 4.5vw, 3.75rem)/1.05 "Avenir Next", sans-serif; letter-spacing: -.03em; margin: 0 0 2.5rem; max-width: 18ch; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --ease-in: cubic-bezier(.5,0,.75,0); --t-base: 320ms; --t-slow: 640ms; }
+.tabs [role="tablist"] { display: flex; gap: .25rem; border-bottom: 1px solid #e9efe933; }
+.tabs [role="tab"] { font: 600 15px/1 "Avenir Next", sans-serif; color: #9fb0a6; background: none; border: 0; padding: 1rem 1.1rem; cursor: pointer; position: relative; }
+.tabs [role="tab"][aria-selected="true"] { color: #e9efe9; }
+.tabs [role="tab"][aria-selected="true"]::after { content: ""; position: absolute; left: .8rem; right: .8rem; bottom: -1px; height: 2px; background: #7ee0a4; }
+.tabs [role="tab"]:focus-visible { outline: 2px solid #7ee0a4; outline-offset: -4px; border-radius: 4px; }
+.tabs [role="tabpanel"] { view-transition-name: tabpanel; padding: 2.5rem 0; display: grid; grid-template-columns: 5fr 7fr; gap: 2.5rem; min-height: 22rem; }
+.tabs [role="tabpanel"]:focus-visible { outline: 2px solid #7ee0a4; outline-offset: 6px; }
+.tabs .swatch { border-radius: 6px; min-height: 16rem; }
+.tabs h2 { font: 500 1.75rem/1.1 "Avenir Next", sans-serif; margin: 0 0 1rem; }
+::view-transition-old(tabpanel) { animation: tab-out 160ms var(--ease-in) both; } /* the old panel is gone before the new one is legible */
+::view-transition-new(tabpanel) { animation: tab-in var(--t-slow) var(--ease-out) 80ms both; }
+@keyframes tab-out { to { opacity: 0; translate: calc(var(--dir, 1) * -40px) 0; } }
+@keyframes tab-in { from { clip-path: inset(0 0 0 100%); translate: calc(var(--dir, 1) * 24px) 0; } to { clip-path: inset(0); } }
+html[data-dir="back"] { --dir: -1; }
+html[data-dir="back"]::view-transition-new(tabpanel) { animation-name: tab-in-back; }
+::view-transition-group(tabpanel) { animation-duration: 0s; }
+@keyframes tab-in-back { from { clip-path: inset(0 100% 0 0); translate: -24px 0; } to { clip-path: inset(0); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(tabpanel), ::view-transition-new(tabpanel) { animation: none; } }
+@media (max-width: 700px) { .tabs [role="tabpanel"] { grid-template-columns: 1fr; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Three greenhouses, three climates.</h1>
+  <!-- argus:copy-start html -->
+  <div class="tabs" data-tabs>
+    <div role="tablist" aria-label="Glasshouses">
+      <button role="tab" id="t-1" aria-controls="p-tabs" aria-selected="true" tabindex="0">Tropical</button>
+      <button role="tab" id="t-2" aria-controls="p-tabs" aria-selected="false" tabindex="-1">Arid</button>
+      <button role="tab" id="t-3" aria-controls="p-tabs" aria-selected="false" tabindex="-1">Alpine</button>
+    </div>
+    <div role="tabpanel" id="p-tabs" aria-labelledby="t-1" tabindex="0">
+      <div class="swatch" style="background:#2f7a4f"></div>
+      <div><h2>Tropical house, 26°C</h2><p>Bananas, cacao and a pond of giant water lilies. Humid all year; your glasses will fog.</p></div>
+    </div>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const PANELS = [
+    { c: '#2f7a4f', h: 'Tropical house, 26°C', p: 'Bananas, cacao and a pond of giant water lilies. Humid all year; your glasses will fog.' },
+    { c: '#c98b4a', h: 'Arid house, 30°C by day', p: 'Agaves, a 90-year-old barrel cactus and a sand bed raked every morning.' },
+    { c: '#7f9fb5', h: 'Alpine house, kept cool', p: 'Saxifrages and gentians in tufa, flowering from February. Fans run all summer.' },
+  ];
+  const root = document.querySelector('[data-tabs]');
+  const tabs = [...root.querySelectorAll('[role="tab"]')];
+  const panel = root.querySelector('[role="tabpanel"]');
+  let current = 0;
+  const select = (i, focus) => {
+    if (i === current) return;
+    const dir = i > current ? 'fwd' : 'back';
+    const swap = () => {
+      tabs.forEach((t, j) => { t.setAttribute('aria-selected', String(j === i)); t.tabIndex = j === i ? 0 : -1; });
+      panel.setAttribute('aria-labelledby', tabs[i].id);
+      panel.querySelector('.swatch').style.background = PANELS[i].c;
+      panel.querySelector('h2').textContent = PANELS[i].h;
+      panel.querySelector('p').textContent = PANELS[i].p;
+      current = i;
+    };
+    if (focus) tabs[i].focus();
+    document.documentElement.dataset.dir = dir;
+    if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) swap();
+    else document.startViewTransition(swap);
+  };
+  tabs.forEach((t, i) => t.addEventListener('click', () => select(i)));
+  root.querySelector('[role="tablist"]').addEventListener('keydown', e => {
+    const map = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: tabs.length - 1 };
+    if (!(e.key in map)) return;
+    e.preventDefault();
+    select((map[e.key] + tabs.length) % tabs.length, true);
+  });
+})();
+// argus:copy-end js
+</script>
+<script>
+// Demo only: ?demo triggers the interaction after load so a frame capture can see it run.
+if (location.search.includes('demo')) setTimeout(() => document.getElementById('t-2').click(), 250);
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  link-wipe-through: the underline draws in from the left and leaves to the right.
+  Pointer: on hover. Keyboard: the same on :focus-visible, plus a focus ring.
+  Touch: links keep a thin resting underline so they read as links without hover.
+  Reduced motion: the line appears and goes without travel.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Underline wipe-through (link-wipe-through)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+/* Demo page */
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; display: grid; place-items: center;
+  background: #e9ece6; color: #1d2320;
+  font: 400 19px/1.6 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+article { max-width: 36rem; padding: 4rem 1.5rem; }
+.kicker { font: 600 12px/1 "Helvetica Neue", Helvetica, Arial, sans-serif; letter-spacing: .02em; color: #5b6660; margin: 0 0 1.25rem; }
+h1 { font-weight: 400; font-size: clamp(2rem, 4vw, 2.75rem); line-height: 1.1; letter-spacing: -.01em; margin: 0 0 1.5rem; }
+p { margin: 0 0 1.1rem; }
+.byline { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #c9cfc6; font: 400 14px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #5b6660; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+
+/* argus:copy-start css */
+.wipe {
+  color: inherit;
+  text-decoration: none;
+  /* a faint resting line, so the link reads as a link without hover (touch) */
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, currentColor 28%, transparent);
+  background: linear-gradient(currentColor, currentColor) no-repeat 100% 100% / 0% 1.5px;
+  transition: background-size var(--t-base) var(--ease-in-out);
+}
+.wipe:hover,
+.wipe:focus-visible {
+  background-position: 0% 100%;
+  background-size: 100% 1.5px;
+  transition-duration: var(--t-fast);
+  transition-timing-function: var(--ease-out);
+}
+.wipe:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .wipe { transition: none; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<article>
+  <p class="kicker">Field notes · Issue 14 · Kent</p>
+  <h1>The orchard that waited forty years for its first pear</h1>
+  <!-- argus:copy-start html -->
+  <p>Ruth Allard planted the Doyenné du Comice row in 1984, on the advice of a <a class="wipe" href="#grafting">grafting manual</a> she later called optimistic. The trees took. The fruit did not, until a cold March in 2024 and a borrowed hive from the <a class="wipe" href="#beekeepers">Stour Valley beekeepers</a>.</p>
+  <p>This autumn the row gave eleven crates. Four went to <a class="wipe" href="#market">Saturday market</a>, the rest to perry.</p>
+  <!-- argus:copy-end html -->
+  <p class="byline"><span>Words by Tom Hesketh</span><a class="wipe" href="#issue-13">Previous issue</a><a class="wipe" href="#subscribe">Subscribe, £18 a year</a></p>
+</article>
+</main>
+</body>
+</html>

@@ -42,7 +42,7 @@ test('the installed copy has the scripts and references', () => {
   const { home, project } = sandbox();
   quiet(() => main(['install', '--tools=claude'], home, project));
   const base = path.join(project, '.claude', 'skills', 'argus');
-  for (const f of ['scripts/check.js', 'scripts/shot.js', 'references/create.md', 'assets/compare.html']) {
+  for (const f of ['scripts/check.js', 'scripts/shot.js', 'references/brief.md', 'assets/compare.html']) {
     assert.ok(fs.existsSync(path.join(base, f)), f + ' should be installed');
   }
 });

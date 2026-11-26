@@ -1,0 +1,124 @@
+<!doctype html>
+<!--
+  Argus snippet gallery: every tested effect, live. Open this file in a browser (no server needed).
+  Each snippet is one standalone page; copy the blocks marked for copying, with motion-tokens.css once in :root.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Argus snippets</title>
+<style>
+body { margin: 0 auto; max-width: 72rem; padding: 1.5rem; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1a1a1a; background: #fff; }
+h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.15rem; margin: 2.5rem 0 .75rem; border-bottom: 1px solid #ddd; padding-bottom: .25rem; }
+h2 small { color: #666; font-weight: 400; }
+nav a { margin-right: .75rem; }
+ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 1.5rem; }
+li p { margin: .25rem 0 .5rem; color: #444; font-size: 14px; }
+li a { font-weight: 600; }
+iframe { width: 100%; aspect-ratio: 16 / 10; border: 1px solid #ddd; background: #fafafa; }
+a { color: #0645ad; }
+a:focus-visible { outline: 2px solid #0645ad; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<h1>Argus snippets</h1>
+<p>49 tested effects. Open one to see it at full size; copy only its marked blocks (<code>argus:copy-start</code> to <code>argus:copy-end</code>) and keep its reduced-motion, touch and keyboard parts. The svg group are techniques to redraw for the subject, not pictures to paste.</p>
+<nav><a href="#arrival">arrival</a> <a href="#link">link</a> <a href="#list">list</a> <a href="#card">card</a> <a href="#micro">micro</a> <a href="#scroll">scroll</a> <a href="#svg">svg</a> <a href="#text">text</a> <a href="#scene">scene</a></nav>
+<section id="arrival">
+<h2>Arrival: the first screen assembles, once, under a second <small>5</small></h2>
+<ul>
+<li><a href="arrival-headline-wipe.html">arrival-headline-wipe</a><p>on first paint the headline&#x27;s lines rise out of their masks one after another while the picture beside them wipes open from the bottom and settles from 1.1 to 1; the small details follow last.</p><iframe src="arrival-headline-wipe.html" title="arrival-headline-wipe" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="arrival-picture-develop.html">arrival-picture-develop</a><p>on load the picture develops like a print in a tray: it comes up from the page&#x27;s ground tone to its full colour and contrast, easing from 1.03 to 1 as it does.</p><iframe src="arrival-picture-develop.html" title="arrival-picture-develop" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="arrival-rule-draw.html">arrival-rule-draw</a><p>on load a hairline rule draws across under the headline from the left edge, and the small details beside it (place, hours) settle in after it.</p><iframe src="arrival-rule-draw.html" title="arrival-rule-draw" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="arrival-shared-element.html">arrival-shared-element</a><p>clicking a product in a list opens its detail view, and the product&#x27;s picture travels and grows from its place in the list into the detail hero (and back again on &quot;Back&quot;).</p><iframe src="arrival-shared-element.html" title="arrival-shared-element" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="arrival-tabs-transition.html">arrival-tabs-transition</a><p>switching tabs wipes the new panel in from the side of the tab you chose (right if it is after the current tab, left if before), while the old panel slides a little the other way and fades.</p><iframe src="arrival-tabs-transition.html" title="arrival-tabs-transition" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="link">
+<h2>Links and buttons: hover and press <small>5</small></h2>
+<ul>
+<li><a href="link-arrow-travel.html">link-arrow-travel</a><p>the arrow leaves through the right edge and a copy arrives from the left, so the link points onward.</p><iframe src="link-arrow-travel.html" title="link-arrow-travel" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="link-direction-fill.html">link-direction-fill</a><p>the fill comes in from the edge the pointer crossed and leaves through the edge it exits by.</p><iframe src="link-direction-fill.html" title="link-direction-fill" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="link-highlighter.html">link-highlighter</a><p>a marker band sweeps behind the words from the left, as if someone highlighted the line; it wipes back on leaving.</p><iframe src="link-highlighter.html" title="link-highlighter" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="link-press-spring.html">link-press-spring</a><p>buttons press in quickly under the finger and spring back with a small overshoot on release; hover only steps the colour, nothing lifts.</p><iframe src="link-press-spring.html" title="link-press-spring" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="link-wipe-through.html">link-wipe-through</a><p>the underline draws in from the left and leaves to the right.</p><iframe src="link-wipe-through.html" title="link-wipe-through" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="list">
+<h2>Lists and rows <small>4</small></h2>
+<ul>
+<li><a href="list-follower-direction.html">list-follower-direction</a><p>a picture follows the pointer over a project list.</p><iframe src="list-follower-direction.html" title="list-follower-direction" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="list-preview-pane.html">list-preview-pane</a><p>a fixed pane beside the list shows the hovered or focused item: its picture and the facts that decide a booking.</p><iframe src="list-preview-pane.html" title="list-preview-pane" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="list-row-expand.html">list-row-expand</a><p>a row opens in place to show what the visitor came for: the picture, the price and the next step.</p><iframe src="list-row-expand.html" title="list-row-expand" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="list-sibling-focus.html">list-sibling-focus</a><p>pointing at one row pulls focus to it.</p><iframe src="list-sibling-focus.html" title="list-sibling-focus" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="card">
+<h2>Pictures and cards <small>3</small></h2>
+<ul>
+<li><a href="card-clip-second.html">card-clip-second</a><p>a second photograph (the boot worn, not flat) wipes in from the side the pointer entered, and wipes out through the side it left.</p><iframe src="card-clip-second.html" title="card-clip-second" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="card-duotone-colour.html">card-duotone-colour</a><p>portraits rest in the house duotone (navy shadows, flour highlights) and turn to true colour on hover, with each person&#x27;s speciality rising underneath.</p><iframe src="card-duotone-colour.html" title="card-duotone-colour" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="card-sizes-rise.html">card-sizes-rise</a><p>a panel rises from the bottom edge of the picture with the sizes still in stock and the price, each size a real button.</p><iframe src="card-sizes-rise.html" title="card-sizes-rise" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="micro">
+<h2>Small controls and states <small>7</small></h2>
+<ul>
+<li><a href="micro-accordion.html">micro-accordion</a><p>questions that open and close smoothly to their natural height, with a plus that turns into a minus.</p><iframe src="micro-accordion.html" title="micro-accordion" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="micro-copy-confirm.html">micro-copy-confirm</a><p>a &quot;Copy&quot; button beside a code or reference copies it; its label rolls up to &quot;Copied&quot; with a small tick and the copied text flashes a highlight, then after 1.6s the label rolls back.</p><iframe src="micro-copy-confirm.html" title="micro-copy-confirm" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="micro-field-float.html">micro-field-float</a><p>a text field whose label sits inside it like a placeholder, then floats up and shrinks when you focus or type; an underline draws out from the point where you clicked (or from the left when you tab in).</p><iframe src="micro-field-float.html" title="micro-field-float" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="micro-stepper.html">micro-stepper</a><p>a quantity stepper whose number rolls like a slot: up when you add, down when you take away, and the minus button rests disabled at the minimum.</p><iframe src="micro-stepper.html" title="micro-stepper" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="micro-success-morph.html">micro-success-morph</a><p>a submit button narrows into a circle while it works (a ring turns inside it), then a tick draws itself in it when done; after two seconds it opens back into the button with a &quot;Sent&quot; label.</p><iframe src="micro-success-morph.html" title="micro-success-morph" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="micro-toast-stack.html">micro-toast-stack</a><p>notices slide up from the bottom edge (250ms ease-out) and stack: the newest in front, older ones tucked behind at 95% and 90% scale with only their tops showing.</p><iframe src="micro-toast-stack.html" title="micro-toast-stack" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="micro-toggle.html">micro-toggle</a><p>a switch whose thumb travels with a small springy overshoot and stretches while it moves; the track colour leads the thumb by 50ms so the change reads instantly.</p><iframe src="micro-toggle.html" title="micro-toggle" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="scroll">
+<h2>Scroll: reveals and one scroll moment <small>9</small></h2>
+<ul>
+<li><a href="scroll-clip-reveal.html">scroll-clip-reveal</a><p>pictures open as they come up the screen.</p><iframe src="scroll-clip-reveal.html" title="scroll-clip-reveal" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-frame-grow.html">scroll-frame-grow</a><p>a small framed picture in the middle of the screen grows to fill the whole screen edge to edge as you scroll, its rounded corners squaring off; a caption fades in once it is full.</p><iframe src="scroll-frame-grow.html" title="scroll-frame-grow" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-ground-shift.html">scroll-ground-shift</a><p>the whole page&#x27;s ground and ink colours change as you pass from one chapter to the next (night, dawn, day, dusk), easing over 600ms, so the page itself marks the chapters instead of boxes around them.</p><iframe src="scroll-ground-shift.html" title="scroll-ground-shift" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-horizontal-track.html">scroll-horizontal-track</a><p>scrolling down moves a row of six cards sideways while the section is pinned; a &quot;3 / 6&quot; counter and a hairline report where you are, and the next card always peeks in at the right.</p><iframe src="scroll-horizontal-track.html" title="scroll-horizontal-track" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-image-settle.html">scroll-image-settle</a><p>as each picture comes up the screen it settles from slightly enlarged (1.15) to its natural size, and while it crosses the screen the image drifts inside its frame (inner parallax), slower than the page.</p><iframe src="scroll-image-settle.html" title="scroll-image-settle" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-progress-index.html">scroll-progress-index</a><p>a small fixed index in the corner shows the current section as &quot;03 / 07&quot; with its name, and a hairline beside it fills with your progress through the whole page.</p><iframe src="scroll-progress-index.html" title="scroll-progress-index" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-stack-cards.html">scroll-stack-cards</a><p>cards stick near the top one after another and stack like a dealt hand; each card shrinks back a few percent and darkens as the next one lands on it, so you can see the edges of the stack behind.</p><iframe src="scroll-stack-cards.html" title="scroll-stack-cards" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-sticky-steps.html">scroll-sticky-steps</a><p>a picture stays pinned while four steps scroll past beside it; the picture changes state with each step, a progress rule fills, and a &quot;02 / 04&quot; mark counts.</p><iframe src="scroll-sticky-steps.html" title="scroll-sticky-steps" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scroll-travelling-object.html">scroll-travelling-object</a><p>one object stays with the reader down the page and changes state at each section: here a coffee bean that is picked green, roasted brown, ground, and finally poured as a cup.</p><iframe src="scroll-travelling-object.html" title="scroll-travelling-object" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="svg">
+<h2>SVG techniques to redraw for the subject <small>9</small></h2>
+<ul>
+<li><a href="svg-annotated-picture.html">svg-annotated-picture</a><p>information drawn on a picture, with thin lines and small labels: here a tide curve over a stretch of shore, with the two low waters marked.</p><iframe src="svg-annotated-picture.html" title="svg-annotated-picture" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-data-chart.html">svg-data-chart</a><p>a small chart drawn from real figures, made for the page rather than taken from a charting library; here a cider farm&#x27;s litres pressed each month this year as bars, with last year as a line that draws across them.</p><iframe src="svg-data-chart.html" title="svg-data-chart" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-draw-on-arrival.html">svg-draw-on-arrival</a><p>a line drawing draws itself once, path by path, when it first comes into view; here a garden designer&#x27;s planting plan: the boundary, the path, the beds, then the trees.</p><iframe src="svg-draw-on-arrival.html" title="svg-draw-on-arrival" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-filter-texture.html">svg-filter-texture</a><p>a small, sparing texture from an SVG filter, used where it means something; here a letterpress printer&#x27;s mark has the uneven edge of real ink on paper, and &quot;Pull another&quot; prints it again with a different impression, as every pull differs.</p><iframe src="svg-filter-texture.html" title="svg-filter-texture" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-mask-window.html">svg-mask-window</a><p>a picture opens through a shape taken from the subject when it comes into view; here a guest house shows its sea view through the round-topped arch of its own front windows.</p><iframe src="svg-mask-window.html" title="svg-mask-window" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-pointer-parts.html">svg-pointer-parts</a><p>a drawn object made of parts that answer the pointer; here a fountain pen maker&#x27;s pen, drawn as an exploded view.</p><iframe src="svg-pointer-parts.html" title="svg-pointer-parts" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-route-stage.html">svg-route-stage</a><p>a route drawn for the subject shows how far a stage takes you; here a canal boat hire company&#x27;s three-day trip.</p><iframe src="svg-route-stage.html" title="svg-route-stage" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-scroll-path-draw.html">svg-scroll-path-draw</a><p>the outline of the thing the page sells draws itself as its section scrolls through the screen; here a steel bicycle frame, tube by tube, then the wheels.</p><iframe src="svg-scroll-path-draw.html" title="svg-scroll-path-draw" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="svg-shape-morph.html">svg-shape-morph</a><p>one drawn shape changes into another when a control is pressed; here a pottery studio&#x27;s three forms (bowl, vase, tumbler) are one profile that reshapes itself, and the size, price and glaze beside it change with it.</p><iframe src="svg-shape-morph.html" title="svg-shape-morph" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="text">
+<h2>Type in motion <small>5</small></h2>
+<ul>
+<li><a href="text-highlight-draw.html">text-highlight-draw</a><p>a hand-drawn ring or underline strokes itself around a key word when the paragraph comes into view, as if someone marked it with a pen.</p><iframe src="text-highlight-draw.html" title="text-highlight-draw" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="text-line-mask.html">text-line-mask</a><p>each line of a headline rises out of its own mask, one after another.</p><iframe src="text-line-mask.html" title="text-line-mask" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="text-odometer.html">text-odometer</a><p>a figure arrives by rolling each digit up its own reel to the right number, rightmost reel last, like a mechanical counter.</p><iframe src="text-odometer.html" title="text-odometer" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="text-scroll-fill.html">text-scroll-fill</a><p>a statement paragraph fills in word by word as it scrolls up the screen, from faint (22%) to full ink.</p><iframe src="text-scroll-fill.html" title="text-scroll-fill" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="text-word-reveal.html">text-word-reveal</a><p>the words of a short display line rise into place one after another, each from behind its own mask, with a 40ms stagger.</p><iframe src="text-word-reveal.html" title="text-word-reveal" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+<section id="scene">
+<h2>Working objects <small>2</small></h2>
+<ul>
+<li><a href="scene-before-after.html">scene-before-after</a><p>one photograph of the chair as it came in and one as it went out, with a divider the visitor drags across to compare them, the restorer&#x27;s own proof.</p><iframe src="scene-before-after.html" title="scene-before-after" loading="lazy" tabindex="-1"></iframe></li>
+<li><a href="scene-dial.html">scene-dial</a><p>an oven thermostat that answers the pointer.</p><iframe src="scene-dial.html" title="scene-dial" loading="lazy" tabindex="-1"></iframe></li>
+</ul>
+</section>
+</body>
+</html>

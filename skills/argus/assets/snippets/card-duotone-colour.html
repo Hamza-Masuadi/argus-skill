@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+  card-duotone-colour: portraits rest in the house duotone (navy shadows, flour highlights) and turn to true colour on hover, with each person's speciality rising underneath.
+  Pointer: on hover, the two blend layers (multiply and screen) fade out and the grayscale filter lifts, in t-fast on --ease-out; back in t-base.
+  Keyboard: :focus-visible does the same, with a ring.
+  Touch: portraits stay duotone and the speciality line is always shown.
+  Reduced motion: colour changes are kept (no travel is involved); the line appears without moving.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duotone to colour (card-duotone-colour)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #1e3a5f; color: #f3ead9; font: 400 15px/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; }
+main { max-width: 72rem; margin: 0 auto; padding: 4.5rem 2rem 6rem; }
+h1 { margin: 0 0 .5rem; font: 400 clamp(2rem, 4vw, 3.25rem)/1.05 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.sub { margin: 0 0 2.5rem; color: #b9c4d3; }
+
+/* argus:copy-start css */
+.team { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)); gap: 1.5rem; }
+.duo { display: block; color: inherit; text-decoration: none; border-radius: 3px; }
+.duo-pic { position: relative; display: block; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 3px; isolation: isolate; }
+.duo-pic svg { display: block; width: 100%; height: 100%; filter: grayscale(1) contrast(1.1); transition: filter var(--t-base) var(--ease-in-out); }
+/* duotone: dark ink screened into the shadows, flour tone multiplied over the lights */
+.duo-pic::before, .duo-pic::after { content: ""; position: absolute; inset: 0; pointer-events: none; transition: opacity var(--t-base) var(--ease-in-out); }
+.duo-pic::before { background: #f3ead9; mix-blend-mode: multiply; }
+.duo-pic::after  { background: #1e3a5f; mix-blend-mode: screen; }
+.duo-name { display: block; padding-top: .75rem; font-weight: 600; }
+.duo-role { display: block; color: #b9c4d3; font-size: 14px; }
+.duo-spec { display: block; font-size: 13px; color: #f3ead9; overflow: hidden; }
+.duo-spec span { display: block; padding-top: .3rem; }
+.duo:hover svg, .duo:focus-visible svg { filter: none; transition-duration: var(--t-fast); transition-timing-function: var(--ease-out); }
+.duo:hover .duo-pic::before, .duo:hover .duo-pic::after,
+.duo:focus-visible .duo-pic::before, .duo:focus-visible .duo-pic::after { opacity: 0; transition-duration: var(--t-fast); transition-timing-function: var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .duo-spec span { transform: translateY(100%); opacity: 0; transition: transform var(--t-base) var(--ease-in-out), opacity var(--t-base) var(--ease-in-out); }
+  .duo:hover .duo-spec span, .duo:focus-visible .duo-spec span { transform: none; opacity: 1; transition-duration: var(--t-fast); transition-timing-function: var(--ease-out); }
+}
+.duo:focus-visible { outline: 2px solid #f3ead9; outline-offset: 5px; }
+@media (prefers-reduced-motion: reduce) { .duo-spec span { transform: none !important; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>The bakers at Hollin &amp; Pell</h1>
+  <p class="sub">Six of us, two ovens, in on Dale Street from four each morning.</p>
+  <!-- argus:copy-start html -->
+  <ul class="team">
+    <li><a class="duo" href="#ruth">
+      <span class="duo-pic" role="img" aria-label="Ruth Hollin in a rust apron">
+        <svg viewBox="0 0 200 250" aria-hidden="true"><rect width="200" height="250" fill="#e5b57a"/><circle cx="100" cy="95" r="38" fill="#a8704f"/><path d="M60 82 q40 -50 80 0 q-4 -36 -40 -40 q-36 4 -40 40z" fill="#2b1d16"/><path d="M30 250 q10 -95 70 -95 q60 0 70 95z" fill="#b5502e"/><rect x="80" y="160" width="40" height="90" fill="#e9dcc3"/></svg>
+      </span>
+      <span class="duo-name">Ruth Hollin</span><span class="duo-role">Head baker, founder</span>
+      <span class="duo-spec"><span>Ask her about: the 36-hour rye</span></span>
+    </a></li>
+    <li><a class="duo" href="#tomasz">
+      <span class="duo-pic" role="img" aria-label="Tomasz Pell in a navy cap">
+        <svg viewBox="0 0 200 250" aria-hidden="true"><rect width="200" height="250" fill="#9cc0b0"/><circle cx="100" cy="98" r="37" fill="#e0b08e"/><path d="M60 80 q40 -40 80 0 v-8 q-40 -26 -80 0z" fill="#22344f"/><rect x="58" y="70" width="84" height="14" rx="6" fill="#22344f"/><path d="M30 250 q10 -95 70 -95 q60 0 70 95z" fill="#d7d0c2"/><path d="M85 130 q15 12 30 0" stroke="#7a4d37" stroke-width="3" fill="none"/></svg>
+      </span>
+      <span class="duo-name">Tomasz Pell</span><span class="duo-role">Viennoiserie</span>
+      <span class="duo-spec"><span>Ask him about: laminating in August heat</span></span>
+    </a></li>
+    <li><a class="duo" href="#amara">
+      <span class="duo-pic" role="img" aria-label="Amara Osei with flour on her sleeves">
+        <svg viewBox="0 0 200 250" aria-hidden="true"><rect width="200" height="250" fill="#f0d36b"/><circle cx="100" cy="96" r="36" fill="#6b4330"/><circle cx="100" cy="58" r="26" fill="#1d1410"/><path d="M30 250 q10 -95 70 -95 q60 0 70 95z" fill="#3f6f5a"/><circle cx="62" cy="215" r="10" fill="#f6f1e6" opacity=".8"/><circle cx="140" cy="220" r="12" fill="#f6f1e6" opacity=".8"/></svg>
+      </span>
+      <span class="duo-name">Amara Osei</span><span class="duo-role">Cakes and celebration bakes</span>
+      <span class="duo-spec"><span>Ask her about: wedding orders, 8 weeks ahead</span></span>
+    </a></li>
+    <li><a class="duo" href="#dev">
+      <span class="duo-pic" role="img" aria-label="Dev Raman holding a peel">
+        <svg viewBox="0 0 200 250" aria-hidden="true"><rect width="200" height="250" fill="#c9a7d6"/><circle cx="100" cy="98" r="37" fill="#b98560"/><path d="M62 92 q38 -58 76 0 q0 -40 -38 -44 q-38 4 -38 44z" fill="#14110f"/><path d="M30 250 q10 -95 70 -95 q60 0 70 95z" fill="#efe7da"/><rect x="146" y="40" width="8" height="200" fill="#8c6a43"/><ellipse cx="150" cy="40" rx="22" ry="28" fill="#a27c50"/></svg>
+      </span>
+      <span class="duo-name">Dev Raman</span><span class="duo-role">Ovens and bread</span>
+      <span class="duo-spec"><span>Ask him about: the wood-fired Saturday loaf</span></span>
+    </a></li>
+  </ul>
+  <!-- argus:copy-end html -->
+</main>
+</body>
+</html>

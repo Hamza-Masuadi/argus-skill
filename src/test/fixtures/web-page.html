@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture web page</title>
+<style>
+  body { margin: 0; font: 16px/1.5 Georgia, serif; color: #222; background: #fafafa; }
+  header { position: sticky; top: 0; background: #fff; padding: 8px 16px; }
+  nav a { display: inline-block; width: 48px; height: 16px; line-height: 16px; font-size: 11px; margin-right: 12px; color: #333; }
+  .sheet button { width: 64px; height: 20px; font-size: 14px; }
+  main { padding: 16px; }
+  .tiny { font-size: 10px; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; height: 40vh; background: #fff; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); }
+  @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } }
+</style>
+</head>
+<body>
+<header><nav><a href="#menu">Menu</a><a href="#order">Order</a><a href="#about">About</a></nav></header>
+<main>
+  <h1>A small page</h1>
+  <p>Some text to read on the page. <span class="tiny">Fine print here.</span></p>
+  <section id="about"><h2>About</h2><p>More words about it.</p></section>
+</main>
+<div class="scrim"></div>
+<div class="sheet" role="dialog" aria-modal="true"><p>A sheet with words in it.</p><button type="button">Close</button></div>
+</body>
+</html>

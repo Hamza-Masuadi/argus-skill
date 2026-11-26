@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  scroll-frame-grow: a small framed picture in the middle of the screen grows to fill the
+  whole screen edge to edge as you scroll, its rounded corners squaring off; a caption
+  fades in once it is full. Reverses when you scroll back.
+  Mechanism: a section one screen plus 70vh tall with a sticky full-screen layer; the
+  picture's clip-path inset is a CSS scroll-driven animation on the section's view timeline,
+  linear. It starts opening as the frame rises into view, so the screen is mostly picture
+  by the time it pins, is full half way through the 70vh pin, and the caption is in before
+  the pin lets go; the next section follows at once. No empty screens, no dead scroll.
+  clip-path keeps the picture's size fixed, so nothing reflows and the image never rescales.
+  Fallback (no scroll-driven animations) and reduced motion: a full-width picture with its
+  caption, one screen tall, no track and no pin.
+  Touch and keyboard: the same.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Small frame to full-bleed (scroll-frame-grow)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f6f3ee; color: #1d1a17; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.pad { min-height: 60vh; max-width: 72rem; margin: 0 auto; padding: 2rem clamp(1.25rem, 4vw, 3rem); display: grid; align-content: end; }
+.pad h1 { font: 400 clamp(2.5rem, 6vw, 5.5rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0 0 1rem; max-width: 16ch; }
+.pad p { margin: 0; max-width: 32rem; color: #5e574f; }
+.pad.after { min-height: 0; padding-block: 3rem 6rem; }
+
+/* argus:copy-start css */
+/* As it stands (no scroll-driven animations, or reduced motion): one full-width picture, no track. */
+.grow-stage { position: relative; height: 100vh; height: 100svh; overflow: clip; }
+.grow-pic { position: absolute; inset: 0; margin: 0; clip-path: inset(0 round 0); }
+.grow-pic svg { width: 100%; height: 100%; display: block; }
+.grow-cap { position: absolute; left: clamp(1.25rem, 4vw, 3rem); top: clamp(1.25rem, 6vh, 4rem); color: #fff; max-width: 26rem; }
+.grow-cap h2 { font: 400 clamp(1.75rem, 3.5vw, 3rem)/1.05 "Iowan Old Style", Georgia, serif; margin: 0 0 .5rem; }
+.grow-cap p { margin: 0; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* The track is only as tall as the grow needs: the screen it fills plus 70vh of pin. */
+    .grow { height: calc(100svh + 70vh); view-timeline: --grow block; }
+    .grow-stage { position: sticky; top: 0; }
+    .grow-pic { animation: grow-open linear both; animation-timeline: --grow; animation-range: entry 25% contain 50%; }
+    .grow-cap { animation: grow-cap linear both; animation-timeline: --grow; animation-range: contain 45% contain 85%; }
+    @keyframes grow-open { from { clip-path: inset(18vh 30vw round 14px); } to { clip-path: inset(0 round 0); } }
+    @keyframes grow-cap { from { opacity: 0; translate: 0 1.5rem; } to { opacity: 1; translate: 0 0; } }
+  }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<section class="pad">
+  <h1>A cabin above the tree line</h1>
+  <p>Hytta Nord sleeps four and has no road to it: the last two kilometres are on foot. Scroll to look inside.</p>
+</section>
+<!-- argus:copy-start html -->
+<section class="grow">
+  <div class="grow-stage">
+    <figure class="grow-pic">
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A timber cabin on a snowy slope at dusk">
+        <rect width="1600" height="1000" fill="#33465c"/>
+        <rect y="0" width="1600" height="520" fill="#46607f"/>
+        <circle cx="1220" cy="260" r="70" fill="#f1d9a6"/>
+        <path d="M0 620 L380 380 L640 560 L980 300 L1600 640 L1600 1000 L0 1000z" fill="#dfe6ee"/>
+        <path d="M0 760 Q800 600 1600 780 L1600 1000 L0 1000z" fill="#f4f7fa"/>
+        <path d="M640 700 L800 590 L960 700 L960 820 L640 820z" fill="#5a3b2a"/>
+        <rect x="760" y="730" width="80" height="60" fill="#f3c46b"/>
+      </svg>
+    </figure>
+    <div class="grow-cap"><h2>Woodstove, four bunks, one window that faces west.</h2><p>Sleeps four, from NOK 1,900 a night.</p></div>
+  </div>
+</section>
+<!-- argus:copy-end html -->
+<section class="pad after"><p>Bookings open on the first of each month for the month after.</p></section>
+</main>
+</body>
+</html>

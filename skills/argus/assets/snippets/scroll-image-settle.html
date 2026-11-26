@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  scroll-image-settle: as each picture comes up the screen it settles from slightly
+  enlarged (1.15) to its natural size, and while it crosses the screen the image drifts
+  inside its frame (inner parallax), slower than the page.
+  Mechanism: two CSS scroll-driven animations on the image's own view() timeline: scale
+  over the entry range, translate over the whole cover range. The frame clips; the image
+  is 116% tall so the drift never shows an edge. Linear, scrubbed.
+  Fallback: without scroll timelines the pictures sit still at natural size.
+  Touch and keyboard: the same. Reduced motion: no scale and no parallax.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image settle and inner parallax (scroll-image-settle)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f2efe9; color: #20201c; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem) 30vh; }
+.top { display: flex; justify-content: space-between; padding: 1.5rem 0; font-size: 14px; }
+h1 { font: 400 clamp(2.5rem, 6vw, 5.5rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 30vh 0 12vh; max-width: 14ch; }
+.gallery { display: grid; grid-template-columns: repeat(12, 1fr); gap: clamp(1rem, 2vw, 2rem); row-gap: 14vh; }
+.g1 { grid-column: 1 / 8; aspect-ratio: 4 / 3; }
+.g2 { grid-column: 9 / 13; aspect-ratio: 3 / 4; margin-top: 30vh; }
+.g3 { grid-column: 3 / 11; aspect-ratio: 16 / 9; }
+figure { margin: 0; }
+figcaption { font-size: 14px; color: #6b675e; margin-top: .75rem; }
+
+/* argus:copy-start css */
+.settle { overflow: clip; border-radius: 2px; position: relative; }
+.settle > svg, .settle > img { position: absolute; left: 0; top: -8%; width: 100%; height: 116%; object-fit: cover; display: block; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .settle { animation: settle-in linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    .settle > svg, .settle > img { animation: settle-drift linear both; animation-timeline: view(); animation-range: cover 0% cover 100%; }
+    @keyframes settle-in { from { scale: 1.15; } to { scale: 1; } }
+    @keyframes settle-drift { from { translate: 0 -6%; } to { translate: 0 6%; } }
+  }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><strong>Saltmarsh Studio, photography</strong><span>Norfolk coast</span></div>
+  <h1>A winter on the marshes</h1>
+  <div class="gallery">
+    <!-- argus:copy-start html -->
+    <figure class="g1-wrap" style="grid-column:1/8">
+      <div class="settle g1"><svg viewBox="0 0 800 700" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Reed beds under a low pink sky"><rect width="800" height="700" fill="#e9c6b8"/><rect y="330" width="800" height="370" fill="#9a8a5c"/><path d="M0 420 Q200 380 400 430 T800 410 V700 H0z" fill="#6f6540"/><rect y="520" width="800" height="40" fill="#b9c8cf"/></svg></div>
+      <figcaption>Cley reed beds, 7.40am, January</figcaption>
+    </figure>
+    <!-- argus:copy-end html -->
+    <figure style="grid-column:9/13">
+      <div class="settle g2"><svg viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A wooden post in still water"><rect width="600" height="900" fill="#c9d4d8"/><rect y="520" width="600" height="380" fill="#8fa3ab"/><rect x="270" y="300" width="40" height="420" fill="#3c3329"/><rect x="270" y="720" width="40" height="120" fill="#5d5249" opacity=".5"/></svg></div>
+      <figcaption>Mooring post, Blakeney</figcaption>
+    </figure>
+    <figure style="grid-column:3/11">
+      <div class="settle g3"><svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Geese flying over a flat field at dusk"><rect width="1600" height="900" fill="#45506b"/><rect y="560" width="1600" height="340" fill="#2a2f3a"/><g fill="#14161c"><path d="M500 300 l30 10 l30 -10 l-30 4z"/><path d="M600 340 l26 9 l26 -9 l-26 4z"/><path d="M700 280 l28 9 l28 -9 l-28 4z"/><path d="M820 320 l24 8 l24 -8 l-24 3z"/></g><circle cx="1240" cy="520" r="44" fill="#f0b97a"/></svg></div>
+      <figcaption>Pink-footed geese coming in, Holkham</figcaption>
+    </figure>
+  </div>
+</main>
+</body>
+</html>

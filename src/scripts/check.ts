@@ -7,6 +7,13 @@
  * the focused element and the scroll position of the window and of any container.
  * Run it before, not during, an interaction driven by hand.
  *
+ * App mode: for an app prototype (a phone app built as an HTML page, screens
+ * switched by URL hash, modal sheets over a scrim), set
+ * `window.__argusCheckOptions = { app: true }` before evaluating this file;
+ * `shot.js --check --app` does that. It relaxes a few web-page rules (listed in
+ * APP_RELAXED below) and adds `mode` and `relaxed` to the result. Without it,
+ * nothing changes.
+ *
  * Returns { url, viewport, summary, countsByRule, findings, notes }.
  * Severity: P0 broken, P1 excludes or confuses users, P2 visible roughness,
  * P3 minor polish or a prompt to confirm a choice,
@@ -42,12 +49,46 @@
   const counts: Record<string, number> = {};
   const severityCounts: Record<Severity, number> = { P0: 0, P1: 0, P2: 0, P3: 0, tell: 0 };
   const notes: string[] = [];
-  // A phone browser widens its viewport to fit overflowing content, which would
-  // hide the overflow. The screen's own width does not move.
-  // Only trust the screen when it is phone-sized: on a desktop it says nothing about the window.
-  const screenW = window.screen?.width ?? 0;
-  const vw = screenW > 0 && screenW <= 480 && screenW < window.innerWidth ? screenW : window.innerWidth;
+  // A phone browser widens window.innerWidth to fit overflowing content, which would hide the
+  // overflow. The layout viewport (the root's clientWidth) and the visual viewport keep the width
+  // the page was laid out for, so the smallest of the three is the viewport. screen.width is not
+  // used: some browsers (Brave) report the window's size there instead of the emulated screen's.
+  const vw = Math.min(...[window.innerWidth, document.documentElement.clientWidth, window.visualViewport?.width ?? 0].filter((w) => w > 0).map((w) => Math.round(w)));
   const vh = window.innerHeight;
+  // Options set by the caller before this file runs (shot.js): app mode (--app) and the text of
+  // stylesheets the page cannot read itself (a file:// or cross-origin sheet). Without them,
+  // nothing changes.
+  interface CheckOptions {
+    app?: unknown;
+    sheets?: Array<{ href: string; text: string }>;
+    /** Set by shot.js while it steps down the page: return only what is on screen now (a View), run no rule. */
+    snapshot?: boolean;
+    /** What a visitor saw at stepped scroll positions, gathered by shot.js with snapshot; used by blank-band. */
+    views?: View[];
+    /** Canvases over a picture that shot.js captured as one flat colour there: [canvas index, what]. */
+    blankCanvases?: Array<[number, string]>;
+  }
+  /**
+   * One screen as a visitor saw it, scrolled to y: `top` is where the screen's content starts
+   * (below a fixed or sticky header bar), and each box is [left, top, right, bottom, font size]
+   * in viewport coordinates, clipped to the screen. `grounds` holds the colour of the ground at the
+   * screen's left edge for each 8px strip from the top ('' where a picture or gradient is), and
+   * `scenes` the [top, bottom] on screen of each block a sticky element travels in.
+   */
+  interface View { y: number; top: number; boxes: number[][]; grounds?: string[]; scenes?: number[][] }
+  const options: CheckOptions = (window as unknown as { __argusCheckOptions?: CheckOptions }).__argusCheckOptions ?? {};
+  // App mode is opt-in, set by the caller before this file runs (shot.js --app).
+  const appMode = !!options.app;
+  const snapshotMode = !!options.snapshot;
+  const APP_RELAXED =
+    'missing-anchor (hash-only links are screen routes), ' +
+    'fixed-cover (open dialogs and their scrim wherever it sits, decorative aria-hidden bars, a translucent or floating bottom tab bar), ' +
+    'page-basics (meta description and icon), timid-headline, first-screen-no-action and first-screen-nothing-large (not a landing page), ' +
+    'small-text (11px allowed anywhere, 10px inside nav and tab bars), pure-black-white (system grounds are pure white and black), ' +
+    'small-text, contrast and target-size (not measured inside decorative aria-hidden parts such as a drawn status bar or home indicator), ' +
+    'section-length (a scrolling list of repeated items), focus-removed (a focus style on the parent or grandparent counts), ' +
+    'image-oversized (judged for a 2x phone screen), focus-obscured (each control is scrolled into view before it is measured), ' +
+    'target-size (the hit area includes ::before and ::after layers that extend it)';
 
   const all = <T extends Element = HTMLElement>(selector: string, root: ParentNode = document): T[] =>
     Array.from(root.querySelectorAll<T>(selector));
@@ -82,6 +123,7 @@
 
   /** Run one rule. An error inside it becomes a note and never stops the others. */
   function rule(id: string, fn: () => void): void {
+    if (snapshotMode) return;
     try {
       fn();
     } catch (err) {
@@ -93,6 +135,51 @@
     if (typeof el.checkVisibility === 'function' && !el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) return false;
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
+  }
+
+  /**
+   * App mode only: inside a purely decorative aria-hidden part, such as a drawn status bar or
+   * home indicator (aria-hidden="true" and nothing in it can take focus). Always false otherwise.
+   */
+  const decorMemo = new Map<Element, boolean>();
+  function isDecorative(el: Element): boolean {
+    if (!appMode) return false;
+    const hidden = el.closest('[aria-hidden="true"]');
+    if (!hidden) return false;
+    let v = decorMemo.get(hidden);
+    if (v === undefined) {
+      v = !hidden.querySelector('a[href], button, input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable="true"]') &&
+        !hidden.matches('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      decorMemo.set(hidden, v);
+    }
+    return v;
+  }
+
+  /**
+   * The rule lists of every stylesheet. A sheet the page cannot read (an external file opened
+   * from file://, or another origin) is read from the text the caller passed in, when it did.
+   */
+  let sheetsMemo: CSSRuleList[] | null = null;
+  function ruleLists(): CSSRuleList[] {
+    if (sheetsMemo) return sheetsMemo;
+    const out: CSSRuleList[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        out.push(sheet.cssRules);
+      } catch {
+        // A stylesheet from another origin cannot be read here; use its text if the caller fetched it.
+        const given = sheet.href ? options.sheets?.find((s) => s.href === sheet.href) : undefined;
+        if (!given) continue;
+        try {
+          const copy = new CSSStyleSheet();
+          copy.replaceSync(given.text);
+          out.push(copy.cssRules);
+        } catch {
+          /* unreadable text: leave it out */
+        }
+      }
+    }
+    return (sheetsMemo = out);
   }
 
   const onFirstScreen = (r: DOMRect): boolean => r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
@@ -319,8 +406,10 @@
 
   const heads = all<HTMLHeadingElement>('h1,h2,h3,h4,h5,h6').filter(isVisible);
   const running = typeof document.getAnimations === 'function' ? document.getAnimations() : [];
-  // Finite animations and transitions still running mean the page is mid-change.
-  const settling = running.filter((a) => a.playState === 'running' && a.effect?.getComputedTiming().endTime !== Infinity).length;
+  // Finite animations and transitions still running mean the page is mid-change. One tied to scroll
+  // (animation-timeline) stands where the scroll puts it, and is not counted.
+  const onClock = (a: Animation): boolean => !a.timeline || typeof DocumentTimeline !== 'function' || a.timeline instanceof DocumentTimeline;
+  const settling = running.filter((a) => a.playState === 'running' && onClock(a) && a.effect?.getComputedTiming().endTime !== Infinity).length;
   if (settling) {
     notes.push(settling + ' animation(s) or transition(s) were still running when the check started, so contrast and layout findings may be measured mid-change. Run the check again once the page has settled.');
   }
@@ -328,7 +417,9 @@
   // ---- contrast, small text, gradient text ---------------------------------
   rule('contrast', () => {
     let unknownBg = 0;
+    let blended = 0;
     for (const el of textEls) {
+      if (isDecorative(el)) continue;
       const cs = getComputedStyle(el);
       const size = parseFloat(cs.fontSize);
       const clip = cs.webkitBackgroundClip || cs.backgroundClip;
@@ -336,9 +427,24 @@
         add('gradient-text', 'tell', el, 'Text is filled with a background (gradient text).');
         continue;
       }
-      if (size < 12) add('small-text', 'P2', el, 'Text is ' + size + 'px; below 12px is hard to read.');
+      // In app mode, 11px is the platform's smallest text anywhere, and 10px tab and navigation bar labels are its standard.
+      const appSize = appMode && (size >= 11 || (size >= 10 && !!el.closest('nav, [role="tablist"], [role="navigation"]')));
+      if (size < 12 && !appSize) add('small-text', 'P2', el, 'Text is ' + size + 'px; below 12px is hard to read.');
       const fg = rgba(cs.color);
       if (fg[3] === 0) continue;
+      // Under a blend mode (a headline that flips its ink over the picture) the colour on screen
+      // is computed from what lies beneath, so the colour pair cannot be measured.
+      let blend = false;
+      for (let a: Element | null = el; a && a !== document.documentElement; a = a.parentElement) {
+        if (getComputedStyle(a).mixBlendMode !== 'normal') {
+          blend = true;
+          break;
+        }
+      }
+      if (blend) {
+        blended++;
+        continue;
+      }
       const bg = backgroundOf(el);
       if (!bg) {
         unknownBg++;
@@ -373,6 +479,7 @@
       add('contrast', r < 3 ? 'P0' : 'P1', el, 'Contrast ' + r.toFixed(2) + ':1, needs ' + need + ':1 (' + Math.round(size) + 'px text).');
     }
     if (unknownBg) notes.push(unknownBg + ' text elements sit on an image or gradient; check their contrast by eye.');
+    if (blended) notes.push(blended + ' text element' + (blended === 1 ? ' uses' : 's use') + ' a blend mode (mix-blend-mode), so contrast cannot be measured; check by eye on the capture at every width.');
   });
 
   // ---- horizontal overflow --------------------------------------------------
@@ -425,9 +532,34 @@
     }
     const limit = 2.5 * vh;
     const sections = Array.from(root.children).filter((el) => isVisible(el) && !/^(HEADER|FOOTER|NAV|SCRIPT|STYLE|DIALOG)$/.test(el.tagName));
+    /**
+     * App mode: a scrolling list of like items (picture cards, rows) is one message however long:
+     * the section, or a block up to two levels inside it, holds four or more visible children that
+     * mostly share a tag and class, and they make up most of the section's height.
+     */
+    const isRepeatedList = (section: Element): boolean => {
+      const h = section.getBoundingClientRect().height;
+      const lists: Element[] = [section];
+      for (const kid of Array.from(section.children)) {
+        lists.push(kid);
+        for (const grandkid of Array.from(kid.children)) lists.push(grandkid);
+      }
+      return lists.some((list) => {
+        const items = Array.from(list.children).filter(isVisible);
+        if (items.length < 4) return false;
+        const sig = (n: Element): string => n.tagName + '.' + (typeof n.className === 'string' ? n.className.trim().split(/\s+/).sort().join('.') : '');
+        const tally = new Map<string, Element[]>();
+        for (const n of items) tally.set(sig(n), [...(tally.get(sig(n)) ?? []), n]);
+        let like: Element[] = [];
+        for (const group of tally.values()) if (group.length > like.length) like = group;
+        if (like.length < 4 || like.length < items.length * 0.75) return false;
+        const covered = like.reduce((sum, n) => sum + n.getBoundingClientRect().height, 0);
+        return covered >= h * 0.6;
+      });
+    };
     for (const el of sections) {
       const h = el.getBoundingClientRect().height;
-      if (h > limit) {
+      if (h > limit && !(appMode && isRepeatedList(el))) {
         add('section-length', 'P2', el, 'This section is about ' + (h / vh).toFixed(1) + ' screens tall at this width (' + Math.round(h) +
           'px); more than about 2.5 means it carries several messages. Split it, or cut it to one message and one picture.');
       }
@@ -464,7 +596,28 @@
 
   // ---- collapsed columns ----------------------------------------------------
   // A block squeezed so narrow that its text breaks to a word or less per line
-  // is a broken layout (typically a grid or flex item that lost its width).
+  // is a broken layout (typically a grid or flex item that lost its width). Judged from the
+  // lines the text really breaks into: a run of four words or more set on three lines or more
+  // at about a word a line. A short display label (two words at a large size, a figure) that
+  // wraps once is not a collapse, nor is small text that still fits two or three words a line.
+  const wordsPerLine = (block: Element): { words: number; lines: number } | null => {
+    const range = document.createRange();
+    let worst: { words: number; lines: number } | null = null;
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const words = (node.nodeValue ?? '').trim().split(/\s+/).filter((w) => /\w/.test(w)).length;
+      if (words < 4) continue;
+      range.selectNode(node);
+      const tops: number[] = [];
+      for (const r of Array.from(range.getClientRects())) {
+        if (r.width < 1) continue;
+        if (!tops.some((t) => Math.abs(t - r.top) < Math.max(3, r.height * 0.3))) tops.push(r.top);
+      }
+      const v = { words, lines: tops.length };
+      if (v.lines >= 3 && (!worst || v.words / v.lines < worst.words / worst.lines)) worst = v;
+    }
+    return worst;
+  };
   rule('collapsed-column', () => {
     const collapsedSeen = new Set<Element>();
     for (const el of textEls) {
@@ -477,8 +630,10 @@
       const cs = getComputedStyle(block);
       if (cs.writingMode && cs.writingMode !== 'horizontal-tb') continue;
       const w = block.clientWidth;
-      if (w > 0 && w < parseFloat(cs.fontSize) * 5) {
-        add('collapsed-column', 'P0', block, 'Text block is only ' + w + 'px wide, so its text breaks to about a word per line. The layout has collapsed.');
+      if (!(w > 0 && w < parseFloat(cs.fontSize) * 5)) continue;
+      const run = wordsPerLine(block);
+      if (run && run.words / run.lines <= 1.5) {
+        add('collapsed-column', 'P0', block, 'Text block is only ' + w + 'px wide, so its text breaks to about a word per line (' + run.words + ' words on ' + run.lines + ' lines). The layout has collapsed.');
       }
     }
   });
@@ -539,13 +694,50 @@
   });
 
   // ---- touch targets --------------------------------------------------------
+  /**
+   * App mode: the size a control can be tapped at, not only drawn at. A ::before or ::after layer
+   * positioned out past the control's edges (a 36px pill with a 44px hit area) extends it. The layer's
+   * box is read from its computed insets; where that falls short (a layer centred with a transform),
+   * points 22px either side of the control's centre are probed to see whether the control still gets the tap.
+   */
+  function hitArea(el: Element, r: DOMRect, cs: CSSStyleDeclaration, w: number, h: number): [number, number] {
+    let x0 = r.left, x1 = r.right, y0 = r.top, y1 = r.bottom;
+    if (cs.position !== 'static' && cs.overflow === 'visible') {
+      const bl = parseFloat(cs.borderLeftWidth) || 0, br = parseFloat(cs.borderRightWidth) || 0;
+      const bt = parseFloat(cs.borderTopWidth) || 0, bb = parseFloat(cs.borderBottomWidth) || 0;
+      for (const pseudo of ['::before', '::after']) {
+        const ps = getComputedStyle(el, pseudo);
+        if (ps.content === 'none' || ps.content === 'normal' || ps.display === 'none' || ps.pointerEvents === 'none') continue;
+        if (ps.position !== 'absolute' || (ps.transform && ps.transform !== 'none')) continue;
+        const [top, right, bottom, left] = [ps.top, ps.right, ps.bottom, ps.left].map((v) => (v.endsWith('px') ? parseFloat(v) : NaN));
+        if ([top, right, bottom, left].some((v) => Number.isNaN(v))) continue;
+        x0 = Math.min(x0, r.left + bl + (left as number));
+        x1 = Math.max(x1, r.right - br - (right as number));
+        y0 = Math.min(y0, r.top + bt + (top as number));
+        y1 = Math.max(y1, r.bottom - bb - (bottom as number));
+      }
+    }
+    w = Math.max(w, x1 - x0);
+    h = Math.max(h, y1 - y0);
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const hits = (x: number, y: number): boolean => {
+      if (x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight) return false;
+      const at = document.elementFromPoint(x, y);
+      return !!at && (at === el || el.contains(at));
+    };
+    if (w < 44 && hits(cx - 21.5, cy) && hits(cx + 21.5, cy)) w = 44;
+    if (h < 44 && hits(cx, cy - 21.5) && hits(cx, cy + 21.5)) h = 44;
+    return [w, h];
+  }
+
   rule('target-size', () => {
     const touch = vw <= 820 || matchMedia('(pointer: coarse)').matches;
     const interactive = all(
       'a[href], button, input:not([type="hidden"]), select, textarea, summary, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="switch"]',
     );
     for (const el of interactive) {
-      if (!isVisible(el) || isScreenReaderOnly(el)) continue;
+      if (!isVisible(el) || isScreenReaderOnly(el) || isDecorative(el)) continue;
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
       // The standard exempts links inside a sentence. Navigation and footer links are not that.
@@ -567,6 +759,7 @@
           h = Math.max(h, lr.height);
         }
       }
+      if (appMode && (w < 44 || h < 44)) [w, h] = hitArea(el, r, cs, w, h);
       w = Math.round(w);
       h = Math.round(h);
       // A lone text link (nav, footer) usually passes the standard through its
@@ -662,7 +855,8 @@
   });
 
   rule('image-oversized', () => {
-    const dpr = window.devicePixelRatio || 1;
+    // An app prototype is seen on phones, all of them 2x or denser, even when captured at 1x.
+    const dpr = appMode ? Math.max(2, window.devicePixelRatio || 1) : window.devicePixelRatio || 1;
     for (const el of all<HTMLImageElement>('img')) {
       if (!isVisible(el) || !el.naturalWidth) continue;
       const src = el.currentSrc || el.src;
@@ -852,6 +1046,8 @@
       const href = el.getAttribute('href') ?? '';
       const frag = href.slice(1);
       if (!frag || /^top$/i.test(frag) || /^[/!]/.test(frag) || frag.startsWith(':~:')) continue;
+      // In an app prototype a hash-only link switches screens (index.html#order), so it has no target id.
+      if (appMode) continue;
       if (el.hasAttribute('role') || el.hasAttribute('aria-controls') || !isVisible(el)) continue;
       let id = frag;
       try {
@@ -889,15 +1085,47 @@
         if (r instanceof CSSGroupingRule) scan(r.cssRules);
       }
     };
-    for (const sheet of Array.from(document.styleSheets)) {
-      try {
-        scan(sheet.cssRules);
-      } catch {
-        /* a stylesheet from another origin cannot be read */
-      }
-    }
+    for (const list of ruleLists()) scan(list);
     if (running.length) hasMotion = true;
     if (hasMotion && !hasReduced) add('reduced-motion', 'P1', null, 'The page animates but has no prefers-reduced-motion rule.');
+  });
+
+  // A page where nothing moves outside prefers-reduced-motion: no animation, no scroll-driven effect,
+  // no transition beyond a colour change. Exempt when the owner chose still (data-argus-motion="still").
+  rule('motionless-page', () => {
+    if (appMode) return;
+    if ([document.documentElement, document.body].some((n) => n?.getAttribute('data-argus-motion') === 'still')) return;
+    const COLOUR = /^(color|background-color|background|border-color|border-(top|right|bottom|left)-color|outline-color|outline|text-decoration-color|text-decoration|fill|stroke|caret-color|accent-color|box-shadow|text-shadow|none)$/;
+    const MOVING = /\b(transform|translate|scale|rotate|opacity|clip-path|filter|inset|top|left|height|width|max-height|grid-template-rows|background-position|letter-spacing)\s*:/;
+    const STATE = /:hover|:focus|:active|:checked|:target|\.is-|\.in-view|\.visible|\.shown|\.revealed|\.open|\[data-|\[aria-/;
+    let moves = running.length > 0 || !!document.querySelector('video[autoplay], animate, animateTransform, animateMotion');
+    const w = window as unknown as Record<string, unknown>;
+    if (['gsap', 'anime', 'Motion', 'lottie', 'Lenis', 'ScrollTrigger'].some((k) => w[k])) moves = true;
+    let anyAll = false;
+    let stateMoves = false;
+    const scan = (list: CSSRuleList): void => {
+      for (const r of Array.from(list)) {
+        if (moves) return;
+        if (r instanceof CSSMediaRule && /prefers-reduced-motion\s*:\s*reduce/.test(r.conditionText)) continue;
+        if (r instanceof CSSKeyframesRule) moves = true;
+        else if (r instanceof CSSStyleRule) {
+          const st = r.style;
+          if (st.animationName && st.animationName !== 'none') moves = true;
+          if (['animation-timeline', 'view-timeline-name', 'scroll-timeline-name'].some((p) => (st.getPropertyValue(p) || '').trim() && st.getPropertyValue(p).trim() !== 'auto')) moves = true;
+          for (const p of (st.transitionProperty || '').split(',').map((x) => x.trim()).filter(Boolean)) {
+            if (p === 'all') anyAll = true;
+            else if (!COLOUR.test(p)) moves = true;
+          }
+          if (STATE.test(r.selectorText) && MOVING.test(st.cssText)) stateMoves = true;
+        }
+        if (r instanceof CSSGroupingRule) scan(r.cssRules);
+      }
+    };
+    for (const list of ruleLists()) scan(list);
+    if (!moves && anyAll && stateMoves) moves = true;
+    if (!moves) add('motionless-page', 'P2', null, 'Nothing on the page moves outside prefers-reduced-motion: no arrival, no reveals, no transition beyond a colour change. ' +
+      'Every page gets the baseline unless the owner chose still (motion.md, "How much"): an arrival for the first screen, reveals as sections enter, hover, focus and press states that show something, and one choreographed moment. ' +
+      'If the owner asked for no motion, set data-argus-motion="still" on <html>.');
   });
 
   // Movement that never stops needs a way to pause it.
@@ -914,6 +1142,47 @@
       /\b(pause|stop|play)\b/i.test(textOf(b) + ' ' + (b.getAttribute('aria-label') ?? '') + ' ' + (b.getAttribute('title') ?? '')),
     );
     if (!pauseControl) add('no-pause', 'P1', null, endless + ' animation(s) loop forever and no pause or stop control was found.');
+  });
+
+  // ---- video openings (pictures.md) ------------------------------------------------------------
+  // A large video that plays by itself: muted (phones refuse to autoplay sound, and sound is never
+  // wanted), playsinline (else iPhones open it full screen), a poster (the first paint until it can
+  // play) and a visible pause control (WCAG 2.2.2, for motion over five seconds). shot.js pauses
+  // videos before capturing and marks the ones that were playing with data-argus-playing.
+  const pauseControlOnPage = (): boolean => all('button, [role="button"]').some((b) =>
+    /\b(pause|stop|play)\b/i.test(textOf(b) + ' ' + (b.getAttribute('aria-label') ?? '') + ' ' + (b.getAttribute('title') ?? '')));
+  rule('hero-video', () => {
+    let shown = 0;
+    for (const v of all<HTMLVideoElement>('video')) {
+      if (!isVisible(v)) continue;
+      const r = v.getBoundingClientRect();
+      if (!(r.width >= vw * 0.5 || r.width * r.height >= vw * vh * 0.25)) continue;
+      const plays = v.autoplay || v.hasAttribute('autoplay') || v.dataset['argusPlaying'] === '1' || (!v.paused && !v.ended);
+      if (!plays || shown >= 3) continue;
+      shown++;
+      const missing: string[] = [];
+      if (!v.muted && !v.hasAttribute('muted')) add('hero-video', 'P1', v, 'This video plays by itself with sound on: add muted (phones will not autoplay it otherwise, and a page opening never needs sound).');
+      if (!v.hasAttribute('playsinline')) missing.push('playsinline (without it an iPhone may open the video full screen)');
+      if (!v.getAttribute('poster')) missing.push('poster (the first paint, and what shows under reduced motion or before it can play)');
+      if (missing.length) add('hero-video', 'P2', v, 'A video that plays by itself has no ' + missing.join(' and no ') + ' (pictures.md).');
+      const long = v.loop || v.hasAttribute('loop') || !isFinite(v.duration) || v.duration > 5;
+      if (long && !v.controls && !pauseControlOnPage()) add('hero-video', 'P1', v, 'A video moves by itself for more than five seconds with no pause control: add a visible pause button (WCAG 2.2.2; pictures.md).');
+    }
+  });
+
+  // A video file past about 4 MB is slow on a phone; measured where the browser reports the bytes it fetched.
+  rule('video-heavy', () => {
+    const LIMIT = 4 * 1024 * 1024;
+    const sizes = new Map<string, number>();
+    for (const e of performance.getEntriesByType('resource') as PerformanceResourceTiming[]) {
+      const n = Math.max(e.encodedBodySize || 0, e.transferSize || 0, e.decodedBodySize || 0);
+      if (n) sizes.set(e.name, Math.max(sizes.get(e.name) ?? 0, n));
+    }
+    for (const v of all<HTMLVideoElement>('video')) {
+      const src = v.currentSrc || v.src;
+      const n = src ? sizes.get(src) ?? 0 : 0;
+      if (n > LIMIT) add('video-heavy', 'P3', v, 'The video file is ' + (n / 1048576).toFixed(1) + ' MB; aim for about 2-4 MB at 1080p and a smaller file for phones (photos.js loop; pictures.md).');
+    }
   });
 
   rule('slow-transition', () => {
@@ -953,8 +1222,11 @@
   rule('page-basics', () => {
     if (!document.title.trim()) add('page-basics', 'P2', null, 'The page has no title, so its tab and bookmarks are unnamed.');
     if (!document.querySelector('main, [role="main"]')) add('page-basics', 'P2', null, 'The page has no main landmark, so screen-reader users cannot jump to the content.');
+    // An app prototype is not found by search or shown in a browser tab, so these two are web-page concerns only.
+    if (appMode) return;
     if (!document.querySelector('meta[name="description"]')?.getAttribute('content')?.trim()) add('page-basics', 'P3', null, 'The page has no meta description.');
     if (!document.querySelector('link[rel~="icon"]')) add('page-basics', 'P3', null, 'The page links no icon, so its tab shows a blank or default one.');
+    if (!document.querySelector('meta[property="og:image"], meta[name="og:image"], meta[name="twitter:image"]')?.getAttribute('content')?.trim()) add('page-basics', 'P3', null, 'The page has no og:image, so a shared link shows no picture (finish.md, 2).');
   });
 
   // ---- content ------------------------------------------------------------------
@@ -985,6 +1257,58 @@
         if (inMarkingSet(before) || (t.length <= 5 && /\d/.test(t))) continue;
         add('eyebrow', 'tell', before, 'Small all-caps label above a heading.');
       }
+    }
+  });
+  // The same habit judged for the whole page: a small label (all caps, letter-spaced or monospace)
+  // directly above most section headings. Reported once, at P3.
+  rule('eyebrow', () => {
+    if (appMode) return;
+    const sectionHeads = heads.filter((h) => h.tagName === 'H2');
+    if (sectionHeads.length < 3) return;
+    const labelled: Element[] = [];
+    for (const h of sectionHeads) {
+      const before = h.previousElementSibling;
+      if (!before || !isVisible(before) || before.matches('h1,h2,h3,h4,h5,h6,img,picture,svg,figure,video,ul,ol,table')) continue;
+      const t = textOf(before);
+      if (!t || t.length > 48 || /\n/.test(t)) continue;
+      const cs = getComputedStyle(before);
+      const size = parseFloat(cs.fontSize);
+      const caps = cs.textTransform === 'uppercase' || (t === t.toUpperCase() && /[A-Z]/.test(t));
+      const spaced = parseFloat(cs.letterSpacing) / size >= 0.06;
+      const mono = /mono|courier|consolas|menlo|monaco|\bcode\b/i.test(cs.fontFamily.split(',')[0] ?? '');
+      if (size <= 15 && (caps || spaced || mono)) labelled.push(before);
+    }
+    if (labelled.length >= 3 && labelled.length / sectionHeads.length >= 0.5) {
+      add('eyebrow', 'P3', labelled[0]!, labelled.length + ' of ' + sectionHeads.length + ' section headings have a small label directly above them (all caps, letter-spaced or monospace). ' +
+        'Drop them unless a label carries information the heading does not (a date, a code, a step the reader needs): a label over every heading is part of the familiar default set (faults.md).');
+    }
+  });
+  // Equal cards numbered 01, 02, 03... in a row or grid: numbers that only count the cards.
+  rule('numbered-grid', () => {
+    if (appMode) return;
+    const lead = (card: Element): number | null => {
+      const walker = document.createTreeWalker(card, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const v = (n.nodeValue ?? '').trim();
+        if (!v || (n.parentElement && !isVisible(n.parentElement))) continue;
+        const m = /^(?:no\.?\s*)?0?(\d{1,2})(?:[.)])?(?:\s*[—–/|:·-].*)?$/i.exec(v);
+        return m ? Number(m[1]) : null;
+      }
+      return null;
+    };
+    let reported = 0;
+    for (const parent of all('ol, ul, div, section, article, main')) {
+      const kids = Array.from(parent.children).filter(isVisible);
+      if (kids.length < 3 || kids.length > 12) continue;
+      const nums = kids.map(lead);
+      if (nums.some((x) => x === null) || nums[0]! > 1 || !nums.every((x, i) => x === nums[0]! + i)) continue;
+      const rects = kids.map((k) => k.getBoundingClientRect());
+      const widths = rects.map((r) => r.width);
+      if (Math.min(...widths) < 120 || Math.max(...widths) / Math.min(...widths) > 1.15 || rects.some((r) => r.height < 60)) continue;
+      if (!rects.some((r, i) => i > 0 && Math.abs(r.top - rects[0]!.top) < 4)) continue;
+      add('numbered-grid', 'P3', parent, kids.length + ' equal cards numbered ' + nums.map((x) => String(x).padStart(2, '0')).slice(0, 4).join(', ') + (kids.length > 4 ? '...' : '') +
+        ' sit side by side. Numbers that only count the cards say nothing: drop them, or, if the order matters, show it as a sequence the visitor follows. The numbered grid is part of the familiar default set (faults.md).');
+      if (++reported >= 2) break;
     }
   });
   rule('filler-words', () => {
@@ -1060,21 +1384,6 @@
     }
   });
 
-  // Too many text sizes reads as noise. Five to seven covers most screens.
-  // Text inside a product mock-up (a drawn app window or phone screen) is the product's, not
-  // the page's: leave out anything inside [data-mock], a role="img" picture or an aria-hidden illustration.
-  rule('many-type-sizes', () => {
-    const mock = '[data-mock], [role="img"], [aria-hidden="true"]';
-    const sizes = new Set<number>();
-    for (const el of textEls) {
-      if (el.closest(mock)) continue;
-      sizes.add(Math.round(parseFloat(getComputedStyle(el).fontSize)));
-    }
-    if (sizes.size > 12) {
-      add('many-type-sizes', 'P2', null, sizes.size + ' different text sizes are in use (' + Array.from(sizes).sort((a, b) => a - b).join(', ') + 'px). Most screens need five to seven, plus one or two display sizes.');
-    }
-  });
-
   // At most two type families on a page (craft.md). Code samples and a logo set in its own face do not count.
   rule('font-families', () => {
     const generic = /^(serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-serif|ui-sans-serif|ui-monospace|ui-rounded|-apple-system|blinkmacsystemfont|emoji|math|inherit|initial)$/;
@@ -1112,7 +1421,7 @@
   });
 
   rule('timid-headline', () => {
-    if (vw < 1280 || isProductUI()) return;
+    if (vw < 1280 || appMode || isProductUI()) return;
     const bySize = new Map<number, number>();
     let largest = 0;
     let largestEl: HTMLElement | null = null;
@@ -1140,7 +1449,9 @@
     const h2Size = Math.max(0, ...heads.filter((h) => h.tagName === 'H2').map((h) => parseFloat(getComputedStyle(h).fontSize)));
     if (h1 && h2Size) {
       const h1Size = parseFloat(getComputedStyle(h1).fontSize);
-      if (h1Size <= h2Size) add('timid-headline', 'P2', h1, 'The h1 is ' + h1Size + 'px, no larger than an h2 (' + h2Size + 'px).');
+      // A display h1 (four times the body or more) with display type repeated lower down as h2s is
+      // display type used as structure, not a timid h1.
+      if (h1Size <= h2Size && !(body && h1Size >= body * 4)) add('timid-headline', 'P2', h1, 'The h1 is ' + h1Size + 'px, no larger than an h2 (' + h2Size + 'px).');
     }
   });
 
@@ -1163,16 +1474,6 @@
         add('colour-flood', 'P3', e.el, 'One saturated colour (rgb(' + keyOf(e.colour) + ')) is the background of about ' + Math.round(share * 100) +
           '% of the first screen. A prompt, not a failure: confirm the flood was chosen and that the main action still stands out.');
       }
-    }
-  });
-
-  rule('warm-default-ground', () => {
-    const ground = dominantGround();
-    if (!ground || ground.share < 0.3) return;
-    const [h, s, l] = hsl(ground.colour);
-    if (h >= 28 && h <= 62 && s > 0.25 && l > 0.6) {
-      add('warm-default-ground', 'P3', ground.el, 'The main ground is a yellow, cream, beige or amber (rgb(' + keyOf(ground.colour) +
-        ')). A prompt, not a failure: confirm it came from the subject and was not a reflex answer to "warm" (tells.md).');
     }
   });
 
@@ -1206,6 +1507,8 @@
   });
 
   rule('pure-black-white', () => {
+    // An app's system grounds are pure white and pure black by design.
+    if (appMode) return;
     const byColour = new Map<string, number>();
     for (const el of textEls) {
       const c = rgba(getComputedStyle(el).color);
@@ -1306,7 +1609,7 @@
 
   rule('first-screen-no-action', () => {
     // Product UI and reading pages (a long article) need no action on the first screen.
-    if (isProductUI() || all('article').some((a) => textOf(a).length > 1500)) return;
+    if (appMode || isProductUI() || all('article').some((a) => textOf(a).length > 1500)) return;
     const found = all('button, input[type="submit"], input[type="button"], [role="button"], a[href]').some((el) => {
       if (el.hasAttribute('aria-expanded') || !isVisible(el)) return false;
       const r = el.getBoundingClientRect();
@@ -1324,19 +1627,19 @@
   });
 
   rule('first-screen-nothing-large', () => {
-    if (vw < 1280 || isProductUI()) return;
+    if (vw < 1280 || appMode || isProductUI()) return;
     const area = vw * vh;
     const big = (r: DOMRect): boolean => {
       const w = Math.min(r.right, vw) - Math.max(r.left, 0);
       const h = Math.min(r.bottom, vh) - Math.max(r.top, 0);
       return w > 0 && h > 0 && w * h >= area * 0.15;
     };
-    if (textEls.some((el) => parseFloat(getComputedStyle(el).fontSize) >= 56 && onFirstScreen(el.getBoundingClientRect()))) return;
+    if (textEls.some((el) => parseFloat(getComputedStyle(el).fontSize) >= 44 && onFirstScreen(el.getBoundingClientRect()))) return;
     for (const el of all<Element>('img, svg, canvas, video, picture, iframe')) {
       if (!el.parentElement?.closest('svg') && isVisible(el) && big(el.getBoundingClientRect())) return;
     }
     for (const s of groundSamples()) if (!s.colour && s.el && big(s.el.getBoundingClientRect())) return; // a background picture
-    add('first-screen-nothing-large', 'P3', null, 'The first screen has no picture covering at least 15% of it and no text of 56px or more, so nothing leads the eye (slips.md).');
+    add('first-screen-nothing-large', 'P3', null, 'The first screen has no picture covering at least 15% of it and no text of 44px or more, so nothing leads the eye (faults.md).');
   });
 
   // ---- buttons: one style and one size for the primary action (craft.md, Space) -------------
@@ -1421,7 +1724,7 @@
     }
   });
 
-  // ---- pictures: one picture style per page (imagery.md) ------------------------------------
+  // ---- pictures: one picture style per page (pictures.md) ------------------------------------
   // A heuristic, so only a prompt: a photograph (a JPEG, WebP or AVIF image, a video, or a photo
   // background) and a large drawn scene (an SVG image, or an inline SVG of many shapes with
   // little text) on the same page. Charts, diagrams, maps, logos and icons carry information
@@ -1476,7 +1779,7 @@
     if (drawing) {
       const photoName = photo instanceof HTMLImageElement ? (photo.currentSrc || photo.src).split(/[?#]/)[0]?.split('/').pop() ?? '' : '';
       add('mixed-pictures', 'P3', drawing, 'A large drawn illustration shares the page with photographs (' + (photoName || describe(photo)) +
-        '). A prompt, not a failure: one picture style per page unless the user asked for both; a diagram or map that carries information is fine (imagery.md).');
+        '). A prompt, not a failure: one picture style per page unless the user asked for both; a diagram or map that carries information is fine (pictures.md).');
     }
   });
 
@@ -1508,8 +1811,8 @@
     }
     const used = Math.round(right - left);
     if (used > 0 && used < vw * 0.62) {
-      add('narrow-content', 'P2', null, 'Content is ' + used + 'px wide in a ' + vw +
-        'px viewport: content sits in a narrow column; widen the layout container or let sections use the width (craft.md).');
+      add('narrow-content', 'P3', null, 'Content is ' + used + 'px wide in a ' + vw +
+        'px viewport: content sits in a narrow column. Fine for a page meant for reading or one whose pictures give the screen its shape; otherwise widen the layout container or let sections use the width (craft.md).');
     }
   });
 
@@ -1517,11 +1820,53 @@
     if (vw > 480) return;
     const spans: Array<[number, number]> = [];
     let example: Element | null = null;
+    // In app mode an open modal sheet and the scrim directly behind it are a state of the screen, not a bar.
+    const DIALOG = 'dialog[open], [role="dialog"], [role="alertdialog"], [aria-modal="true"]';
+    const dialogs = appMode ? all<Element>(DIALOG).filter(isVisible) : [];
+    const isModalLayer = (el: Element): boolean => {
+      if (el.closest(DIALOG) || dialogs.some((d) => el.contains(d))) return true;
+      // A scrim: a fixed layer over most of the screen, right next to an open dialog (or next to the wrapper it sits in).
+      const r = el.getBoundingClientRect();
+      if (r.width < vw * 0.9 || r.height < vh * 0.9) return false;
+      const besideDialog = dialogs.some((d) => {
+        for (let n: Element | null = d; n && n !== document.body; n = n.parentElement) {
+          if (n.previousElementSibling === el || n.nextElementSibling === el) return true;
+        }
+        return false;
+      });
+      if (besideDialog) return true;
+      // A shared scrim kept elsewhere in the page: while a dialog is open, a fixed layer over the whole
+      // screen with no text and no controls of its own, behind the dialog, is its backdrop.
+      if (getComputedStyle(el).position !== 'fixed' || textOf(el) || el.querySelector('a[href], button, input, select, textarea, [role="button"]')) return false;
+      const z = (n: Element): number => {
+        for (let a: Element | null = n; a && a !== document.body; a = a.parentElement) {
+          const v = parseInt(getComputedStyle(a).zIndex, 10);
+          if (!Number.isNaN(v)) return v;
+        }
+        return 0;
+      };
+      return dialogs.some((d) => {
+        const dr = d.getBoundingClientRect();
+        const hit = document.elementFromPoint(dr.left + dr.width / 2, dr.top + Math.min(dr.height / 2, 20));
+        return (!!hit && (d.contains(hit) || hit.contains(d))) || z(d) >= z(el);
+      });
+    };
+    // App mode: a bottom tab bar that floats or lets the content show through is part of the screen, not a cover.
+    const isFloatingTabBar = (el: Element, cs: CSSStyleDeclaration, r: DOMRect): boolean => {
+      if (!el.matches('nav, [role="tablist"], [role="navigation"]') && !el.querySelector(':scope > nav, :scope > [role="tablist"]')) return false;
+      if (r.bottom < vh - 48 || r.top < vh * 0.6) return false;
+      const translucent = rgba(cs.backgroundColor)[3] < 0.999 || parseFloat(cs.opacity) < 1 ||
+        (cs.backdropFilter && cs.backdropFilter !== 'none') || ((cs as unknown as { webkitBackdropFilter?: string }).webkitBackdropFilter ?? 'none') !== 'none';
+      const floating = vh - r.bottom >= 4 || (r.left >= 4 && r.right <= vw - 4);
+      return translucent || floating;
+    };
     for (const el of pool()) {
       const cs = getComputedStyle(el);
       if (cs.position !== 'fixed' && cs.position !== 'sticky') continue;
       const r = el.getBoundingClientRect();
       if (r.width < vw * 0.5 || r.right <= 0 || r.left >= vw) continue;
+      if (dialogs.length && isModalLayer(el)) continue;
+      if (appMode && (isDecorative(el) || isFloatingTabBar(el, cs, r))) continue;
       // A sticky element covers only once it is stuck at its offset.
       if (cs.position === 'sticky') {
         const stuckTop = cs.top !== 'auto' && Math.abs(r.top - parseFloat(cs.top)) < 1;
@@ -1582,6 +1927,1475 @@
       add('near-miss-alignment', 'P3', e.el, 'Left edge is at ' + Math.round(e.left) + 'px, ' + Math.round(off) + 'px off the common edge at ' + common +
         'px. A prompt, not a failure: confirm the offset is meant.');
     }
+  });
+
+  // ---- flow: how the page reads below the first screen (flow.md) -------------------------
+  // Measured at 1024px and wider only, and not in app mode. Positions are page coordinates.
+  interface Box { l: number; t: number; r: number; b: number; el: Element; font: number }
+  const flowOn = vw >= 1024 && !appMode;
+  const sy = window.scrollY;
+  const sx = window.scrollX;
+  const pageH = Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight ?? 0);
+  /** The site header: a header, banner or nav at the top of the page, or a fixed or sticky bar. */
+  const inHeader = (el: Element): boolean => {
+    const h = el.closest('header, [role="banner"], nav');
+    if (h && !h.closest('main, article, section')) return true;
+    // A fixed or sticky bar across the top; a sticky column beside content is content.
+    for (let n: Element | null = el; n && n !== document.body; n = n.parentElement) {
+      const p = getComputedStyle(n).position;
+      if (p !== 'fixed' && p !== 'sticky') continue;
+      const r = n.getBoundingClientRect();
+      if (r.width >= vw * 0.6 && r.height < vh * 0.3) return true;
+    }
+    return false;
+  };
+  const isMedia = (el: Element): boolean => /^(IMG|VIDEO|CANVAS|PICTURE|IFRAME)$/.test(el.tagName) || (el instanceof SVGSVGElement && !el.parentElement?.closest('svg'));
+  const hasPictureBackground = (cs: CSSStyleDeclaration): boolean => /url\(/.test(cs.backgroundImage);
+  /**
+   * What is drawn on the page: lines of text, pictures, video, canvas and SVG, form controls, and
+   * boxes with a visible border all round, a shadow, or a background that differs from what is behind them.
+   * A ground (a band or section background as wide as the screen) is not content; a picture
+   * background is. Each box is in page coordinates.
+   */
+  let boxesMemo: Box[] | null = null;
+  function contentBoxes(): Box[] {
+    if (boxesMemo) return boxesMemo;
+    const out: Box[] = [];
+    // Content inside a box that hides its overflow (an odometer's reel of digits, a clipped strip)
+    // counts only as far as that box shows it.
+    const clipMemo = new Map<Element, number[] | null>();
+    const clipOf = (el: Element | null): number[] | null => {
+      if (!el || el === document.body || el === document.documentElement) return null;
+      if (clipMemo.has(el)) return clipMemo.get(el) ?? null;
+      let out = clipOf(el.parentElement);
+      const cs = getComputedStyle(el);
+      if (cs.position === 'fixed') out = null;
+      if (/hidden|clip|auto|scroll/.test(cs.overflowX + ' ' + cs.overflowY)) {
+        const q = el.getBoundingClientRect();
+        const mine = [q.left + sx, q.top + sy, q.right + sx, q.bottom + sy];
+        out = out ? [Math.max(out[0]!, mine[0]!), Math.max(out[1]!, mine[1]!), Math.min(out[2]!, mine[2]!), Math.min(out[3]!, mine[3]!)] : mine;
+      }
+      clipMemo.set(el, out);
+      return out;
+    };
+    const push = (r: DOMRect, el: Element, font = 0, clipFrom: Element | null = el.parentElement): void => {
+      let [l, t, rr, b] = [r.left + sx, r.top + sy, r.right + sx, r.bottom + sy];
+      const c = clipOf(clipFrom);
+      if (c) [l, t, rr, b] = [Math.max(l, c[0]!), Math.max(t, c[1]!), Math.min(rr, c[2]!), Math.min(b, c[3]!)];
+      if (rr - l < 2 || b - t < 2) return;
+      out.push({ l, t, r: rr, b, el, font });
+    };
+    const range = document.createRange();
+    for (const el of textEls) {
+      if (inHeader(el)) continue;
+      const font = parseFloat(getComputedStyle(el).fontSize) || 0;
+      for (const node of Array.from(el.childNodes)) {
+        if (node.nodeType !== Node.TEXT_NODE || !node.nodeValue?.trim()) continue;
+        range.selectNode(node);
+        for (const r of Array.from(range.getClientRects())) push(r, el, font, el);
+      }
+    }
+    for (const el of pool()) {
+      if (el instanceof SVGElement && !(el instanceof SVGSVGElement)) continue;
+      const media = isMedia(el) || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(el.tagName);
+      const cs = getComputedStyle(el);
+      let box = media;
+      if (!box) {
+        const bg = rgba(cs.backgroundColor);
+        const borders = [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth].every((w) => parseFloat(w) >= 1) &&
+          cs.borderTopStyle !== 'none' && rgba(cs.borderTopColor)[3] > 0.1;
+        const picture = hasPictureBackground(cs);
+        let differs = false;
+        if (bg[3] > 0.05 && el.parentElement) {
+          const behind = backgroundOf(el.parentElement);
+          const mine = over(bg, behind ?? [255, 255, 255, 1]);
+          differs = !behind || Math.abs(luminance(mine) - luminance(behind)) > 0.004 || keyOf(mine) !== keyOf(behind) && Math.max(...[0, 1, 2].map((i) => Math.abs((mine[i] ?? 0) - (behind[i] ?? 0)))) > 6;
+        }
+        const gradient = /gradient\(/.test(cs.backgroundImage);
+        // A card lifted off the ground by a shadow alone is still a card.
+        const shadow = cs.boxShadow !== 'none' && !/inset/.test(cs.boxShadow) && el.getBoundingClientRect().height >= 40;
+        box = picture || borders || differs || gradient || shadow;
+        if (box && !picture && !shadow && !borders && !(parseFloat(cs.borderTopLeftRadius) > 0)) {
+          // A ground: a plain band as wide as the screen is the page or the section, not a thing on it.
+          const r = el.getBoundingClientRect();
+          if (r.width >= vw * 0.9) box = false;
+        }
+      }
+      if (!box || !isVisible(el) || inHeader(el)) continue;
+      if (cs.position === 'fixed') continue;
+      push(el.getBoundingClientRect(), el);
+    }
+    return (boxesMemo = out);
+  }
+  /** The left and right edges of the main text column: where the page's text lines start and end. */
+  function textColumn(): [number, number] | null {
+    const lefts: number[] = [];
+    const rights: number[] = [];
+    for (const b of contentBoxes()) {
+      if (!b.font) continue;
+      lefts.push(Math.max(0, b.l));
+      rights.push(Math.min(vw, b.r));
+    }
+    if (lefts.length < 5) return null;
+    lefts.sort((a, b) => a - b);
+    rights.sort((a, b) => a - b);
+    // Ignore the odd outlier, such as a caption on a full-bleed picture.
+    const l = lefts[Math.floor(lefts.length * 0.03)] ?? 0;
+    const r = rights[Math.ceil(rights.length * 0.97) - 1] ?? vw;
+    return r - l > 200 ? [l, r] : null;
+  }
+  const headingText = (h: Element | null | undefined): string => (h ? '"' + textOf(h).replace(/\s+/g, ' ').slice(0, 50) + '"' : 'no heading');
+  /** The page's sections: the blocks of main (stepping through wrappers that hold all of it), header and footer left out. */
+  function flowSections(): Element[] {
+    let root: Element = document.querySelector('main') ?? document.body;
+    for (let i = 0; i < 4; i++) {
+      const kids = Array.from(root.children).filter(isVisible);
+      const only = kids.length === 1 ? kids[0] : undefined;
+      if (!only || only.tagName === 'SECTION') break;
+      root = only;
+    }
+    return Array.from(root.children).filter((el) => isVisible(el) && !/^(HEADER|FOOTER|NAV|SCRIPT|STYLE|DIALOG|TEMPLATE)$/.test(el.tagName) && !inHeader(el));
+  }
+  /** Step down through wrappers with a single visible child: where a section's layout happens. */
+  function layoutBox(el: Element): Element {
+    let n = el;
+    for (let i = 0; i < 5; i++) {
+      const kids = Array.from(n.children).filter(isVisible);
+      const only = kids.length === 1 ? kids[0] : undefined;
+      if (!only || /^H[1-6]$/.test(only.tagName)) break;
+      n = only;
+    }
+    return n;
+  }
+  const innerBox = (el: Element): [number, number] => {
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return [r.left + sx + (parseFloat(cs.paddingLeft) || 0), r.right + sx - (parseFloat(cs.paddingRight) || 0)];
+  };
+
+  /**
+   * Coverage of a region, strip by strip: for each STRIP-tall strip from y0 to y1, the share of
+   * the width from x0 to x1 that content covers. Boxes may be limited to those inside one element.
+   */
+  const STRIP = 8;
+  function coverage(boxes: Array<{ l: number; t: number; r: number; b: number }>, x0: number, x1: number, y0: number, y1: number): number[] {
+    const n = Math.max(0, Math.floor((y1 - y0) / STRIP));
+    const w = x1 - x0;
+    const spans: Array<Array<[number, number]>> = Array.from({ length: n }, () => []);
+    for (const b of boxes) {
+      const l = Math.max(x0, b.l);
+      const r = Math.min(x1, b.r);
+      if (r <= l || b.b <= y0 || b.t >= y1) continue;
+      const i0 = Math.max(0, Math.floor((b.t - y0) / STRIP));
+      const i1 = Math.min(n - 1, Math.floor((b.b - 0.01 - y0) / STRIP));
+      for (let i = i0; i <= i1; i++) spans[i]?.push([l, r]);
+    }
+    return spans.map((list) => {
+      list.sort((p, q) => p[0] - q[0]);
+      let sum = 0;
+      let to = -Infinity;
+      for (const [l, r] of list) {
+        const from = Math.max(l, to);
+        if (r > from) sum += r - from;
+        to = Math.max(to, r);
+      }
+      return w > 0 ? sum / w : 0;
+    });
+  }
+  const mean = (list: number[]): number => (list.length ? list.reduce((x, y) => x + y, 0) / list.length : 0);
+  /** The nearest heading to a stretch of page: the last one above its middle, else the next one below. */
+  const nearestHeading = (top: number, bottom: number): Element | null => {
+    const at = heads.filter((h) => !inHeader(h)).map((h) => ({ h, y: h.getBoundingClientRect().top + sy }));
+    return (at.filter((x) => x.y <= (top + bottom) / 2).pop() ?? at.find((x) => x.y > top))?.h ?? null;
+  };
+  /** Where the page's content starts: below a header at the top of the page. */
+  const contentStart = (): number => {
+    let start = 0;
+    for (const el of all<Element>('header, [role="banner"]')) {
+      if (!isVisible(el) || el.closest('main, article, section')) continue;
+      const r = el.getBoundingClientRect();
+      if (r.top + sy < vh * 0.5) start = Math.max(start, r.bottom + sy);
+    }
+    return start;
+  };
+
+  /**
+   * The element's nearest sticky ancestor (itself included), short of `stop`. A sticky header bar
+   * is the header, not content, and is not looked for here (inHeader leaves it out).
+   */
+  const stickyMemo = new Map<Element, Element | null>();
+  const stickyOf = (el: Element, stop: Element | null = null): Element | null => {
+    for (let n: Element | null = el; n && n !== stop && n !== document.body; n = n.parentElement) {
+      let hit = stickyMemo.get(n);
+      if (hit === undefined) {
+        hit = getComputedStyle(n).position === 'sticky' ? n : null;
+        stickyMemo.set(n, hit);
+      }
+      if (hit) return hit;
+    }
+    return null;
+  };
+  /**
+   * How far a sticky element travels as the page scrolls: from where it sits now to the far end
+   * of its containing block (its parent's content box), down for one that sticks to the top, up
+   * for one that sticks to the bottom. [up, down] in pixels.
+   */
+  const travelMemo = new Map<Element, [number, number]>();
+  const stickyTravel = (s: Element): [number, number] => {
+    const known = travelMemo.get(s);
+    if (known) return known;
+    let travel: [number, number] = [0, 0];
+    const p = s.parentElement;
+    if (p) {
+      const pr = p.getBoundingClientRect();
+      const pcs = getComputedStyle(p);
+      const cs = getComputedStyle(s);
+      const sr = s.getBoundingClientRect();
+      const floor = pr.bottom - (parseFloat(pcs.paddingBottom) || 0) - (parseFloat(pcs.borderBottomWidth) || 0) - (parseFloat(cs.marginBottom) || 0);
+      const ceiling = pr.top + (parseFloat(pcs.paddingTop) || 0) + (parseFloat(pcs.borderTopWidth) || 0) + (parseFloat(cs.marginTop) || 0);
+      if (cs.top !== 'auto') travel = [0, Math.max(0, floor - sr.bottom)];
+      else if (cs.bottom !== 'auto') travel = [Math.max(0, sr.top - ceiling), 0];
+    }
+    travelMemo.set(s, travel);
+    return travel;
+  };
+  /**
+   * A content box stretched over every part of the page it is seen beside: content inside a sticky
+   * element covers the whole range the element travels through within its containing block.
+   */
+  const reach = <T extends { t: number; b: number; el: Element }>(b: T, stop: Element | null = null): T => {
+    const s = stickyOf(b.el, stop);
+    if (!s) return b;
+    const [up, down] = stickyTravel(s);
+    return up || down ? { ...b, t: b.t - up, b: b.b + down } : b;
+  };
+
+  /**
+   * Snapshot mode (shot.js stepping down the page): what is on this screen now. Content in a
+   * small fixed element (a cursor follower, a floating badge) goes with the visitor everywhere and
+   * fills nothing, so it is left out; a large fixed layer is kept.
+   */
+  function viewSnapshot(): View {
+    let top = 0;
+    const floatingMemo = new Map<Element, boolean>();
+    const scenes: number[][] = [];
+    // Pictures out of flow that contentBoxes leaves out: a large fixed picture or picture background
+    // (a photograph held behind a hero), and a picture background drawn by ::before or ::after (the
+    // hero's photograph set as an absolutely placed layer). Each counts where it shows on this screen:
+    // its box, cut by any ancestor that clips it (clip-path, or a hiding overflow that applies to it).
+    // Small ones are decoration or a floating badge and fill nothing. Viewport rows, page columns.
+    const fillers: Array<{ host: Element; l: number; t: number; r: number; b: number }> = [];
+    {
+      const cut = (el: Element, rect: number[], fixed: boolean): number[] => {
+        let [l = 0, t = 0, r = 0, b = 0] = rect;
+        for (let n = el.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+          const cs = getComputedStyle(n);
+          const hides = /hidden|clip|auto|scroll/.test(cs.overflowX + ' ' + cs.overflowY);
+          const holdsFixed = cs.transform !== 'none' || cs.filter !== 'none' || /paint|strict|content/.test(cs.contain);
+          if (cs.clipPath !== 'none' || hides && (!fixed || holdsFixed)) {
+            const q = n.getBoundingClientRect();
+            [l, t, r, b] = [Math.max(l, q.left), Math.max(t, q.top), Math.min(r, q.right), Math.min(b, q.bottom)];
+          }
+        }
+        return [l, t, r, b];
+      };
+      const big = (w: number, h: number): boolean => w >= vw * 0.25 && h >= vh * 0.25;
+      for (const el of pool()) {
+        if (inHeader(el) || !isVisible(el)) continue;
+        const cs = getComputedStyle(el);
+        if (cs.position === 'fixed' && (isMedia(el) || hasPictureBackground(cs))) {
+          const q = el.getBoundingClientRect();
+          if (big(q.width, q.height)) {
+            const [l = 0, t = 0, r = 0, b = 0] = cut(el, [q.left, q.top, q.right, q.bottom], true);
+            fillers.push({ host: el, l, t, r, b });
+          }
+        }
+        for (const which of ['::before', '::after']) {
+          const ps = getComputedStyle(el, which);
+          if (ps.content === 'none' || ps.content === 'normal' || ps.display === 'none' || ps.visibility === 'hidden' || (parseFloat(ps.opacity) || 0) < 0.1) continue;
+          if (!hasPictureBackground(ps) || (ps.position !== 'absolute' && ps.position !== 'fixed')) continue;
+          const w = parseFloat(ps.width);
+          const h = parseFloat(ps.height);
+          if (!(w > 0 && h > 0) || !big(w, h)) continue;
+          let x = parseFloat(ps.left);
+          let y = parseFloat(ps.top);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+          if (ps.position === 'absolute') {
+            // Placed against the nearest positioned ancestor's padding box (the element itself, usually).
+            let cb: Element | null = el;
+            while (cb && cb !== document.body && getComputedStyle(cb).position === 'static') cb = cb.parentElement;
+            const q = (cb ?? document.documentElement).getBoundingClientRect();
+            const ccs = getComputedStyle(cb ?? document.documentElement);
+            x += q.left + (parseFloat(ccs.borderLeftWidth) || 0);
+            y += q.top + (parseFloat(ccs.borderTopWidth) || 0);
+          }
+          const [l = 0, t = 0, r = 0, b = 0] = cut(el, [x, y, x + w, y + h], ps.position === 'fixed');
+          // An absolute layer is also cut by its own element when that hides its overflow.
+          const own = /hidden|clip/.test(cs.overflowX + ' ' + cs.overflowY) || cs.clipPath !== 'none' ? el.getBoundingClientRect() : null;
+          fillers.push(own ? { host: el, l: Math.max(l, own.left), t: Math.max(t, own.top), r: Math.min(r, own.right), b: Math.min(b, own.bottom) } : { host: el, l, t, r, b });
+        }
+      }
+    }
+    // A sticky element is holding the screen when it is stuck where its top (or bottom) puts it, not
+    // yet pushed off by the end of its scene, and what it holds is a third of the screen tall or more:
+    // the scroll space beside it, between steps set well apart, is not blank, for the visitor is
+    // looking at it. Its own transform (a centring translate) is taken off before comparing.
+    const heldNow = (el: Element, r: DOMRect): boolean => {
+      const cs = getComputedStyle(el);
+      let ty = 0;
+      if (cs.transform && cs.transform !== 'none') {
+        try { ty += new DOMMatrixReadOnly(cs.transform).m42; } catch { /* not a matrix */ }
+      }
+      const tr = (cs.translate || '').split(/\s+/)[1];
+      if (tr) ty += /%$/.test(tr) ? (parseFloat(tr) / 100) * (el as HTMLElement).offsetHeight : parseFloat(tr) || 0;
+      const lt = r.top - ty;
+      const lb = r.bottom - ty;
+      const stuck = cs.top !== 'auto' ? Math.abs(lt - parseFloat(cs.top)) <= 2 : cs.bottom !== 'auto' ? Math.abs(vh - lb - parseFloat(cs.bottom)) <= 2 : false;
+      if (!stuck || r.bottom <= 0 || r.top >= vh) return false;
+      let t0 = Infinity;
+      let b0 = -Infinity;
+      for (const b of contentBoxes()) {
+        if (!el.contains(b.el)) continue;
+        t0 = Math.min(t0, Math.max(0, b.t - sy));
+        b0 = Math.max(b0, Math.min(vh, b.b - sy));
+      }
+      for (const f of fillers) {
+        if (!el.contains(f.host) || f.b <= f.t) continue;
+        t0 = Math.min(t0, Math.max(0, f.t));
+        b0 = Math.max(b0, Math.min(vh, f.b));
+      }
+      return b0 - t0 >= vh / 3;
+    };
+    for (const el of pool()) {
+      const p = getComputedStyle(el).position;
+      if (p !== 'fixed' && p !== 'sticky') continue;
+      const r = el.getBoundingClientRect();
+      if (p === 'fixed') floatingMemo.set(el, r.width < vw * 0.4 || r.height < vh * 0.4);
+      const bar = r.width >= vw * 0.6 && r.height < vh * 0.3;
+      if (r.top <= 1 && r.bottom > 0 && bar && isVisible(el)) top = Math.max(top, r.bottom);
+      const pr = el.parentElement?.getBoundingClientRect();
+      if (p === 'sticky' && !bar && pr && pr.bottom > 0 && pr.top < vh) scenes.push([Math.round(Math.max(0, pr.top)), Math.round(Math.min(vh, pr.bottom)), heldNow(el, r) ? 1 : 0]);
+    }
+    const floating = (el: Element): boolean => {
+      for (let n: Element | null = el; n && n !== document.body; n = n.parentElement) if (floatingMemo.get(n)) return true;
+      return false;
+    };
+    const boxes: number[][] = [];
+    for (const b of contentBoxes()) {
+      const t = b.t - sy;
+      const bottom = b.b - sy;
+      if (bottom <= top || t >= vh || b.r - sx <= 0 || b.l - sx >= vw || floating(b.el)) continue;
+      boxes.push([Math.round(b.l), Math.round(Math.max(top, t)), Math.round(b.r), Math.round(Math.min(vh, bottom)), Math.round(b.font)]);
+    }
+    for (const f of fillers) {
+      const t = Math.max(top, f.t);
+      const bottom = Math.min(vh, f.b);
+      const l = Math.max(0, f.l);
+      const r = Math.min(vw, f.r);
+      if (bottom - t < 2 || r - l < 2) continue;
+      boxes.push([Math.round(l + sx), Math.round(t), Math.round(r + sx), Math.round(bottom), 0]);
+    }
+    // The ground down the screen's left edge, so an empty stretch that crosses from one section's
+    // ground to another's can be told from one on a single unbroken ground.
+    const grounds: string[] = [];
+    for (let y = 0; y < vh; y += STRIP) {
+      const at = document.elementFromPoint(2, y + STRIP / 2);
+      const c = at ? backgroundOf(at) : null;
+      grounds.push(c ? keyOf(c) : '');
+    }
+    return { y: Math.round(sy), top: Math.round(top), boxes, grounds, scenes };
+  }
+  if (snapshotMode) return viewSnapshot();
+
+  // A tall stretch of page with almost nothing on it reads as the page running out.
+  // Measured as a visitor sees it: shot.js steps down the page a third of a screen at a time and
+  // records what is on each screen (sticky and pinned content where it is stuck, a sideways
+  // gallery where it has slid to, nothing hidden under the header bar). Each screen is cut into
+  // 8px strips; a strip's coverage is the share of the text column that content covers. Any
+  // stretch half a screen tall whose average coverage is under 12% is reported, as is a stretch
+  // of a third of a screen with nothing at all on it: the empty end of a pinned scene. A stretch
+  // that holds a type line of 96px or more is a deliberate statement and is left alone, and the
+  // last 200px of the page are left out. Run without shot.js, the page is measured as it lies,
+  // and content in a sticky element counts over the whole range it travels.
+  // Separately, three or more empty gaps of 240px or more between blocks (section padding stacked
+  // on section padding) are reported once, as a prompt.
+  rule('blank-band', () => {
+    // A page of about one screen has no flow to break; the first-screen rules judge it.
+    if (!flowOn || vh <= 0 || pageH < vh * 1.5) return;
+    const column = textColumn();
+    if (!column) return;
+    const [cl, cr] = column;
+    const cw = cr - cl;
+    const THRESHOLD = 0.12;
+    const span = Math.ceil((vh * 0.5) / STRIP);
+    const VOID = 240;
+    const sceneEnds: Array<[number, number]> = [];
+    // Stretches that hold a statement line; seen from another scroll position the same stretch may
+    // have the line just off screen, and it is still the statement's room.
+    const statements: Array<[number, number]> = [];
+    const found: Array<{ top: number; bottom: number; lowest: number; scene: boolean }> = [];
+    const gapsFound: Array<[number, number]> = [];
+    type Flat = { l: number; t: number; r: number; b: number; font: number };
+    /** Look through one run of strips that starts at y0 (and lies at `shift` down the page). */
+    const scan = (boxes: Flat[], y0: number, y1: number, shift: number, clipped: boolean, grounds: string[] | null = null, scenes: number[][] = []): void => {
+      const cover = coverage(boxes, cl, cr, y0, y1);
+      const n = cover.length;
+      // Beside a sticky element that is holding the screen (stuck, with a third of a screen of content),
+      // the screen is not blank, however far apart the steps beside it are set.
+      for (const [t = 0, e = 0, held = 0] of scenes) {
+        if (!held) continue;
+        for (let i = Math.max(0, Math.floor((t - y0) / STRIP)); i < n && y0 + i * STRIP < e; i++) cover[i] = Math.max(cover[i] ?? 0, 1);
+      }
+      const prefix = [0];
+      for (const c of cover) prefix.push((prefix[prefix.length - 1] ?? 0) + c);
+      const avg = (i: number, j: number): number => ((prefix[j] ?? 0) - (prefix[i] ?? 0)) / Math.max(1, j - i);
+      const marked = new Array<boolean>(n).fill(false);
+      for (let i = 0; i + span <= n; i++) {
+        if (avg(i, i + span) < THRESHOLD) for (let k = i; k < i + span; k++) marked[k] = true;
+      }
+      // Nothing at all on one unbroken ground, 240px or more where a sticky scene runs (the stretch it
+      // leaves behind when it ends) or 40% of the screen anywhere: on a visitor's screen that reads as
+      // the page running out. The same gap across a change of ground is a break between sections,
+      // left to the prompt below. Only known from the screens shot.js saw.
+      if (grounds) {
+        const first = Math.round(y0 / STRIP);
+        const same = (a: string | undefined, b: string | undefined): boolean => {
+          if (a === b) return true;
+          const p = (a ?? '').split(',').map(Number);
+          const q = (b ?? '').split(',').map(Number);
+          return p.length === 3 && q.length === 3 && p.every((v, k) => Math.abs(v - (q[k] ?? 0)) <= 6);
+        };
+        for (let i = 0; i < n; i++) {
+          if ((cover[i] ?? 0) > 0.005) continue;
+          let j = i;
+          while (j + 1 < n && (cover[j + 1] ?? 0) <= 0.005) j++;
+          let one = true;
+          for (let k = i + 1; k <= j && one; k++) one = same(grounds[first + k], grounds[first + i]);
+          const a = y0 + i * STRIP;
+          const b = y0 + (j + 1) * STRIP;
+          const inScene = scenes.some(([t = 0, e = 0]) => t < b && e > a);
+          if (one && ((j + 1 - i) * STRIP >= VOID && inScene || (j + 1 - i) * STRIP >= vh * 0.4)) {
+            for (let k = i; k <= j; k++) marked[k] = true;
+            if (inScene) sceneEnds.push([a + shift, b + shift]);
+          }
+          i = j;
+        }
+      }
+      const inBand = new Array<boolean>(n).fill(false);
+      for (let i = 0; i < n; i++) {
+        if (!marked[i]) continue;
+        let j = i;
+        while (j + 1 < n && marked[j + 1]) j++;
+        const top = y0 + i * STRIP;
+        const bottom = y0 + (j + 1) * STRIP;
+        // A large type line set on its own is a statement, not an empty stretch.
+        if (boxes.some((b) => b.font >= 96 && b.t < bottom && b.b > top && b.r - b.l >= cw * 0.3)) statements.push([top + shift, bottom + shift]);
+        else {
+          for (let k = i; k <= j; k++) inBand[k] = true;
+          let lowest = avg(i, j + 1);
+          for (let k = i; k + span <= j + 1; k++) lowest = Math.min(lowest, avg(k, k + span));
+          found.push({ top: top + shift, bottom: bottom + shift, lowest, scene: sceneEnds.some(([a, b]) => a < bottom + shift && b > top + shift) });
+        }
+        i = j;
+      }
+      // Empty gaps between blocks: strips with nothing at all on them, 240px or more in a row.
+      for (let i = 0; i < n; i++) {
+        if ((cover[i] ?? 0) > 0.005 || inBand[i]) continue;
+        let j = i;
+        while (j + 1 < n && (cover[j + 1] ?? 0) <= 0.005 && !inBand[j + 1]) j++;
+        // A gap cut off by the screen's edge may run on past it: only whole gaps count.
+        if ((j + 1 - i) * STRIP >= 240 && !(clipped && (i === 0 || j === n - 1))) gapsFound.push([y0 + i * STRIP + shift, y0 + (j + 1) * STRIP + shift]);
+        i = j;
+      }
+    };
+    const views = (options.views ?? []).filter((v) => v && Array.isArray(v.boxes));
+    if (views.length) {
+      for (const v of views) {
+        const boxes = v.boxes.map(([l = 0, t = 0, r = 0, b = 0, font = 0]) => ({ l, t, r, b, font }));
+        scan(boxes, Math.max(0, v.top), Math.min(vh, pageH - 200 - v.y), v.y, true, Array.isArray(v.grounds) ? v.grounds : null, Array.isArray(v.scenes) ? v.scenes : []);
+      }
+    } else {
+      const start = contentStart();
+      scan(contentBoxes().map((b) => reach(b)), start, pageH - 200, 0, false);
+    }
+    // The same stretch seen from several scroll positions is one stretch.
+    const merge = <T extends { top: number; bottom: number }>(list: T[], join: (a: T, b: T) => void): T[] => {
+      const out: T[] = [];
+      for (const x of list.slice().sort((a, b) => a.top - b.top)) {
+        const last = out[out.length - 1];
+        if (last && x.top <= last.bottom + STRIP) join(last, x);
+        else out.push({ ...x });
+      }
+      return out;
+    };
+    const bands = merge(found, (a, b) => { a.bottom = Math.max(a.bottom, b.bottom); a.lowest = Math.min(a.lowest, b.lowest); a.scene ||= b.scene; })
+      .filter((band) => !statements.some(([t, b]) => t < band.bottom && b > band.top));
+    for (const { top, bottom, lowest, scene } of bands) {
+      const near = nearestHeading(top, bottom);
+      const what = scene && lowest < 0.005 ? 'nothing at all is on screen where the sticky scene beside it ends'
+        : 'content covers ' + (lowest < 0.01 ? 'almost none' : 'about ' + Math.floor(lowest * 100) + '%') + ' of the column (under 12% is reported)';
+      add('blank-band', 'P3', near, 'From ' + Math.round(top) + ' to ' + Math.round(bottom) + 'px down the page (' + ((bottom - top) / vh).toFixed(1) +
+        ' screens), ' + what + ', near the heading ' + headingText(near) +
+        '. Look at it: fine when it is a deliberate panel whose one strong thing has room; otherwise fill it with the section\'s picture or proof, tighten the spacing, or join it to its neighbour (flow.md).');
+    }
+    // A sticky element that fills only the top of the screen leaves its own column empty under it
+    // for as long as it stays stuck: a tag or card pinned at the top with the rest of its column bare.
+    // Reported when it travels a fifth of a screen or more, the empty part under it is half the
+    // screen or more, and nothing else in its containing block fills its column under it.
+    const placed = contentBoxes();
+    const stickies = new Set<Element>();
+    for (const b of placed) { const st = stickyOf(b.el); if (st) stickies.add(st); }
+    for (const st of stickies) {
+      const [, down] = stickyTravel(st);
+      const stuck = parseFloat(getComputedStyle(st).top);
+
+      if (down < vh * 0.2 || !Number.isFinite(stuck)) continue;
+      const own = placed.filter((b) => st.contains(b.el));
+      if (!own.length) continue;
+      const sTop = st.getBoundingClientRect().top + sy;
+      const l = Math.min(...own.map((b) => b.l));
+      const r = Math.max(...own.map((b) => b.r));
+      const filled = Math.max(...own.map((b) => b.b)) - sTop;
+      const under = vh - (stuck + filled);
+      if (under < vh * 0.5 || r - l < cw * 0.15) continue;
+      // What else its containing block holds under it, in its column.
+      const from = sTop + filled;
+      const to = from + down;
+      const others = placed.filter((b) => !st.contains(b.el) && b.r > l + 8 && b.l < r - 8 && b.b > from && b.t < to);
+      if (mean(coverage(others, l, r, from, to)) > 0.05) continue;
+      const near = nearestHeading(sTop, sTop + down);
+      add('blank-band', 'P3', st, 'This sticky block stays on screen for ' + Math.round(down) + 'px of scrolling but fills only the top ' + Math.round(stuck + filled) +
+        'px of the screen: under it, its column is empty for the rest of the screen (' + Math.round(under) + 'px, ' + Math.round((under / vh) * 100) +
+        '%) the whole way, near the heading ' + headingText(near) + '. Let it fill the screen\'s height, or stack the next thing under it (flow.md).');
+    }
+    const gaps = merge(gapsFound.map(([top, bottom]) => ({ top, bottom })), (a, b) => { a.bottom = Math.max(a.bottom, b.bottom); })
+      .filter((g) => !bands.some((b) => g.top < b.bottom && g.bottom > b.top));
+    if (gaps.length >= 3) {
+      const sizes = gaps.map((g) => Math.round(g.bottom - g.top)).sort((x, y) => x - y);
+      add('blank-band', 'P3', null, gaps.length + ' empty gaps of 240px or more separate the blocks of this page (' + sizes[0] + ' to ' + sizes[sizes.length - 1] +
+        'px, at ' + gaps.slice(0, 6).map((g) => Math.round(g.top)).join(', ') + 'px...). Padding stacked on padding makes each section a separate island; ' +
+        'tighten the spacing, or let a picture, rule or overlap carry the eye from one section into the next (flow.md).');
+    }
+  });
+
+  // A section, or a tall block in one, with one side left empty. The block's width is split into
+  // a left and a right zone of 45% each. A zone is empty when nothing is in it for 75% or more of
+  // the block's content height (and the other side is three times fuller), when content covers
+  // under 5% of its area, or under 12% while the other side is five times fuller (a row of big
+  // names with small notes beside them). Reported when one zone is empty and the other, at least
+  // 15% covered, is not. The first screen and centred columns are left alone, and so is a block
+  // with a sticky column, filled over its whole scroll range while the other side scrolls past it.
+  // A column with another column beside it is judged as part of its row (so a list beside a sticky
+  // side column is not judged alone), and content capped by a max-width container centred in a
+  // wider block is judged within that container's width.
+  rule('lopsided-section', () => {
+    if (!flowOn) return;
+    const boxes = contentBoxes();
+    const reported = new Set<Element>();
+    const candidates: Element[] = [];
+    for (const section of flowSections()) {
+      candidates.push(section);
+      for (const kid of Array.from(layoutBox(section).children)) if (isVisible(kid)) candidates.push(kid);
+    }
+    const sections = new Set(flowSections());
+    // A column with another column beside it is judged with that column, as part of its row (the
+    // section): a list that keeps to the left of its own column is not a lopsided section when the
+    // column beside it, sticky or filled, fills the other side.
+    const besideAnother = (el: Element): boolean => {
+      const p = el.parentElement;
+      if (!p || sections.has(el)) return false;
+      const r = el.getBoundingClientRect();
+      return Array.from(p.children).some((sib) => {
+        if (sib === el || !isVisible(sib)) return false;
+        const q = sib.getBoundingClientRect();
+        return q.width > 40 && q.top < r.bottom - 4 && q.bottom > r.top + 4 && (q.left >= r.right - 4 || q.right <= r.left + 4) && boxes.some((b) => sib.contains(b.el));
+      });
+    };
+    for (const el of candidates) {
+      if (Array.from(reported).some((p) => p.contains(el))) continue;
+      if (besideAnother(el)) continue;
+      const box = layoutBox(el);
+      // A track wider than the screen (a sideways gallery) shows only part of itself: not a column layout.
+      if (box.getBoundingClientRect().width > vw * 1.02) continue;
+      let [cl, cr] = innerBox(box);
+      if (cr - cl < vw * 0.5) continue;
+      // Content capped by a max-width container centred in a wider block (the blocks in it share one
+      // centred measure): judge the sides of that measure, not the empty margins either side of it.
+      const kids = Array.from(box.children).filter(isVisible).map((k) => k.getBoundingClientRect());
+      if (kids.length) {
+        const minL = Math.max(cl, Math.min(...kids.map((k) => k.left + sx)));
+        const maxR = Math.min(cr, Math.max(...kids.map((k) => k.right + sx)));
+        const lm = minL - cl;
+        const rm = cr - maxR;
+        if (lm > (cr - cl) * 0.04 && rm > (cr - cl) * 0.04 && Math.abs(lm - rm) < (cr - cl) * 0.04) [cl, cr] = [minL, maxR];
+      }
+      const cw = cr - cl;
+      if (cw < vw * 0.5) continue;
+      const inside = boxes.filter((b) => el.contains(b.el) && b.r > cl && b.l < cr);
+      if (inside.length < 2) continue;
+      const top = Math.min(...inside.map((b) => b.t));
+      const bottom = Math.max(...inside.map((b) => b.b));
+      if (bottom - top < 300 || top < vh || bottom > pageH - 200) continue;
+      // A picture or panel behind the whole block fills it; a sticky column travels down beside the
+      // rest, filled over its whole scroll range, and the other side scrolls past it by design.
+      if (inside.some((b) => b.r - b.l >= cw * 0.9 && b.b - b.t >= (bottom - top) * 0.5)) continue;
+      if (inside.some((b) => stickyOf(b.el, el))) continue;
+      const zone = cw * 0.45;
+      const judge = (x0: number, x1: number): { empty: number; area: number } => {
+        const c = coverage(inside, x0, x1, top, bottom);
+        return { empty: c.filter((v) => v < 0.02).length / Math.max(1, c.length), area: mean(c) };
+      };
+      const L = judge(cl, cl + zone);
+      const R = judge(cr - zone, cr);
+      // Empty beside full: nothing for 70% of the height, or little covered while the other side is five times fuller.
+      const isEmpty = (z: { empty: number; area: number }, other: { empty: number; area: number }): boolean =>
+        other.area >= 0.15 && ((z.empty >= 0.75 && other.area >= z.area * 3) || z.area < 0.05 || (z.area < 0.12 && other.area >= z.area * 5));
+      let side = '';
+      let z = R;
+      if (isEmpty(R, L) && !isEmpty(L, R)) side = 'right';
+      else if (isEmpty(L, R) && !isEmpty(R, L)) { side = 'left'; z = L; }
+      if (!side) continue;
+      reported.add(el);
+      const h = el.querySelector('h1, h2, h3, h4') ?? el.closest('section')?.querySelector('h1, h2, h3, h4') ?? nearestHeading(top, bottom);
+      const how = z.empty >= 0.75 ? 'has nothing in it for ' + Math.round(z.empty * 100) + '% of the block\'s ' + Math.round(bottom - top) + 'px height'
+        : 'is only about ' + Math.round(z.area * 100) + '% covered over the block\'s ' + Math.round(bottom - top) + 'px height';
+      add('lopsided-section', 'P3', el, 'In the block under the heading ' + headingText(h) + ', the ' + side + ' side ' + how +
+        ', while the content keeps to the ' + (side === 'right' ? 'left' : 'right') + '. Look at it: fine when the empty side is a deliberate margin for a short column; otherwise put the picture, proof or a second column there, or let the content take the width (flow.md).');
+    }
+  });
+
+  // Sections that all use one layout read as a template filled in again and again. The layout of a
+  // section is the row its heading sits in: how many columns, which one holds the heading, which
+  // hold a picture, and their widths (within 8 points of each other). For a heading on top, the
+  // widest row of blocks under it and whether it holds a picture. Reported for three or more
+  // sections in a row with one layout, or for one layout used by four or more sections that are
+  // at least 40% of the page's sections. The first screen's section is left out.
+  rule('repeated-layout', () => {
+    if (!flowOn) return;
+    interface Sig { cols: number; head: string; media: string; widths: number[]; below?: number }
+    const signature = (section: Element): Sig | null => {
+      const h = section.querySelector('h1, h2, h3');
+      if (!h || !isVisible(h)) return null;
+      const sr = section.getBoundingClientRect();
+      if (sr.height < 200 || sr.top + sy < vh * 0.5) return null;
+      // Climb from the heading to the first block that has a neighbour beside it.
+      let item: Element = h;
+      let row: Element[] = [];
+      for (let n: Element = h; n !== section && n.parentElement; n = n.parentElement) {
+        const nr = n.getBoundingClientRect();
+        const beside = Array.from(n.parentElement.children).filter((s) => {
+          if (s === n || !isVisible(s)) return false;
+          const q = s.getBoundingClientRect();
+          return q.top < nr.bottom - 4 && q.bottom > nr.top + 4 && (q.left >= nr.right - 4 || q.right <= nr.left + 4) && q.width > 40;
+        });
+        if (beside.length) {
+          item = n;
+          row = [n, ...beside].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+          break;
+        }
+      }
+      if (!row.length) {
+        // Heading on top: what sits under it is the layout. The widest row of side-by-side blocks, 1 to 4 or more.
+        let below = 1;
+        for (const parent of all<Element>('*', section).slice(0, 400)) {
+          const kids = Array.from(parent.children).filter((k) => {
+            if (!isVisible(k) || k.contains(h)) return false;
+            const q = k.getBoundingClientRect();
+            return q.width >= 160 && q.height >= 60;
+          });
+          if (kids.length < 2) continue;
+          const firstTop = kids[0]?.getBoundingClientRect().top ?? 0;
+          const inRow = kids.filter((k) => Math.abs(k.getBoundingClientRect().top - firstTop) < 8).length;
+          below = Math.max(below, Math.min(4, inRow));
+        }
+        const pictured = all<Element>('img, video, picture, canvas', section).some((m) => {
+          const q = m.getBoundingClientRect();
+          return isVisible(m) && q.width >= 160 && q.height >= 120;
+        });
+        // A centred heading is a different layout from one set on the left.
+        const range = document.createRange();
+        range.selectNodeContents(h);
+        const hr = range.getBoundingClientRect();
+        const [il, ir] = innerBox(layoutBox(section));
+        const centred = hr.left + sx - il > (ir - il) * 0.15 && Math.abs((hr.left + hr.right) / 2 + sx - (il + ir) / 2) < (ir - il) * 0.1;
+        return { cols: 1, head: centred ? 'centre' : 'top', media: pictured ? 'below' : 'none', widths: [1], below };
+      }
+      const total = row.reduce((s, n) => s + n.getBoundingClientRect().width, 0);
+      const at = row.indexOf(item);
+      const head = at === 0 ? 'left' : at === row.length - 1 ? 'right' : 'middle';
+      const media = row.map((n, i) => {
+        const big = all<Element>('img, video, picture, canvas, svg', n).concat([n]).some((m) => {
+          if (!(isMedia(m) || hasPictureBackground(getComputedStyle(m)))) return false;
+          const q = m.getBoundingClientRect();
+          return q.width >= 160 && q.height >= 120;
+        });
+        return big ? String(i) : '';
+      }).filter(Boolean).join(',') || 'none';
+      return { cols: row.length, head, media, widths: row.map((n) => n.getBoundingClientRect().width / total) };
+    };
+    const same = (a: Sig, b: Sig): boolean => a.cols === b.cols && a.head === b.head && a.media === b.media && a.below === b.below &&
+      a.widths.every((w, i) => Math.abs(w - (b.widths[i] ?? 0)) <= 0.08);
+    const describeSig = (s: Sig): string => s.cols === 1 ? (s.head === 'centre' ? 'centred heading on top' : 'heading on top') + ((s.below ?? 1) > 1 ? ' over ' + (s.below === 4 ? '4 or more' : s.below) + ' blocks side by side' : ' over one column') +
+      (s.media === 'none' ? ', no picture' : ', with a picture') :
+      s.cols + ' columns (' + s.widths.map((w) => Math.round(w * 100) + '%').join(' / ') + '), heading ' + (s.head === 'middle' ? 'in the middle' : 'on the ' + s.head) +
+      (s.media === 'none' ? ', no picture beside it' : ', picture in column ' + s.media.split(',').map((i) => Number(i) + 1).join(' and '));
+    const list = flowSections().map((el) => ({ el, sig: signature(el) }));
+    let i = 0;
+    while (i < list.length) {
+      const first = list[i];
+      if (!first?.sig) { i++; continue; }
+      let j = i + 1;
+      while (j < list.length) {
+        const next = list[j]?.sig;
+        if (!next || !same(first.sig, next)) break;
+        j++;
+      }
+      if (j - i >= 3) {
+        const names = list.slice(i, j).map((x) => headingText(x.el.querySelector('h1, h2, h3'))).join(', ');
+        add('repeated-layout', 'P3', first.el, (j - i) + ' sections in a row share one layout, ' + describeSig(first.sig) + ': ' + names +
+          '. Look at it: fine when the page is a run of consistent ruled sections by design; otherwise vary the layout by what each section has to say (flow.md).');
+        for (let k = i; k < j; k++) { const x = list[k]; if (x) x.sig = null; }
+      }
+      i = j;
+    }
+    // One layout used again and again across the page, with other sections between.
+    const signed = list.filter((x): x is { el: Element; sig: Sig } => !!x.sig);
+    const total = flowSections().filter((el) => el.getBoundingClientRect().top + sy >= vh * 0.5 && el.querySelector('h1, h2, h3')).length;
+    const used = new Set<Element>();
+    for (const x of signed) {
+      if (used.has(x.el)) continue;
+      const group = signed.filter((y) => !used.has(y.el) && same(x.sig, y.sig));
+      if (group.length < 4 || group.length < total * 0.4) continue;
+      for (const y of group) used.add(y.el);
+      add('repeated-layout', 'P3', x.el, group.length + ' of the page\'s ' + total + ' sections use one layout, ' + describeSig(x.sig) + ': ' +
+        group.map((y) => headingText(y.el.querySelector('h1, h2, h3'))).join(', ') + '. Look at it: fine when the page is a run of consistent ruled sections by design; otherwise vary the layout by what each section has to say (flow.md).');
+    }
+  });
+
+  // ---- design: faults of finish -------------------------------------------------------------
+  // A few measurable faults of finish: sizes and radii from no system, small running text, two
+  // faces that look alike, a crowded first screen. None prescribes a style; each states what it
+  // measured. None runs in app mode; most leave product UI alone.
+  const debug = (window as unknown as { __argusCheckDebug?: boolean }).__argusCheckDebug === true;
+  const dbg = (s: string): void => {
+    if (debug) notes.push('debug: ' + s);
+  };
+  /** Text inside a product mock-up, a table or a drawn picture belongs to that thing, not the page. */
+  const MOCK = '[data-mock], [role="img"], table';
+  const fontPx = (el: Element): number => parseFloat(getComputedStyle(el).fontSize) || 0;
+  /** The size carrying the most characters: the body size. */
+  const bodySize = ((): number => {
+    const bySize = new Map<number, number>();
+    for (const el of textEls) {
+      if (el.closest(MOCK) || inHeader(el)) continue;
+      const s = Math.round(fontPx(el));
+      bySize.set(s, (bySize.get(s) ?? 0) + ownText(el).length);
+    }
+    let body = 0;
+    let most = 0;
+    for (const [s, n] of bySize) if (n > most) [most, body] = [n, s];
+    return body;
+  })();
+  /** Group sizes that differ by 8% or less (a fluid size and its neighbour are one size). */
+  const clusterSizes = (sizes: number[]): number[][] => {
+    const sorted = Array.from(new Set(sizes)).sort((a, b) => a - b);
+    const out: number[][] = [];
+    for (const s of sorted) {
+      const last = out[out.length - 1];
+      const prev = last?.[last.length - 1];
+      if (last && prev && s / prev <= 1.08) last.push(s);
+      else out.push([s]);
+    }
+    return out;
+  };
+  const sizeList = (groups: number[][]): string => groups.map((g) => (g.length > 1 ? g[0] + '-' + g[g.length - 1] : String(g[0]))).join(', ');
+  /** The first family in a font-family list, unquoted and lower case. */
+  const firstFamily = (stack: string): string => (stack.split(',')[0] ?? '').trim().replace(/^["']|["']$/g, '').toLowerCase();
+  /** The largest text on the first screen, outside the header: its elements, size and family. */
+  const display = ((): { els: HTMLElement[]; size: number; family: string; stack: string } | null => {
+    let size = 0;
+    for (const el of textEls) {
+      if (el.closest(MOCK) || inHeader(el) || !onFirstScreen(el.getBoundingClientRect())) continue;
+      size = Math.max(size, fontPx(el));
+    }
+    if (!size) return null;
+    const els = textEls.filter((el) => !el.closest(MOCK) && !inHeader(el) && onFirstScreen(el.getBoundingClientRect()) && fontPx(el) >= size * 0.98);
+    const stack = els[0] ? getComputedStyle(els[0]).fontFamily : '';
+    return { els, size, family: firstFamily(stack), stack };
+  })();
+  // Judged at 1024px and wider, on a page that persuades: not app mode, more than a screen tall, and
+  // either not product UI or led by display type (a landing page with a working form is still one).
+  const design = !appMode && vw >= 1024 && pageH >= vh * 1.25 && (!isProductUI() || (!!display && display.size >= Math.max(40, bodySize * 3)));
+  dbg('design ' + design + ' productUI ' + isProductUI());
+  /** The family that carries the running text: the most characters in paragraphs and list items of 60 characters or more. */
+  const bodyFace = ((): { family: string; stack: string; el: HTMLElement | null } => {
+    const tally = new Map<string, { n: number; stack: string; el: HTMLElement }>();
+    for (const el of all('p, li, dd, blockquote')) {
+      if (!isVisible(el) || el.closest(MOCK) || inHeader(el)) continue;
+      const t = textOf(el);
+      if (t.length < 60) continue;
+      const stack = getComputedStyle(el).fontFamily;
+      const f = firstFamily(stack);
+      const e = tally.get(f) ?? { n: 0, stack, el };
+      e.n += t.length;
+      tally.set(f, e);
+    }
+    let best: { family: string; stack: string; el: HTMLElement | null } = { family: '', stack: '', el: null };
+    let most = 0;
+    for (const [family, e] of tally) if (e.n > most) [most, best] = [e.n, { family, stack: e.stack, el: e.el }];
+    return best;
+  })();
+
+  // Sizes that are not a small set of roles. The count of declared sizes does not separate strong
+  // pages from weak ones (strong pages declare many); what does is a sprawl of mid sizes, about 28
+  // to 72px at 1440, used for headings, where everything looks equally important. Sizes are rounded
+  // as rendered at this width and grouped when within 8% of each other.
+  rule('type-untokened-sizes', () => {
+    if (!design) return;
+    const k = Math.min(1.33, Math.max(0.75, vw / 1440));
+    const lo = 28 * k;
+    const hi = 72 * k;
+    const allSizes: number[] = [];
+    const headSizes: number[] = [];
+    const midSizes: number[] = [];
+    for (const el of textEls) {
+      if (el.closest(MOCK) || inHeader(el) || ownText(el).length < 2) continue;
+      const s = Math.round(fontPx(el));
+      allSizes.push(s);
+      if (s < lo || s > hi) continue;
+      midSizes.push(s);
+      if (el.closest('h1, h2, h3, h4, h5, h6, [role="heading"]')) headSizes.push(s);
+    }
+    const headGroups = clusterSizes(headSizes);
+    const mid = clusterSizes(midSizes);
+    const every = clusterSizes(allSizes);
+    dbg('type-untokened-sizes heads ' + sizeList(headGroups) + ' | mid ' + sizeList(mid) + ' | all ' + every.length + ' ' + sizeList(every));
+    if (headGroups.length > 2 || mid.length > 4) {
+      add('type-untokened-sizes', 'P3', null, 'Headings come in ' + headGroups.length + ' mid sizes (' + (sizeList(headGroups) || 'none') + 'px) and text in ' + mid.length +
+        ' sizes between ' + Math.round(lo) + ' and ' + Math.round(hi) + 'px (' + sizeList(mid) + 'px; sizes within 8% count as one) at ' + vw +
+        'px, so the headings all look equally important. Set type from a few size roles (display, heading, lead, body, small) and give each heading level one of them (type.md).');
+    } else if (every.length > 12) {
+      add('type-untokened-sizes', 'P3', null, every.length + ' distinct text sizes are rendered at ' + vw + 'px (' + sizeList(every) +
+        'px; sizes within 8% count as one, tables and mock-ups left out). Set type from a few size roles (display, heading, lead, body, small) (type.md).');
+    }
+  });
+
+  // Running text set small. Persuade pages read at 17-20px; 14-15px is interface text.
+  rule('type-small-body', () => {
+    if (!design) return;
+    let small = 0;
+    let total = 0;
+    let example: Element | null = null;
+    const sizes = new Set<number>();
+    for (const el of all('p, li, dd, blockquote')) {
+      if (!isVisible(el) || el.closest(MOCK + ', footer, figcaption, form, nav, [role="contentinfo"], small') || inHeader(el)) continue;
+      const t = textOf(el);
+      if (t.length < 120) continue;
+      const size = fontPx(el);
+      // Running text: wraps to two lines or more.
+      const lh = parseFloat(getComputedStyle(el).lineHeight) || size * 1.4;
+      if (el.getBoundingClientRect().height < lh * 1.8) continue;
+      total += t.length;
+      if (size < 15.5) {
+        small += t.length;
+        sizes.add(Math.round(size));
+        example ??= el;
+      }
+    }
+    dbg('type-small-body ' + small + '/' + total);
+    if (total >= 400 && small / total > 0.25) {
+      add('type-small-body', 'P3', example, Math.round((small / total) * 100) + '% of the running text is under 16px (' + Array.from(sizes).sort().join(', ') +
+        'px). Body text on a page that persuades reads at 17-20px; keep 14-15px for interface labels (type.md).');
+    }
+  });
+
+  // Two faces that look alike: two sans-serifs (or two serifs) of similar proportions, one for
+  // display and one for body. Judged from a small table of common web faces and from glyphs drawn
+  // on a canvas (x-height and width per em); reported only when both agree they are alike.
+  rule('type-twin-faces', () => {
+    if (!design || !display || !bodyFace.family || display.family === bodyFace.family) return;
+    const SANS = ['inter', 'geist', 'space grotesk', 'bricolage grotesque', 'figtree', 'manrope', 'plus jakarta sans', 'dm sans', 'poppins', 'roboto', 'instrument sans',
+      'archivo', 'schibsted grotesk', 'host grotesk', 'hanken grotesk', 'public sans', 'switzer', 'familjen grotesk', 'funnel display', 'funnel sans', 'satoshi', 'general sans',
+      'cabinet grotesk', 'league spartan', 'sora', 'red hat display', 'red hat text', 'mona sans', 'hubot sans', 'syne', 'commissioner', 'atkinson hyperlegible', 'atkinson hyperlegible next',
+      'asap', 'radio canada big', 'work sans', 'outfit', 'urbanist', 'lexend', 'montserrat', 'open sans', 'lato', 'nunito sans', 'source sans 3', 'ibm plex sans', 'noto sans',
+      'helvetica', 'helvetica neue', 'arial', 'libre franklin', 'karla', 'rubik', 'mulish', 'raleway', 'onest', 'geologica', 'albert sans', 'be vietnam pro', 'epilogue', 'archivo narrow'];
+    const SERIF = ['fraunces', 'instrument serif', 'playfair display', 'playfair', 'newsreader', 'literata', 'source serif 4', 'petrona', 'young serif', 'gambetta', 'zodiak',
+      'sentient', 'eb garamond', 'libre caslon text', 'libre caslon display', 'crimson pro', 'spectral', 'alegreya', 'bodoni moda', 'gloock', 'boska', 'dm serif display', 'dm serif text',
+      'lora', 'merriweather', 'pt serif', 'libre baskerville', 'cormorant', 'cormorant garamond', 'georgia', 'times new roman', 'noto serif', 'ibm plex serif', 'source serif pro', 'besley'];
+    const kind = (family: string, stack: string): string => {
+      if (SANS.includes(family)) return 'sans';
+      if (SERIF.includes(family)) return 'serif';
+      const generic = stack.toLowerCase();
+      if (/\bmonospace\b|\bmono\b/.test(generic)) return 'mono';
+      if (/\bsans-serif\b|system-ui/.test(generic)) return 'sans';
+      if (/\bserif\b/.test(generic)) return 'serif';
+      return '';
+    };
+    const a = kind(display.family, display.stack);
+    const b = kind(bodyFace.family, bodyFace.stack);
+    if (!a || a !== b || a === 'mono') return;
+    // Both faces must really be loaded, or the canvas would measure the fallback.
+    const loaded = new Set<string>();
+    document.fonts.forEach((f) => {
+      if (f.status === 'loaded') loaded.add(f.family.replace(/^["']|["']$/g, '').toLowerCase());
+    });
+    if (!loaded.has(display.family) || !loaded.has(bodyFace.family)) {
+      notes.push('type-twin-faces: ' + display.family + ' and ' + bodyFace.family + ' are both ' + a + ' faces, but one is not loaded, so their shapes were not compared.');
+      return;
+    }
+    const probe = document.createElement('canvas').getContext('2d');
+    if (!probe) return;
+    const measure = (family: string): [number, number] => {
+      probe.font = '400 100px "' + family + '"';
+      const x = probe.measureText('x').actualBoundingBoxAscent;
+      const h = probe.measureText('H').actualBoundingBoxAscent || 1;
+      return [x / h, probe.measureText('abcdefghijklmnopqrstuvwxyz').width / 100];
+    };
+    const [xa, wa] = measure(display.family);
+    const [xb, wb] = measure(bodyFace.family);
+    const stretch = (el: Element | null): number => (el ? parseFloat(getComputedStyle(el).fontStretch) || 100 : 100);
+    const stretchGap = Math.abs(stretch(display.els[0] ?? null) - stretch(bodyFace.el));
+    dbg('type-twin-faces ' + display.family + ' x ' + xa.toFixed(3) + ' w ' + wa.toFixed(2) + ' / ' + bodyFace.family + ' x ' + xb.toFixed(3) + ' w ' + wb.toFixed(2) + ' stretch gap ' + stretchGap);
+    const widthGap = Math.abs(wa - wb) / Math.min(wa, wb);
+    if (widthGap <= 0.12 && Math.abs(xa - xb) <= 0.1 && stretchGap < 15) {
+      add('type-twin-faces', 'P3', display.els[0] ?? null, 'These two faces look alike: ' + display.family + ' (display) and ' + bodyFace.family + ' (body) are both ' + a +
+        ' faces with x-heights of ' + Math.round(xa * 100) + '% and ' + Math.round(xb * 100) + '% of the capital and widths within ' + Math.round(widthGap * 100) +
+        '%. Use one family for both, or two faces that clearly differ (type.md).');
+    }
+  });
+
+  // ---- colour, shape, depth -----------------------------------------------------------------
+  // Corners from many sources: more than three radii in repeated use.
+  rule('radius-sprawl', () => {
+    if (!design) return;
+    const uses = new Map<string, number>();
+    for (const el of pool()) {
+      if (el instanceof SVGElement) continue;
+      const cs = getComputedStyle(el);
+      const raw = cs.borderTopLeftRadius;
+      if (!raw || raw === '0px') continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 12 || r.height < 12 || !isVisible(el) || el.closest('[aria-hidden="true"], [data-mock]')) continue;
+      const shaped = /^(IMG|VIDEO|PICTURE|CANVAS|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || rgba(cs.backgroundColor)[3] > 0.1 ||
+        (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') || cs.boxShadow !== 'none' || /url\(/.test(cs.backgroundImage);
+      if (!shaped) continue;
+      const px = raw.endsWith('%') ? (parseFloat(raw) / 100) * Math.min(r.width, r.height) : parseFloat(raw) || 0;
+      const round = raw.endsWith('%') ? parseFloat(raw) >= 40 : px >= Math.min(r.width, r.height) / 2 - 1;
+      const key = round ? 'round' : Math.round(px) + 'px';
+      uses.set(key, (uses.get(key) ?? 0) + 1);
+    }
+    // A radius used once is often a one-off detail; the language is what repeats.
+    const repeated = Array.from(uses).filter(([k, n]) => k !== 'round' && n >= 2).map(([k]) => k);
+    dbg('radius-sprawl ' + Array.from(uses).map(([k, n]) => k + 'x' + n).join(' '));
+    if (repeated.length > 3) {
+      add('radius-sprawl', 'P3', null, repeated.length + ' different corner radii are in repeated use (' + repeated.sort((a, b) => parseFloat(a) - parseFloat(b)).join(', ') +
+        ', with pills and circles counted apart). Pick at most three radius tokens and use them everywhere (colour.md).');
+    }
+  });
+
+  // ---- the finishing pass (finish.md) ---------------------------------------------------------
+  // Cheap prompts for what a last pass catches. Each reports once a page, naming the first case.
+  const NOT_COPY = 'code, pre, kbd, samp, var, script, style, input, textarea, select, [contenteditable="true"], [data-mock], [role="img"]';
+
+  // Left-over working text: TODO, TBD, a bracketed placeholder, an example.com address or link.
+  rule('leftover-text', () => {
+    const hits: Element[] = [];
+    for (const el of textEls) {
+      if (el.closest(NOT_COPY)) continue;
+      const t = ownText(el);
+      if (/\bTODO\b|\bTBD\b/.test(t) || /\[\s*placeholder\s*\]|\bexample\.com\b/i.test(t)) hits.push(el);
+    }
+    for (const a of all<HTMLAnchorElement>('a[href*="example.com"]')) if (isVisible(a) && !hits.includes(a)) hits.push(a);
+    if (hits.length) add('leftover-text', 'P3', hits[0]!, hits.length + ' place(s) still show working text (TODO, TBD, [placeholder] or example.com). Replace each, or mark a needed stand-in in a code comment and list it in the report (finish.md, 1).');
+  });
+
+  // Typewriter marks in running copy: straight double quotes, a spaced hyphen or a double hyphen for a dash.
+  rule('straight-quotes', () => {
+    let first: Element | null = null;
+    let n = 0;
+    const kinds = new Set<string>();
+    for (const el of textEls) {
+      if (el.closest(NOT_COPY)) continue;
+      const t = ownText(el);
+      if (t.length < 3) continue;
+      const found: string[] = [];
+      if (/"/.test(t)) found.push('straight quotes');
+      if (/\s-\s|\S--\S|\s--\s/.test(t)) found.push('a hyphen for a dash');
+      if (!found.length) continue;
+      found.forEach((k) => kinds.add(k));
+      first ??= el;
+      n++;
+    }
+    if (first) add('straight-quotes', 'P3', first, n + ' text element(s) use ' + Array.from(kinds).join(' and ') + '. Use curly quotes (“ ” ‘ ’) and an en or em dash (– —) in visible copy (finish.md, 5).');
+  });
+
+  // Prices set on their own (a price tag, a plan's figure) in proportional figures, so digits do not line up.
+  rule('price-figures', () => {
+    const price = /^(from\s+)?[-+−]?[$€£¥₹]\s?\d[\d,.]*(\s?[kKmM])?(\s*\/\s*\w+)?$|^\d[\d,.]*\s?(€|£|kr|zł|CHF)$/i;
+    const tabularByDefault = (cs: CSSStyleDeclaration): boolean => {
+      if (!ctx) return false;
+      ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+      return Math.abs(ctx.measureText('1111').width - ctx.measureText('0000').width) < 0.5;
+    };
+    const loose: Element[] = [];
+    for (const el of textEls) {
+      if (el.closest('table, ' + NOT_COPY)) continue;
+      const t = textOf(el).replace(/\s+/g, ' ');
+      if (t.length > 18 || !price.test(t)) continue;
+      const cs = getComputedStyle(el);
+      if (/tabular-nums/.test(cs.fontVariantNumeric) || /tnum/.test(cs.fontFeatureSettings) || /mono|courier|consolas|menlo|monaco/i.test(cs.fontFamily) || tabularByDefault(cs)) continue;
+      loose.push(el);
+    }
+    if (loose.length) add('price-figures', 'P3', loose[0]!, loose.length + ' price(s) are set in proportional figures; give prices font-variant-numeric: tabular-nums so the digits line up and do not shift when they change (finish.md, 5). A font: shorthand resets it to normal, so set it after any font: rule that reaches the price.');
+  });
+
+  // A heading whose last line is one short word, at desktop width.
+  rule('heading-widow', () => {
+    if (appMode || vw < 1280) return;
+    const widows: Element[] = [];
+    for (const h of all('h1, h2, h3')) {
+      if (!isVisible(h) || h.closest('[data-mock], [role="img"]')) continue;
+      const words: Range[] = [];
+      const walk = document.createTreeWalker(h, NodeFilter.SHOW_TEXT);
+      while (walk.nextNode()) {
+        const node = walk.currentNode as Text;
+        for (const m of (node.nodeValue ?? '').matchAll(/\S+/g)) {
+          const r = document.createRange();
+          r.setStart(node, m.index!);
+          r.setEnd(node, m.index! + m[0].length);
+          words.push(r);
+        }
+      }
+      if (words.length < 4) continue;
+      const last = words[words.length - 1]!;
+      const before = words[words.length - 2]!;
+      const lr = last.getBoundingClientRect();
+      const br = before.getBoundingClientRect();
+      if (!lr.height || !br.height) continue;
+      // The last word sits on a line below the word before it, and is short. (Glyph boxes overlap in tight leading, so compare tops.)
+      if (lr.top - br.top > br.height / 2 && last.toString().replace(/[^\p{L}\p{N}]/gu, '').length <= 6) widows.push(h);
+    }
+    if (widows.length) add('heading-widow', 'P3', widows[0]!, widows.length + ' heading(s) end on a line holding one short word. Set text-wrap: balance on headings, or rewrite the line (finish.md, 6).');
+  });
+
+  // Timed motion on the browser's default curves: a bare ease, or linear on something that is not a loop or tied to scroll.
+  rule('bare-easing', () => {
+    const bare: Element[] = [];
+    const split = (v: string): string[] => v.split(/,(?![^(]*\))/).map((x) => x.trim());
+    for (const el of pool()) {
+      const cs = getComputedStyle(el);
+      let hit = false;
+      const durs = split(cs.transitionDuration);
+      if (cs.transitionProperty !== 'none' && durs.some((d) => parseFloat(d) > 0)) {
+        const fns = split(cs.transitionTimingFunction);
+        hit = durs.some((d, i) => parseFloat(d) > 0 && /^(ease|linear)$/.test(fns[i % fns.length] ?? ''));
+      }
+      if (!hit && cs.animationName && cs.animationName !== 'none') {
+        const names = split(cs.animationName);
+        const adur = split(cs.animationDuration);
+        const fns = split(cs.animationTimingFunction);
+        const counts = split(cs.animationIterationCount);
+        const timelines = split((cs as unknown as Record<string, string>).animationTimeline ?? 'auto');
+        hit = names.some((nm, i) => {
+          if (nm === 'none' || !(parseFloat(adur[i % adur.length] ?? '0') > 0)) return false;
+          if ((timelines[i % timelines.length] ?? 'auto') !== 'auto') return false; // tied to scroll: linear is right
+          const fn = fns[i % fns.length] ?? '';
+          if (fn === 'ease') return true;
+          return fn === 'linear' && (counts[i % counts.length] ?? '1') !== 'infinite'; // a steady loop (marquee, spinner) may be linear
+        });
+      }
+      if (hit) bare.push(el);
+    }
+    if (bare.length) add('bare-easing', 'P3', bare[0]!, bare.length + ' element(s) animate on the default ease or linear curve. Give timed motion a named easing token (one curve to arrive, one to move); linear only for scroll-scrubbed motion or a steady loop (finish.md, 8; motion.md, M14).');
+  });
+
+  // Borders from many sources: more than three border widths in repeated use.
+  rule('border-sprawl', () => {
+    if (!design) return;
+    const uses = new Map<string, number>();
+    for (const el of pool()) {
+      if (el instanceof SVGElement || el.closest('[aria-hidden="true"], [data-mock]')) continue;
+      const cs = getComputedStyle(el);
+      const widths = new Set<string>();
+      for (const side of ['Top', 'Right', 'Bottom', 'Left']) {
+        const w = parseFloat((cs as unknown as Record<string, string>)['border' + side + 'Width'] ?? '0');
+        const st = (cs as unknown as Record<string, string>)['border' + side + 'Style'];
+        if (w > 0 && st !== 'none' && st !== 'hidden') widths.add(Math.round(w * 2) / 2 + 'px');
+      }
+      if (!widths.size || !isVisible(el)) continue;
+      for (const w of widths) uses.set(w, (uses.get(w) ?? 0) + 1);
+    }
+    const repeated = Array.from(uses).filter(([, n]) => n >= 2).map(([k]) => k);
+    if (repeated.length > 3) {
+      add('border-sprawl', 'P3', null, repeated.length + ' different border widths are in repeated use (' + repeated.sort((a, b) => parseFloat(a) - parseFloat(b)).join(', ') +
+        '). Rules, borders and drawn strokes read as one hand at one or two weights (finish.md, 10).');
+    }
+  });
+
+  // ---- hero and layout ---------------------------------------------------------------------
+  // Too many separate things on the first screen.
+  rule('hero-crowded', () => {
+    if (vw < 1280 || !design) return;
+    const atoms: DOMRect[] = [];
+    const blocks = new Set<Element>();
+    // A booking or order form, or the one card or device holding it, is one group however many
+    // fields and labels it has: its parts are counted as the whole. So is a list, timeline or board. A card is a box of its own
+    // (a fill, a border or a shadow) under 40% of the screen that holds a field.
+    const units = new Map<Element, Element | null>();
+    const ownBox = (cs: CSSStyleDeclaration): boolean =>
+      !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(cs.backgroundColor) || cs.boxShadow !== 'none' ||
+      ['Top', 'Right', 'Bottom', 'Left'].some((s) => parseFloat(cs.getPropertyValue('border-' + s.toLowerCase() + '-width')) > 0 && cs.getPropertyValue('border-' + s.toLowerCase() + '-style') !== 'none');
+    // A list, timeline, table or board (three or more like items) is one group too, however many stops it has.
+    const listOf = (el: Element): Element | null => {
+      for (let n: Element | null = el, depth = 0; n && n !== document.body && depth < 6; depth++, n = n.parentElement) {
+        if (inHeader(n)) return null;
+        const kids = Array.from(n.children).filter((k) => isVisible(k));
+        if (kids.length < 3) continue;
+        const r = n.getBoundingClientRect();
+        if (r.width * r.height >= vw * vh * 0.5) return null;
+        if (n.matches('ol, ul, dl, table, [role="list"], [role="table"]')) return n;
+        const sig = (k: Element): string => k.tagName + '.' + (typeof k.className === 'string' ? k.className.trim().split(/\s+/)[0] : '');
+        const first = sig(kids[0]!);
+        if (kids.filter((k) => sig(k) === first).length >= Math.max(3, kids.length * 0.75)) return n;
+      }
+      return null;
+    };
+    const unitOf = (el: Element): Element | null => {
+      if (units.has(el)) return units.get(el) ?? null;
+      const form = el.closest('form, [role="form"]') ?? el.closest('fieldset');
+      let unit: Element | null = form && !inHeader(form) ? form : listOf(el);
+      let n: Element | null = unit ?? el;
+      for (let depth = 0; n && n !== document.body && depth < 8; depth++, n = n.parentElement) {
+        const r = n.getBoundingClientRect();
+        if (r.width * r.height >= vw * vh * 0.4) break;
+        if (n.querySelector('input:not([type="hidden"]), select, textarea') && ownBox(getComputedStyle(n))) {
+          unit = n;
+          break;
+        }
+      }
+      units.set(el, unit);
+      return unit;
+    };
+    const counted = new Set<Element>();
+    const count = (el: Element, r: DOMRect): void => {
+      const unit = unitOf(el);
+      if (!unit) {
+        atoms.push(r);
+        return;
+      }
+      if (counted.has(unit)) return;
+      counted.add(unit);
+      atoms.push(unit.getBoundingClientRect());
+    };
+    for (const el of textEls) {
+      if (inHeader(el) || el.closest('[aria-hidden="true"]')) continue;
+      let block: HTMLElement | null = el;
+      while (block && block !== document.body && getComputedStyle(block).display.startsWith('inline')) block = block.parentElement;
+      if (!block || blocks.has(block)) continue;
+      blocks.add(block);
+      const r = block.getBoundingClientRect();
+      if (r.top < vh && r.bottom > 0 && r.width > 0) count(block, r);
+    }
+    for (const el of all<Element>('img, video, canvas, svg, input:not([type="hidden"]), select, textarea, button')) {
+      if (el.parentElement?.closest('svg') || inHeader(el) || el.closest('[aria-hidden="true"]') || !isVisible(el)) continue;
+      const r = el.getBoundingClientRect();
+      if (r.top >= vh || r.bottom <= 0 || (el.tagName === 'svg' && (r.width < 48 || r.height < 48))) continue;
+      count(el, r);
+    }
+    // Things within 14px of each other (a row of chips, a label and its value) are one group.
+    const GAP = 14;
+    const parent = atoms.map((_, i) => i);
+    const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i] ?? i)));
+    const near = (a: DOMRect, b: DOMRect): boolean =>
+      a.left - GAP < b.right && b.left - GAP < a.right && a.top - GAP < b.bottom && b.top - GAP < a.bottom &&
+      // a picture behind text does not swallow the text: only touching edges join
+      !(a.width * a.height > vw * vh * 0.1 || b.width * b.height > vw * vh * 0.1);
+    for (let i = 0; i < atoms.length; i++) {
+      for (let j = i + 1; j < atoms.length; j++) {
+        const a = atoms[i];
+        const b = atoms[j];
+        if (a && b && near(a, b)) parent[find(i)] = find(j);
+      }
+    }
+    const groups = new Set(atoms.map((_, i) => find(i))).size;
+    dbg('hero-crowded groups ' + groups);
+    if (groups > 7) {
+      add('hero-crowded', 'P3', null, 'The first screen at ' + vw + 'px holds about ' + groups + ' separate groups of content (text blocks, pictures and controls more than 14px apart; a form or the card holding it, and a list, timeline or board, count once). ' +
+        'Keep what a stranger needs in five seconds: what it is, one line, the action, one proof, the picture. Move the rest below (first-screen.md).');
+    }
+  });
+
+  // Many words on the first screen: a statement, a line and the action read in seconds; paragraphs
+  // there are read by few. Counts the words of visible text in the first viewport. Left out: the
+  // header, anything hidden from assistive technology, text inside SVG drawings, charts and mock-ups
+  // (role="img", data-mock), and a list, table or board that covers a fifth of the screen, which is
+  // the hero itself. A form's labels count.
+  rule('hero-wordy', () => {
+    if (vw < 1280 || !design) return;
+    const HERO_WORDS = 110;
+    let words = 0;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = (node.textContent ?? '').trim();
+      const el = node.parentElement;
+      if (!text || !el || el.closest('script, style, noscript, template, svg, canvas, [aria-hidden="true"], [role="img"], [data-mock]') || inHeader(el) || !isVisible(el)) continue;
+      // A ruled list, table or board that is itself the hero (an offer as a price list, a departures
+      // board) is the first screen's picture, not paragraphs to cut: its words are not counted.
+      const board = el.closest('table, ul, ol, dl, [role="table"], [role="list"]');
+      if (board) {
+        const b = board.getBoundingClientRect();
+        if (b.width * Math.min(b.bottom, vh) - b.width * Math.max(b.top, 0) >= vw * vh * 0.2) continue;
+      }
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const r = range.getBoundingClientRect();
+      if (r.width === 0 || r.top >= vh || r.bottom <= 0) continue;
+      words += text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+    }
+    dbg('hero-wordy words ' + words);
+    if (words > HERO_WORDS) {
+      add('hero-wordy', 'P3', null, 'The first screen at ' + vw + 'px carries about ' + words + ' words outside the header. A statement, one line under it and the action are read in seconds; ' +
+        'move the rest to the panels below, a ruled table or a disclosure, keeping every must-have (composure.md, "Few words"). Fine to keep where the page is for reading.');
+    }
+  });
+
+  // ---- covered content ---------------------------------------------------------------------
+  // Something laid over the first screen's form, price or text: a band that moves, a positioned
+  // badge, a sticky panel. Found by geometry, then confirmed by hit-testing the middle of the
+  // overlap (the covering element is made hit-testable for that moment only, then restored), so a
+  // picture painted under the text, or text set on a picture, is not reported. A moving band that
+  // carries words collides whichever is on top: it may not run under a form or text either.
+  rule('covered-content', () => {
+    if (appMode) return;
+    const PRICE = /[£$€¥]\s?\d|\d\s?(€|kr|zł)/;
+    const targets: Array<{ el: Element; what: string }> = [];
+    for (const el of all<Element>('input:not([type="hidden"]), select, textarea, button')) {
+      if (isVisible(el) && onFirstScreen(el.getBoundingClientRect())) targets.push({ el, what: describe(el) });
+    }
+    for (const el of textEls) {
+      if (!onFirstScreen(el.getBoundingClientRect()) || inHeader(el)) continue;
+      const own = ownText(el);
+      if (PRICE.test(own) && own.length <= 40) targets.push({ el, what: "'" + own + "'" });
+      else if (el.matches('p, li, label, dd, blockquote') && textOf(el).length >= 20) targets.push({ el, what: describe(el) });
+      if (targets.length > 300) break;
+    }
+    if (!targets.length) return;
+    const runningForever = new Set<Element>();
+    for (const a of document.getAnimations()) {
+      const t = (a.effect as KeyframeEffect | null)?.target;
+      if (t && a.playState === 'running' && a.effect?.getTiming().iterations === Infinity) runningForever.add(t);
+    }
+    const covers: Array<{ el: Element; moving: boolean; r: DOMRect }> = [];
+    for (const el of all<Element>('body *')) {
+      if (el instanceof SVGElement && !(el instanceof SVGSVGElement)) continue;
+      const cs = getComputedStyle(el);
+      const moving = runningForever.has(el);
+      const placed = cs.position === 'absolute' || cs.position === 'fixed' || cs.position === 'sticky';
+      if (!moving && !placed) continue;
+      if (cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05 || !isVisible(el)) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8 || !onFirstScreen(r)) continue;
+      // A full-width bar held to the top or bottom edge is a header or an action bar (fixed-cover's to judge).
+      if ((cs.position === 'fixed' || cs.position === 'sticky') && r.width >= vw * 0.9 && (r.top <= 1 || r.bottom >= vh - 1)) continue;
+      covers.push({ el, moving: moving && textOf(el).length >= 3, r });
+    }
+    // Moving bands first, so the band is named rather than what sits on it.
+    covers.sort((a, b) => Number(b.moving) - Number(a.moving));
+    const found: string[] = [];
+    let first: Element | null = null;
+    const seen = new Set<Element>();
+    for (const t of targets) {
+      if (found.length >= 3) break;
+      const q = t.el.getBoundingClientRect();
+      for (const c of covers) {
+        if (c.el.contains(t.el) || t.el.contains(c.el) || seen.has(t.el)) continue;
+        const l = Math.max(q.left, c.r.left, 0);
+        const rr = Math.min(q.right, c.r.right, vw);
+        const top = Math.max(q.top, c.r.top, 0);
+        const b = Math.min(q.bottom, c.r.bottom, vh);
+        const area = (rr - l) * (b - top);
+        // A shared edge of a pixel or two is not a cover: the overlap must be at least 4px each way.
+        if (rr - l < 4 || b - top < 4 || (area < q.width * q.height * 0.1 && area < 200)) continue;
+        if (c.moving) {
+          seen.add(t.el);
+          first ??= c.el;
+          found.push(describe(c.el).replace(/ ".*$/, '') + ' (a moving band) crosses ' + t.what);
+          break;
+        }
+        const he = c.el as HTMLElement;
+        const before = he.style.getPropertyValue('pointer-events');
+        const prio = he.style.getPropertyPriority('pointer-events');
+        let hit: Element | null = null;
+        try {
+          he.style.setProperty('pointer-events', 'auto', 'important');
+          hit = document.elementFromPoint((l + rr) / 2, (top + b) / 2);
+        } finally {
+          if (before) he.style.setProperty('pointer-events', before, prio);
+          else he.style.removeProperty('pointer-events');
+          if (he.getAttribute('style') === '') he.removeAttribute('style');
+        }
+        if (!hit || !c.el.contains(hit) || t.el.contains(hit)) continue;
+        seen.add(t.el);
+        first ??= c.el;
+        found.push(describe(c.el).replace(/ ".*$/, '') + ' (positioned) covers ' + t.what);
+        break;
+      }
+    }
+    if (found.length) {
+      add('covered-content', 'P1', first, found.join('; ') + '. Nothing may cover, cut across or collide with a form, a price or text on the first screen: move it, or end it before the content (first-screen.md).');
+    }
+  });
+
+  // ---- text colliding with text or a drawn line ----------------------------------------------
+  // Two pieces of visible text whose lines overlap (more than half a line high), or text laid over the
+  // stroke of a drawing, on the first screen. Text is measured line by line (Range rectangles),
+  // clipped by any ancestor that hides overflow, and left out when it is nearly transparent, a moving
+  // band (covered-content's case) or hidden from view. A drawn line counts when it is solid and at
+  // least 1.5px wide on screen and is not part of the text's own block (an underline or highlight
+  // drawn for that text); it is tested on its real outline (isPointInStroke) at a dozen points inside
+  // each line of text, so a line that only passes near the text is not reported.
+  rule('text-collision', () => {
+    if (appMode) return;
+    type Box = { l: number; t: number; r: number; b: number };
+    interface Line extends Box { node: Text; el: Element; svg: boolean }
+    const clipMemo = new Map<Element, Box>();
+    const clipOf = (el: Element): Box => {
+      const hit = clipMemo.get(el);
+      if (hit) return hit;
+      let box: Box = { l: -Infinity, t: -Infinity, r: Infinity, b: Infinity };
+      const parent = el.parentElement;
+      if (parent && parent !== document.documentElement) box = { ...clipOf(parent) };
+      const cs = getComputedStyle(el);
+      if (!(el instanceof SVGElement && el.ownerSVGElement) && (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') && el !== document.body) {
+        const r = el.getBoundingClientRect();
+        box = { l: Math.max(box.l, r.left), t: Math.max(box.t, r.top), r: Math.min(box.r, r.right), b: Math.min(box.b, r.bottom) };
+      }
+      clipMemo.set(el, box);
+      return box;
+    };
+    const opacityOf = (el: Element): number => {
+      let o = 1;
+      for (let n: Element | null = el; n && o > 0.01; n = n.parentElement) o *= parseFloat(getComputedStyle(n).opacity) || 0;
+      return o;
+    };
+    const moving = new Set<Element>();
+    for (const a of document.getAnimations()) {
+      const t = (a.effect as KeyframeEffect | null)?.target;
+      if (t && a.playState === 'running' && a.effect?.getTiming().iterations === Infinity) moving.add(t);
+    }
+    const blockOf = (el: Element): Element => {
+      let n: Element | null = el;
+      while (n && n.parentElement && (n instanceof SVGElement || getComputedStyle(n).display.startsWith('inline') || getComputedStyle(n).display === 'contents')) n = n.parentElement;
+      return n ?? el;
+    };
+    const lines: Line[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    for (let node = walker.nextNode() as Text | null; node && lines.length < 800; node = walker.nextNode() as Text | null) {
+      const text = node.nodeValue ?? '';
+      if (!/[\p{L}\p{N}]/u.test(text)) continue;
+      const el = node.parentElement;
+      if (!el || el.closest('script, style, noscript, template, select, option, textarea, [data-mock], [role="img"]')) continue;
+      if (!isVisible(el) || isScreenReaderOnly(el) || [...moving].some((m) => m.contains(el))) continue;
+      const cs = getComputedStyle(el);
+      const ink = el instanceof SVGElement ? rgba(cs.fill) : rgba(cs.color);
+      if ((ink[3] ?? 0) * opacityOf(el) < 0.35 && !(parseFloat(cs.getPropertyValue('-webkit-text-stroke-width')) > 0)) continue;
+      const clip = clipOf(el);
+      range.selectNodeContents(node);
+      for (const q of Array.from(range.getClientRects())) {
+        const box = { l: Math.max(q.left, clip.l), t: Math.max(q.top, clip.t), r: Math.min(q.right, clip.r), b: Math.min(q.bottom, clip.b) };
+        if (box.r - box.l < 4 || box.b - box.t < 4 || box.b <= 0 || box.t >= vh || box.r <= 0 || box.l >= vw) continue;
+        lines.push({ ...box, node, el, svg: !!(el instanceof SVGElement) });
+      }
+    }
+    const found: string[] = [];
+    let first: Element | null = null;
+    const pairs = new Set<string>();
+    const say = (a: Element, what: string): void => {
+      first ??= a;
+      if (found.length < 3) found.push(what);
+    };
+    const name = (el: Element): string => describe(el).replace(/^(\w+)[^ ]* /, '$1 ');
+    // Text over text.
+    for (let i = 0; i < lines.length; i++) {
+      const a = lines[i]!;
+      for (let j = i + 1; j < lines.length; j++) {
+        const b = lines[j]!;
+        if (a.node === b.node) continue;
+        const w = Math.min(a.r, b.r) - Math.max(a.l, b.l);
+        const h = Math.min(a.b, b.b) - Math.max(a.t, b.t);
+        if (w < 6 || h < 0.5 * Math.min(a.b - a.t, b.b - b.t)) continue;
+        const ea = blockOf(a.el), eb = blockOf(b.el);
+        const key = [ea, eb].map((e) => describe(e)).sort().join('|');
+        if (pairs.has(key)) continue;
+        pairs.add(key);
+        say(a.el, name(ea) + ' runs into ' + name(eb));
+      }
+    }
+    // Text over a drawn line.
+    const strokes: SVGGeometryElement[] = [];
+    for (const g of all<SVGGeometryElement>('svg path, svg line, svg polyline, svg polygon, svg circle, svg ellipse, svg rect')) {
+      if (strokes.length >= 300) break;
+      const cs = getComputedStyle(g);
+      if (cs.stroke === 'none' || cs.visibility === 'hidden' || cs.display === 'none' || typeof g.isPointInStroke !== 'function') continue;
+      const r = g.getBoundingClientRect();
+      if (r.bottom <= 0 || r.top >= vh || r.right <= 0 || r.left >= vw) continue;
+      const m = g.getScreenCTM();
+      const scale = m ? Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) : 1;
+      if ((parseFloat(cs.strokeWidth) || 0) * scale < 1.5) continue;
+      if ((rgba(cs.stroke)[3] ?? 0) * (parseFloat(cs.strokeOpacity) || 0) * opacityOf(g) < 0.4) continue;
+      // A line drawn in dashes, or still being drawn, shows only part of its outline: skip it unless fully drawn.
+      if (cs.strokeDasharray && cs.strokeDasharray !== 'none') {
+        const len = g.hasAttribute('pathLength') ? parseFloat(g.getAttribute('pathLength') ?? '0') : (typeof g.getTotalLength === 'function' ? g.getTotalLength() : 0);
+        const dash = parseFloat(cs.strokeDasharray.split(/[ ,]+/)[0] ?? '0');
+        if (!(Math.abs(parseFloat(cs.strokeDashoffset) || 0) < 0.01 * Math.max(1, len) && dash >= len * 0.99)) continue;
+      }
+      strokes.push(g);
+    }
+    if (strokes.length) {
+      for (const ln of lines) {
+        if (found.length >= 3) break;
+        const own = blockOf(ln.el);
+        const group = ln.svg ? ln.el.closest('a, g') : null;
+        for (const g of strokes) {
+          if (own.contains(g) || (group && group.contains(g)) || ln.el.contains(g)) continue;
+          const r = g.getBoundingClientRect();
+          if (r.right < ln.l || r.left > ln.r || r.bottom < ln.t || r.top > ln.b) continue;
+          const m = g.getScreenCTM();
+          if (!m) continue;
+          const inv = m.inverse();
+          let hits = 0;
+          for (let yi = 0; yi < 2; yi++) {
+            for (let xi = 0; xi < 6; xi++) {
+              const x = ln.l + (ln.r - ln.l) * (0.08 + 0.84 * (xi / 5));
+              const y = ln.t + (ln.b - ln.t) * (0.3 + 0.4 * yi);
+              const p = new DOMPoint(x, y).matrixTransform(inv);
+              if (g.isPointInStroke(p)) hits++;
+            }
+          }
+          if (hits < (ln.svg ? 3 : 2)) continue;
+          const key = describe(own) + '|' + describe(g.ownerSVGElement ?? g);
+          if (pairs.has(key)) continue;
+          pairs.add(key);
+          say(ln.el, name(own) + ' sits on a drawn line (' + describe(g).split(' ')[0] + ' in ' + describe(g.ownerSVGElement ?? g).split(' ')[0] + ')');
+          break;
+        }
+      }
+    }
+    if (found.length) {
+      add('text-collision', 'P1', first, 'On the first screen at ' + vw + 'px: ' + found.join('; ') + '. Text may not run into other text or a drawn line: recompose this width (move, resize or stack), never shrink the text to fit (first-screen.md).');
+    }
+  });
+
+  // ---- a canvas over a picture that draws nothing ------------------------------------------------
+  // shot.js --check scrolls to each picture with a canvas laid over it (a WebGL layer redrawing it) and
+  // reports the ones that capture as one flat colour there: an empty box where the picture should be.
+  rule('blank-canvas', () => {
+    const blank = options.blankCanvases ?? [];
+    if (!blank.length) return;
+    const canvases = all<HTMLCanvasElement>('canvas');
+    add('blank-canvas', 'P1', canvases[blank[0]![0]] ?? null, blank.length + ' picture(s) under a canvas show one flat colour where the picture should be (' + blank.map((b) => b[1]).join(', ') +
+      '). Keep the <img> visible until the canvas has drawn it, and show it again on any doubt (showpiece.md, 6).');
   });
 
   // ---- tables ---------------------------------------------------------------------------
@@ -1664,19 +3478,32 @@
       }
       return parts.join('|');
     };
+    // A focus style may be drawn inside the control: an SVG link whose shape changes stroke or fill,
+    // a card whose arrow moves. The first few descendants are compared too.
+    const kidsOf = (el: Element): Element[] => Array.from(el.querySelectorAll('*')).slice(0, 8);
+    const lookInside = (el: Element): string => kidsOf(el).map((k) => {
+      const cs = getComputedStyle(k);
+      return [cs.outlineStyle, cs.outlineColor, cs.stroke, cs.strokeWidth, cs.fill, cs.opacity, cs.transform, cs.color, cs.backgroundColor, cs.textDecorationLine, cs.visibility].join('|');
+    }).join('~');
     let measured = 0;
     try {
       for (const el of targets) {
         // Turn transitions off for a moment, so the focused style can be read at once.
         const frozen: Array<[HTMLElement, string | null]> = [];
-        for (const n of [el, el.parentElement]) {
-          if (!(n instanceof HTMLElement)) continue;
-          frozen.push([n, n.getAttribute('style')]);
-          n.style.setProperty('transition', 'none', 'important');
+        // In app mode a focus ring may be drawn on a row or card around the control, up to two levels up.
+        const grand = appMode ? el.parentElement?.parentElement ?? null : null;
+        for (const n of [...(appMode ? [el, el.parentElement, grand] : [el, el.parentElement]), ...kidsOf(el)]) {
+          if (!(n instanceof HTMLElement || n instanceof SVGElement)) continue;
+          frozen.push([n as HTMLElement, n.getAttribute('style')]);
+          (n as HTMLElement).style.setProperty('transition', 'none', 'important');
         }
         try {
-          const off = look(el) + '#' + look(el.parentElement);
-          // Only controls already on screen are tested for being hidden; nothing is scrolled into view.
+          const off = look(el) + '#' + look(el.parentElement) + (grand ? '#' + look(grand) : '') + '#' + lookInside(el);
+          // Only controls already on screen are tested for being hidden; nothing is scrolled into view,
+          // except in app mode: each control is first scrolled to the middle of its scroll area, as a person would
+          // scroll to it, so a row that merely passes under a tab bar is not reported but one that can
+          // never come out from under a fixed layer still is. Scroll positions are restored below.
+          if (appMode) el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' as ScrollBehavior });
           const r = el.getBoundingClientRect();
           const cx = r.left + r.width / 2;
           const cy = r.top + r.height / 2;
@@ -1685,7 +3512,7 @@
           // Only judge focus the browser shows as keyboard focus; otherwise a :focus-visible style would not apply.
           if (document.activeElement !== el || !el.matches(':focus-visible')) continue;
           measured++;
-          const on = look(el) + '#' + look(el.parentElement);
+          const on = look(el) + '#' + look(el.parentElement) + (grand ? '#' + look(grand) : '') + '#' + lookInside(el);
           if (on === off) {
             add('focus-removed', 'P1', el, 'Nothing visible changes when this control takes keyboard focus (outline, shadow, border and background stay the same).');
           }
@@ -1725,7 +3552,7 @@
   let dropped = 0;
   for (const n of Object.values(counts)) if (n > MAX_PER_RULE) dropped += n - MAX_PER_RULE;
   if (dropped) notes.push(dropped + ' further findings were omitted (more than ' + MAX_PER_RULE + ' per rule); see countsByRule.');
-  notes.push('Not checked: keyboard order, states, whether forms complete, overlapping or colliding labels, and anything about taste. Focus is checked on the first 40 controls only. Check the rest by hand.');
+  notes.push('Not checked: keyboard order, states, whether forms complete, overlapping or colliding labels below the first screen, and anything about taste. Focus is checked on the first 40 controls only. Check the rest by hand.');
 
   return {
     url: location.href,
@@ -1734,5 +3561,6 @@
     countsByRule: counts,
     findings,
     notes,
+    ...(appMode ? { mode: 'app', relaxed: APP_RELAXED } : {}),
   };
 })();

@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  list-sibling-focus: pointing at one row pulls focus to it. Every other row drops to 35%
+  opacity, so the hovered wine, its note and its two prices read alone. Nothing moves.
+  Pure CSS with :has(); the dimming arrives in 180ms and lifts more slowly (320ms) so
+  brushing down the list does not strobe.
+  Pointer: (hover: hover) only.
+  Keyboard: the same with :focus-visible inside the list.
+  Touch: no dimming; everything stays at full strength.
+  Reduced motion: the dimming happens without a fade.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sibling dimming, focus pull (list-sibling-focus)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+/* Demo page */
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh;
+  background: #26151d; color: #f1e3e6;
+  font: 400 16px/1.5 "Gill Sans", "Gill Sans MT", "Helvetica Neue", Helvetica, sans-serif;
+}
+main { max-width: 46rem; margin: 0 auto; padding: 5rem 2rem; }
+h1 { font: italic 400 3rem/1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; margin: 0 0 .75rem; }
+.sub { margin: 0 0 2.5rem; color: #b9a2a8; }
+.cols { display: grid; grid-template-columns: 1fr 4.5rem 4.5rem; gap: 1rem; font-size: 13px; color: #b9a2a8; padding-bottom: .5rem; border-bottom: 1px solid #5a3b47; }
+.cols span:not(:first-child) { text-align: right; }
+
+/* argus:copy-start css */
+.wines { list-style: none; margin: 0; padding: 0; }
+.wines a {
+  display: grid; grid-template-columns: 1fr 4.5rem 4.5rem; gap: .2rem 1rem; align-items: baseline;
+  padding: 1rem 0; border-bottom: 1px solid #5a3b47; color: inherit; text-decoration: none;
+  transition: opacity var(--t-base) var(--ease-in-out);
+}
+.wines .w { font: 400 1.35rem/1.25 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.wines .note { grid-column: 1; color: #b9a2a8; font-size: 14px; }
+.wines .p { text-align: right; font-variant-numeric: tabular-nums; grid-row: 1; }
+.wines .p:nth-of-type(3) { grid-column: 2; }
+.wines .p:nth-of-type(4) { grid-column: 3; }
+.wines a:focus-visible { outline: 2px solid #f1e3e6; outline-offset: 2px; }
+@media (hover: hover) {
+  .wines:has(a:hover) a:not(:hover),
+  .wines:has(a:focus-visible) a:not(:focus-visible) {
+    opacity: .35;
+    transition-duration: var(--t-fast); transition-timing-function: var(--ease-out);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wines a, .wines:has(a:hover) a:not(:hover), .wines:has(a:focus-visible) a:not(:focus-visible) { transition: none; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>By the glass</h1>
+  <p class="sub">The Dove, Faversham. 125ml glass or 75cl bottle.</p>
+  <div class="cols" aria-hidden="true"><span>Wine</span><span>Glass</span><span>Bottle</span></div>
+  <!-- argus:copy-start html -->
+  <ul class="wines">
+    <li><a href="#picpoul"><span class="w">Picpoul de Pinet, Ormarine 2024</span><span class="note">Lemon pith, sea air. With the oysters.</span><span class="p">£7.50</span><span class="p">£34</span></a></li>
+    <li><a href="#bacchus"><span class="w">Bacchus, Chapel Down 2023</span><span class="note">Elderflower and cut grass, from up the road in Tenterden.</span><span class="p">£9</span><span class="p">£41</span></a></li>
+    <li><a href="#gamay"><span class="w">Fleurie, Domaine Chignard 2022</span><span class="note">Served cool. Red cherry, a little granite.</span><span class="p">£10</span><span class="p">£46</span></a></li>
+    <li><a href="#rioja"><span class="w">Rioja Crianza, Bodegas Ondarre 2020</span><span class="note">Vanilla and plum. For the lamb.</span><span class="p">£8.50</span><span class="p">£38</span></a></li>
+    <li><a href="#sherry"><span class="w">Fino, Tío Pepe en Rama</span><span class="note">Bone dry, salted almond. 75ml pour.</span><span class="p">£6</span><span class="p">£32</span></a></li>
+  </ul>
+  <!-- argus:copy-end html -->
+</main>
+</body>
+</html>

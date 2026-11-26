@@ -1,0 +1,120 @@
+<!doctype html>
+<!--
+  svg-route-stage: a route drawn for the subject shows how far a stage takes you; here a
+  canal boat hire company's three-day trip. Choosing a day draws the line from the wharf
+  to that night's mooring and marks the stops passed; the text for the day changes with it.
+  Mechanism: the route is one path with pathLength="1" drawn over a faint copy. The script
+  finds where each stop sits along the path (by sampling getPointAtLength once) and, on a
+  choice, sets stroke-dashoffset to 1 minus that fraction; a CSS transition moves it,
+  forward or back. Stops behind the line get .is-past. The same function could be driven
+  by scroll or by a form's step instead of buttons.
+  Fallback and reduced motion: without script the whole route is drawn with every stop,
+  and the list shows every day; under prefers-reduced-motion the line jumps to the stage.
+  Touch and keyboard: real buttons with aria-pressed; the list marks the chosen day with
+  aria-current and the summary is announced through aria-live. The drawing has role="img"
+  and an aria-label.
+  A technique to redraw for the subject (a walking tour, a delivery round, the stages of
+  a building project), not a decoration to paste: keep the mechanism, draw your own route.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Route drawn to a stage (svg-route-stage)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #eef2ee; color: #172420; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+main { width: min(70rem, 100%); padding: 2rem clamp(1.25rem, 4vw, 3rem); }
+main > h1 { font: 400 clamp(2rem, 4.5vw, 3.75rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0 0 2rem; max-width: 18ch; }
+
+/* argus:copy-start css */
+:root { --ease-in-out: cubic-bezier(.65,0,.35,1); --ease-out: cubic-bezier(.22,1,.36,1); --t-page: 900ms; --t-fast: 180ms; }
+.trip { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(1.5rem, 4vw, 4rem); align-items: start; }
+.trip svg { width: 100%; height: auto; overflow: visible; }
+.trip .bed { fill: none; stroke: #17242022; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+.trip .run { fill: none; stroke: #1d6f5f; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.trip .stop { fill: #eef2ee; stroke: #172420; stroke-width: 3; transition: fill var(--t-fast) var(--ease-out); }
+.trip .stop.is-past { fill: #1d6f5f; }
+.trip .name { font: 600 15px "Avenir Next", sans-serif; fill: #172420; }
+.trip .days { display: flex; gap: .5rem; margin: 0 0 1.25rem; }
+.trip button { font: 600 15px/1 "Avenir Next", sans-serif; color: #172420; background: none; border: 1.5px solid #172420; border-radius: 6px; padding: .8rem 1rem; min-height: 44px; cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out); }
+.trip button[aria-pressed="true"] { background: #172420; color: #fff; }
+.trip button:focus-visible { outline: 2px solid #1d6f5f; outline-offset: 3px; }
+.trip ol { margin: 0; padding-left: 1.2rem; }
+.trip li { margin-bottom: .6rem; color: #4c5c57; }
+.trip li[aria-current] { color: #172420; }
+.trip li[aria-current] strong { color: #1d6f5f; }
+.route-ready .trip .run { stroke-dasharray: 1; transition: stroke-dashoffset var(--t-page) var(--ease-in-out); }
+@media (prefers-reduced-motion: reduce) { .trip .run, .trip .stop, .trip button { transition: none !important; } }
+@media (max-width: 700px) { .trip { grid-template-columns: 1fr; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Three days on the Kennet and Avon</h1>
+  <!-- argus:copy-start html -->
+  <div class="trip">
+    <svg viewBox="0 0 660 360" role="img" aria-label="Map of the three-day trip from Bradford on Avon wharf to Devizes, with a mooring each night">
+      <path class="bed" d="M60 300 C 110 300, 140 250, 200 250 S 290 280, 330 260 S 420 160, 470 150 S 560 100, 600 90"/>
+      <path class="run" pathLength="1" d="M60 300 C 110 300, 140 250, 200 250 S 290 280, 330 260 S 420 160, 470 150 S 560 100, 600 90"/>
+      <circle class="stop is-past" cx="60" cy="300" r="10"/><text class="name" x="40" y="335">Wharf</text>
+      <circle class="stop is-past" cx="330" cy="260" r="10"/><text class="name" x="300" y="295">Semington</text>
+      <circle class="stop is-past" cx="470" cy="150" r="10"/><text class="name" x="400" y="128">Seend Cleeve</text>
+      <circle class="stop is-past" cx="600" cy="90" r="10"/><text class="name" x="560" y="65">Devizes</text>
+    </svg>
+    <div>
+      <div class="days" role="group" aria-label="Show the route to the end of">
+        <button type="button" aria-pressed="false" data-stop="1">Day 1</button>
+        <button type="button" aria-pressed="false" data-stop="2">Day 2</button>
+        <button type="button" aria-pressed="false" data-stop="3">Day 3</button>
+      </div>
+      <ol>
+        <li><strong>Day 1, to Semington.</strong> Five hours, two swing bridges, the Avoncliff aqueduct.</li>
+        <li><strong>Day 2, to Seend Cleeve.</strong> Four hours and five locks; a pub at the mooring.</li>
+        <li><strong>Day 3, to Devizes.</strong> The first of the Caen Hill flight; we bring the boat back.</li>
+      </ol>
+      <p class="sr-note" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></p>
+    </div>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  document.querySelectorAll('.trip').forEach(trip => {
+    const run = trip.querySelector('.run');
+    if (!run || typeof run.getTotalLength !== 'function') return;
+    const stops = [...trip.querySelectorAll('.stop')];
+    const items = trip.querySelectorAll('ol li');
+    const buttons = trip.querySelectorAll('button[data-stop]');
+    const live = trip.querySelector('[aria-live]');
+    // Where each stop sits along the path, from 0 to 1, found once.
+    const total = run.getTotalLength(), N = 400, samples = [];
+    for (let i = 0; i <= N; i++) samples.push(run.getPointAtLength(total * i / N));
+    const at = stops.map(s => {
+      const x = +s.getAttribute('cx'), y = +s.getAttribute('cy');
+      let best = 0, dist = Infinity;
+      samples.forEach((p, i) => { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < dist) { dist = d; best = i; } });
+      return best / N;
+    });
+    const go = (n, quiet) => {
+      run.style.strokeDashoffset = String(1 - at[n]);
+      stops.forEach((s, i) => s.classList.toggle('is-past', i <= n));
+      buttons.forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.stop === n)));
+      items.forEach((li, i) => (i === n - 1 ? li.setAttribute('aria-current', 'step') : li.removeAttribute('aria-current')));
+      if (!quiet && live && items[n - 1]) live.textContent = items[n - 1].textContent;
+    };
+    document.documentElement.classList.add('route-ready');
+    run.style.strokeDashoffset = '1';
+    buttons.forEach(b => b.addEventListener('click', () => go(+b.dataset.stop)));
+    requestAnimationFrame(() => requestAnimationFrame(() => go(1, true)));
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

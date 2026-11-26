@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+  svg-scroll-path-draw: the outline of the thing the page sells draws itself as its section
+  scrolls through the screen; here a steel bicycle frame, tube by tube, then the wheels.
+  Scrolling back undraws it.
+  Mechanism: each path has pathLength="1" and stroke-dasharray: 1; its stroke-dashoffset is a
+  CSS scroll-driven animation on the section's view timeline (animation-timeline: view()),
+  each tube over its own slice of the range (--from, --to, in percent of the cover range).
+  Linear: the scroll is the easing. No script.
+  Fallback and reduced motion: outside @supports (animation-timeline: view()), and under
+  prefers-reduced-motion, the drawing is complete.
+  Touch and keyboard: nothing to operate; the drawing has role="img" and an aria-label, and
+  the words beside it carry the same facts.
+  A technique to redraw for the subject (a chair, a boat hull, a house section), not a
+  decoration to paste: keep the mechanism, draw your own paths in one stroke style.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scroll-linked path drawing (svg-scroll-path-draw)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #eef0f2; color: #15191d; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.pad { min-height: 70vh; max-width: 72rem; margin: 0 auto; padding: 2rem clamp(1.25rem, 4vw, 3rem); display: grid; align-content: end; }
+.pad h1 { font: 600 clamp(2.25rem, 5vw, 4.5rem)/1 "Avenir Next", sans-serif; letter-spacing: -.03em; margin: 0 0 1rem; max-width: 16ch; }
+.pad p { margin: 0; max-width: 32rem; color: #4a535c; }
+
+/* argus:copy-start css */
+.build { max-width: 72rem; margin: 0 auto; padding: 10vh clamp(1.25rem, 4vw, 3rem); display: grid; grid-template-columns: 7fr 5fr; gap: clamp(1.5rem, 4vw, 4rem); align-items: center; view-timeline: --build block; }
+.build svg { width: 100%; height: auto; overflow: visible; }
+.build .part { fill: none; stroke: #15191d; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.build .part.accent { stroke: #c2410c; }
+.build h2 { font: 600 clamp(1.6rem, 3vw, 2.4rem)/1.1 "Avenir Next", sans-serif; margin: 0 0 1rem; }
+.build p { margin: 0 0 1rem; color: #4a535c; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .build .part { stroke-dasharray: 1; animation: part-draw linear both; animation-timeline: --build;
+      animation-range: cover var(--from) cover var(--to); }
+    @keyframes part-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  }
+}
+@media (max-width: 700px) { .build { grid-template-columns: 1fr; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<section class="pad"><h1>Frames built to measure in Sheffield</h1><p>Every Callow Cycles frame is cut, mitred and brazed by one of three people in a workshop on Arundel Street.</p></section>
+<!-- argus:copy-start html -->
+<section class="build" aria-labelledby="build-t">
+  <svg viewBox="0 0 640 400" role="img" aria-label="Line drawing of a steel road frame: top tube, down tube, seat tube and stays, then the two wheels">
+    <path class="part" style="--from:20%;--to:32%" pathLength="1" d="M243 120 L470 130"/>
+    <path class="part" style="--from:28%;--to:40%" pathLength="1" d="M470 130 L300 290"/>
+    <path class="part" style="--from:34%;--to:46%" pathLength="1" d="M230 80 L300 290"/>
+    <path class="part" style="--from:40%;--to:52%" pathLength="1" d="M243 120 L140 290 L300 290"/>
+    <path class="part accent" style="--from:46%;--to:56%" pathLength="1" d="M470 130 L455 95 M470 130 L510 290"/>
+    <path class="part" style="--from:52%;--to:66%" pathLength="1" d="M140 210 A80 80 0 1 0 140 370 A80 80 0 1 0 140 210"/>
+    <path class="part" style="--from:56%;--to:70%" pathLength="1" d="M510 210 A80 80 0 1 0 510 370 A80 80 0 1 0 510 210"/>
+  </svg>
+  <div>
+    <h2 id="build-t">Reynolds 853, brazed by hand</h2>
+    <p>Seven tubes, fitted to your measurements after a two-hour session on the jig.</p>
+    <p>Frames from £1,950. Twelve weeks from fitting to collection.</p>
+  </div>
+</section>
+<!-- argus:copy-end html -->
+<section class="pad"><p>Fittings on Tuesdays and Saturdays. Book a slot and bring the bike you ride now.</p></section>
+<section class="pad"></section>
+</main>
+</body>
+</html>

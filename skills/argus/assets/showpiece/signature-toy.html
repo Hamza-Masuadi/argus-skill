@@ -1,0 +1,177 @@
+<!doctype html>
+<!--
+  signature-toy: a letterpress studio's name set in loose lead type in a tray. Brush the pointer
+  through it and the blocks scatter and tumble with light physics (gravity, bumping, friction);
+  "Shake the tray" does the same from a button, and "Set the type" puts the name back in order.
+  It starts still, set in order, and rests again by itself.
+
+  Level: showpiece, optional. One toy per site, taken from what the trade does (here: setting type
+  by hand). It lives beside the content, never over text, a form or the action.
+
+  No library: about 120 lines of plain script (Verlet-style integration, blocks collide as circles).
+  If you need real rigid bodies, matter-js 0.20.0 (MIT) is the documented choice, at about 25 KB
+  gzipped; most toys do not need it.
+
+  Rules it keeps:
+    - Static first: without script, under reduced motion, or before anyone touches it, the name is
+      set in order, real text with an aria-label; the blocks are aria-hidden.
+    - Keyboard and touch get the same play through the two buttons (no drag or hover required).
+    - Reduced motion: the buttons rearrange at once (shuffled or set), no tumbling.
+    - The loop runs only while blocks move, and stops when the tray is off screen or the tab hidden.
+  Check it with: shot.js signature-toy.html --tap "text=Shake the tray" --frames 8 --every 120
+  Copy the marked blocks (the copy markers below).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A tray of loose type to play with (signature-toy)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f3efe6; color: #23201c; font: 400 17px/1.6 "Iowan Old Style", "Palatino Linotype", Georgia, serif; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid #9a3412; outline-offset: 3px; }
+.top { display: flex; justify-content: space-between; padding: 1.4rem clamp(1.25rem, 4vw, 3rem); font: 500 14px/1.4 "Avenir Next", system-ui, sans-serif; }
+.hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; min-height: calc(100vh - 4.5rem); padding: 4vh clamp(1.25rem, 4vw, 3rem) 10vh; }
+.hero h1 { font-size: clamp(2.25rem, 4.5vw, 4rem); line-height: 1; font-weight: 400; letter-spacing: -.02em; margin: 0 0 1rem; }
+.hero p { margin: 0 0 1.5rem; max-width: 28rem; }
+.hero .cta { font: 600 15px/1 "Avenir Next", system-ui, sans-serif; display: inline-block; padding: .9rem 1.3rem; background: #23201c; color: #f3efe6; text-decoration: none; border-radius: 2px; }
+@media (max-width: 800px) { .hero { grid-template-columns: 1fr; } }
+
+/* argus:copy-start signature-toy css */
+.toy { margin: 0; }
+.toy-tray { --s: clamp(40px, 4.6vw, 68px); position: relative; height: clamp(16rem, 30vw, 26rem); border: 10px solid #6b4f35; border-radius: 3px; background: #2c2620; overflow: hidden; touch-action: pan-y; }
+/* Set in order (the static state): a row on the tray's floor. */
+.toy-set { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 4px; }
+.toy-block { width: var(--s, 56px); height: var(--s, 56px); display: grid; place-items: center; background: #b9b2a6; color: #2c2620; border-radius: 3px; box-shadow: inset 0 -4px 0 #8f887c, inset 0 2px 0 #d6d0c5;
+  font: 700 calc(var(--s, 56px) * .62)/1 "Iowan Old Style", Georgia, serif; transform: scaleX(-1); /* type is cast mirror-wise, and set right to left, so it prints the right way round */ user-select: none; }
+.toy-live .toy-block { position: absolute; left: 0; top: 0; will-change: transform; }
+.toy-controls { display: flex; gap: .75rem; margin-top: .9rem; font: 500 14px/1 "Avenir Next", system-ui, sans-serif; }
+.toy-controls button { font: inherit; padding: .7rem 1rem; border: 1px solid #23201c55; background: none; color: inherit; border-radius: 2px; cursor: pointer; }
+.toy-controls button:hover { border-color: #23201c; }
+.toy-controls button:active { transform: scale(.97); }
+/* argus:copy-end signature-toy css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Inkwell Letterpress</strong><a href="#order">Order cards</a></header>
+<main>
+  <section class="hero">
+    <div>
+      <h1>Wedding stationery set by hand, one letter at a time.</h1>
+      <p>Printed on an 1890s Albion press in Hebden Bridge, from metal and wood type we sort ourselves.</p>
+      <a class="cta" href="#order">Start your order</a>
+    </div>
+    <!-- argus:copy-start signature-toy html -->
+    <figure class="toy">
+      <div class="toy-tray" role="img" aria-label="A tray of lead type spelling INKWELL">
+        <div class="toy-set" aria-hidden="true">
+          <span class="toy-block">L</span><span class="toy-block">L</span><span class="toy-block">E</span><span class="toy-block">W</span><span class="toy-block">K</span><span class="toy-block">N</span><span class="toy-block">I</span>
+        </div>
+      </div>
+      <div class="toy-controls" hidden>
+        <button type="button" data-act="shake">Shake the tray</button>
+        <button type="button" data-act="set">Set the type</button>
+      </div>
+    </figure>
+    <!-- argus:copy-end signature-toy html -->
+  </section>
+</main>
+
+<!-- argus:copy-start signature-toy js -->
+<script>
+addEventListener('DOMContentLoaded', () => {
+  const tray = document.querySelector('.toy-tray');
+  const blocks = Array.from(tray.querySelectorAll('.toy-block'));
+  const controls = document.querySelector('.toy-controls');
+  controls.hidden = false; // the buttons only mean something when script runs
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Start from where the blocks are set, so taking over from the static row moves nothing.
+  const box = tray.getBoundingClientRect();
+  const size = blocks[0].getBoundingClientRect().width;
+  const r = size / 2;
+  const home = blocks.map((b) => { const q = b.getBoundingClientRect(); return { x: q.left - box.left - 10 + r, y: q.top - box.top - 10 + r }; });
+  const bodies = home.map((h) => ({ x: h.x, y: h.y, px: h.x, py: h.y, a: 0, va: 0 }));
+  tray.classList.add('toy-live');
+  blocks.forEach((b) => tray.appendChild(b));
+  tray.querySelector('.toy-set').remove();
+
+  const W = () => tray.clientWidth, H = () => tray.clientHeight;
+  const paint = () => bodies.forEach((p, i) => { blocks[i].style.transform = `translate(${p.x - r}px, ${p.y - r}px) rotate(${p.a}rad) scaleX(-1)`; });
+  paint();
+
+  let raf = 0, still = 0, onScreen = true, asleep = true;
+  const step = () => {
+    let energy = 0;
+    for (const p of bodies) {
+      const vx = (p.x - p.px) * 0.985, vy = (p.y - p.py) * 0.985;
+      p.px = p.x; p.py = p.y;
+      p.x += vx; p.y += vy + 0.6; // gravity
+      p.va *= 0.96; p.a += p.va;
+      energy += vx * vx + vy * vy + p.va * p.va * 100;
+    }
+    for (let k = 0; k < 3; k++) { // a few passes keep the pile from sinking into itself
+      for (let i = 0; i < bodies.length; i++) {
+        for (let j = i + 1; j < bodies.length; j++) {
+          const a = bodies[i], b = bodies[j];
+          const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01, min = size * 0.98;
+          if (d < min) { const push = (min - d) / 2 / d; a.x -= dx * push; a.y -= dy * push; b.x += dx * push; b.y += dy * push; a.va -= dx * 0.0004; b.va += dx * 0.0004; }
+        }
+      }
+      for (const p of bodies) { // walls and floor, with a little bounce and floor friction
+        if (p.x < r) { p.x = r; p.px = p.x + (p.x - p.px) * 0.4; }
+        if (p.x > W() - r) { p.x = W() - r; p.px = p.x + (p.x - p.px) * 0.4; }
+        if (p.y > H() - r) { p.y = H() - r; p.py = p.y + (p.y - p.py) * 0.3; p.px = p.x - (p.x - p.px) * 0.8; p.va *= 0.8; }
+        if (p.y < r) { p.y = r; p.py = p.y; }
+      }
+    }
+    paint();
+    still = energy < 0.02 ? still + 1 : 0;
+    if (still > 40) asleep = true;
+    raf = asleep || !onScreen || document.hidden ? 0 : requestAnimationFrame(step);
+  };
+  const wake = () => { still = 0; asleep = false; if (!raf && !reduced) raf = requestAnimationFrame(step); };
+
+  // Brushing through the tray pushes nearby blocks along the pointer's movement.
+  let last = null;
+  tray.addEventListener('pointermove', (e) => {
+    if (reduced) return;
+    const q = tray.getBoundingClientRect();
+    const x = e.clientX - q.left - 10, y = e.clientY - q.top - 10;
+    if (last) {
+      const mx = x - last.x, my = y - last.y;
+      for (const p of bodies) {
+        const d = Math.hypot(p.x - x, p.y - y);
+        if (d < size * 1.2) { p.px -= mx * 0.5; p.py -= my * 0.5 + 2; p.va += mx * 0.004; }
+      }
+      wake();
+    }
+    last = { x, y };
+  }, { passive: true });
+  tray.addEventListener('pointerleave', () => { last = null; });
+
+  controls.addEventListener('click', (e) => {
+    const act = e.target.closest('button')?.dataset.act;
+    if (act === 'shake') {
+      if (reduced) { // a new arrangement at once, no tumbling
+        bodies.forEach((p) => { p.x = p.px = r + Math.random() * (W() - size); p.y = p.py = H() - r - Math.random() * size * 2; p.a = (Math.random() - 0.5) * 0.6; });
+        return paint();
+      }
+      bodies.forEach((p) => { p.px = p.x - (Math.random() - 0.5) * 30; p.py = p.y + 14 + Math.random() * 12; p.va = (Math.random() - 0.5) * 0.2; });
+      wake();
+    } else if (act === 'set') {
+      cancelAnimationFrame(raf); raf = 0; asleep = true;
+      bodies.forEach((p, i) => { p.x = p.px = home[i].x; p.y = p.py = home[i].y; p.a = p.va = 0; });
+      if (!reduced) blocks.forEach((b) => b.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.16,1,.3,1)' }));
+      paint();
+    }
+  });
+  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; if (onScreen && !asleep) wake(); }).observe(tray);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !asleep) wake(); });
+});
+</script>
+<!-- argus:copy-end signature-toy js -->
+</body>
+</html>

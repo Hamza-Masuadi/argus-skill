@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+  text-highlight-draw: a hand-drawn ring or underline strokes itself around a key word
+  when the paragraph comes into view, as if someone marked it with a pen.
+  Mechanism: SVG paths with pathLength="1" and a stroke-dashoffset transition, triggered
+  once by IntersectionObserver. The drawing is decoration (aria-hidden); the word is
+  also wrapped in <mark>/<strong> so the emphasis exists without the drawing.
+  Touch and keyboard: the same. Reduced motion: the marks are drawn already.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hand-drawn highlight (text-highlight-draw)</title>
+<script>document.documentElement.classList.add('js');</script>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #fffdf8; color: #1c1b19; font: 400 18px/1.6 "Charter", "Iowan Old Style", Georgia, serif; }
+main { max-width: 64rem; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.top { display: flex; justify-content: space-between; padding: 1.5rem 0; font: 500 14px/1 "Avenir Next", Arial, sans-serif; }
+section { min-height: 90vh; display: grid; align-content: center; }
+h1 { font: 400 clamp(2.5rem, 6.5vw, 5.75rem)/1.08 "Charter", "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0; max-width: 16ch; }
+.lede { font-size: clamp(1.25rem, 2vw, 1.6rem); line-height: 1.45; max-width: 34ch; }
+.note { font: 500 14px/1.5 "Avenir Next", Arial, sans-serif; color: #6b665d; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-slow: 640ms; --t-page: 900ms; }
+.hl { position: relative; display: inline-block; font-style: inherit; font-weight: inherit; background: none; color: inherit; white-space: nowrap; }
+.hl svg { position: absolute; pointer-events: none; overflow: visible; }
+.hl--ring svg { left: -11%; top: -30%; width: 124%; height: 158%; }
+.hl--under svg { left: -2%; width: 104%; bottom: -.28em; height: .5em; }
+/* No vector-effect here: non-scaling-stroke breaks pathLength-based dashes in Chromium.
+   Stroke widths are in viewBox units instead, tuned per shape. */
+.hl path { fill: none; stroke: #e2452f; stroke-linecap: round; stroke-linejoin: round; }
+.hl--ring path { stroke-width: 1.3; }
+.hl--under path { stroke-width: 3.4; }
+.js .hl path {
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  transition: stroke-dashoffset var(--t-page) var(--ease-out);
+  transition-delay: var(--d, 200ms);
+}
+.js .hl.is-in path { stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: reduce) { .js .hl path { stroke-dashoffset: 0; transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><strong>Northside Tutors</strong><span>GCSE and A level, Manchester</span></div>
+  <section>
+    <!-- argus:copy-start html -->
+    <h1>Maths that finally <mark class="hl hl--ring" data-hl>clicks<svg viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M58 5 C 30 1, 4 10, 4 26 C 4 42, 36 48, 60 46 C 86 44, 98 34, 96 22 C 94 9, 72 3, 44 6"/></svg></mark>, one hour a week.</h1>
+    <!-- argus:copy-end html -->
+  </section>
+  <section>
+    <p class="lede">Our students go up <strong class="hl hl--under" data-hl>two grades on average<svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 6 C 20 3, 45 8, 64 5 S 92 3, 99 6"/></svg></strong> by the summer, measured against their mock results in January.</p>
+    <p class="note">Based on 214 students in 2025. First lesson free.</p>
+  </section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const els = document.querySelectorAll('[data-hl]');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
+  }, { threshold: 1, rootMargin: '0px 0px -15% 0px' });
+  els.forEach(el => io.observe(el));
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

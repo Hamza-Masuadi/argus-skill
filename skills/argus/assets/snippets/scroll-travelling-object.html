@@ -1,0 +1,98 @@
+<!doctype html>
+<!--
+  scroll-travelling-object: one object stays with the reader down the page and changes
+  state at each section: here a coffee bean that is picked green, roasted brown, ground,
+  and finally poured as a cup. The label under it names the current state.
+  Mechanism: the object is position: sticky in a side column; each section has
+  data-state; an IntersectionObserver with a band at the middle of the screen sets
+  data-state on the object, and CSS transitions do the change (colour, scale, rotation,
+  which drawing is shown). Interruptible: scrolling back reverses each step.
+  Phones: the object gets a narrow gutter of its own beside the text (3rem, no label), sticky
+  at mid-screen, so it still travels and changes state but never sits over any text.
+  Touch and keyboard: the same. Reduced motion: states swap with a short fade, no travel.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travelling object (scroll-travelling-object)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f4eee6; color: #231a14; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.top { display: flex; justify-content: space-between; padding: 1.5rem clamp(1.25rem, 4vw, 3rem); font-size: 14px; }
+.stage-sec { min-height: 90vh; display: grid; align-content: center; gap: 1rem; padding: 10vh 0; }
+.stage-sec .n { font: 600 14px/1 "Avenir Next", sans-serif; color: #8a5a3c; }
+.stage-sec h2 { font: 400 clamp(2.25rem, 5vw, 4.5rem)/1 "Iowan Old Style", Georgia, serif; letter-spacing: -.02em; margin: 0; max-width: 14ch; }
+.stage-sec p { margin: 0; max-width: 30rem; color: #5c4c40; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --spring-soft: cubic-bezier(.3,1.25,.5,1); --t-slow: 640ms; }
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring-soft: linear(0, 0.071, 0.229, 0.415, 0.593, 0.742, 0.858, 0.939, 0.992, 1.022, 1.035, 1.038, 1.035, 1.029, 1.021, 1.015, 1.009, 1.005, 1.002, 1, 0.999, 0.999, 0.999, 0.999, 1); }
+}
+.travel { display: grid; grid-template-columns: 5fr 7fr; gap: clamp(1.5rem, 5vw, 5rem); padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.traveller { position: sticky; top: 0; height: 100vh; display: grid; place-items: center; align-content: center; gap: 1.25rem; }
+.traveller svg { width: min(30vw, 22rem); height: auto; overflow: visible; }
+.traveller .label { font: 600 14px/1 "Avenir Next", sans-serif; font-variant-numeric: tabular-nums; }
+.traveller .bean, .traveller .grounds, .traveller .cup { transition: opacity var(--t-slow) var(--ease-out), transform var(--t-slow) var(--spring-soft), fill var(--t-slow) var(--ease-out); transform-box: fill-box; transform-origin: 50% 50%; }
+.traveller .bean { fill: #7fa35a; }
+.traveller .grounds, .traveller .cup { opacity: 0; transform: scale(.85); }
+.traveller[data-state="roasted"] .bean { fill: #5b3420; transform: rotate(-24deg) scale(.92); }
+.traveller[data-state="ground"] .bean, .traveller[data-state="cup"] .bean { opacity: 0; transform: scale(.6) rotate(-40deg); }
+.traveller[data-state="ground"] .grounds { opacity: 1; transform: none; }
+.traveller[data-state="cup"] .cup { opacity: 1; transform: none; }
+@media (max-width: 760px) {
+  /* A column of its own: nothing else is ever under the object. */
+  .travel { grid-template-columns: 3rem 1fr; gap: .875rem; padding: 0 1rem; }
+  .traveller { top: calc(50svh - 1.5rem); height: auto; align-self: start; }
+  .traveller svg { width: 3rem; }
+  .traveller .label { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .traveller .bean, .traveller .grounds, .traveller .cup { transition: opacity 120ms linear, fill 120ms linear; transform: none !important; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<header class="top"><strong>Ondo Coffee Roasters</strong><span>Single-farm coffee, roasted Tuesdays</span></header>
+<main>
+  <!-- argus:copy-start html -->
+  <div class="travel">
+    <div class="traveller" data-state="green" aria-hidden="true">
+      <svg viewBox="0 0 200 200">
+        <g class="bean"><ellipse cx="100" cy="100" rx="56" ry="78"/><path d="M100 26 C 84 70, 116 130, 100 174" fill="none" stroke="#00000040" stroke-width="7" stroke-linecap="round"/></g>
+        <g class="grounds" fill="#4a2b1a"><path d="M30 160 Q100 40 170 160 Z"/><circle cx="70" cy="150" r="4" fill="#6d4128"/><circle cx="110" cy="120" r="4" fill="#6d4128"/><circle cx="130" cy="148" r="3" fill="#6d4128"/></g>
+        <g class="cup"><path d="M45 80 H155 L145 160 Q100 176 55 160 Z" fill="#e9e1d5"/><ellipse cx="100" cy="80" rx="55" ry="12" fill="#3b2216"/><path d="M155 96 q30 0 28 26 q-2 22 -32 22" fill="none" stroke="#e9e1d5" stroke-width="10"/><ellipse cx="100" cy="174" rx="70" ry="8" fill="#d8cdbe"/></g>
+      </svg>
+      <span class="label">Green bean</span>
+    </div>
+    <div class="travel-steps">
+      <section class="stage-sec" data-state="green" data-label="Green bean"><span class="n">01, March</span><h2>Picked ripe in Huila, Colombia.</h2><p>The Ospina family farm grows at 1,800 metres. Cherries are picked by hand, only when deep red.</p></section>
+      <section class="stage-sec" data-state="roasted" data-label="Roasted, day 1"><span class="n">02, Tuesday</span><h2>Roasted light, eleven minutes.</h2><p>Small batches of 12kg, taken off just after the first crack so the fruit still shows.</p></section>
+      <section class="stage-sec" data-state="ground" data-label="Ground, to order"><span class="n">03, on order</span><h2>Ground the morning it ships.</h2><p>Tell us how you brew and we grind for it, or send it whole.</p></section>
+      <section class="stage-sec" data-state="cup" data-label="In the cup"><span class="n">04, your kitchen</span><h2>Red apple, cane sugar, a long finish.</h2><p>250g for £11.50, posted free on two bags or more.</p></section>
+    </div>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const obj = document.querySelector('.traveller');
+  const label = obj.querySelector('.label');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      obj.dataset.state = e.target.dataset.state;
+      label.textContent = e.target.dataset.label;
+    });
+  }, { rootMargin: '-45% 0px -45% 0px' });
+  document.querySelectorAll('.stage-sec[data-state]').forEach(s => io.observe(s));
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

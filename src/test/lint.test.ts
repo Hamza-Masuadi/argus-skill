@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
-import { lint, main } from '../scripts/lint';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { h1Screens, lint, main, USAGE } from '../scripts/lint';
 
 const page = (head: string, body: string): string =>
   `<html lang="en"><head><meta name="viewport" content="width=device-width">${head}</head><body><h1>Title</h1>${body}</body></html>`;
@@ -176,4 +179,104 @@ test('--help prints usage and succeeds instead of looking for a file called --he
   }
   assert.ok(lines.some((l) => l.startsWith('Usage:')));
   assert.ok(!lines.some((l) => l.startsWith('Not found')));
+});
+
+const shell = (body: string): string => `<html lang="en"><head><meta name="viewport" content="width=device-width"></head><body>${body}</body></html>`;
+const appRules = (text: string): string[] => lint([{ path: 'index.html', text }], { app: true }).findings.map((f) => f.rule);
+
+test('--app: several h1s pass when each is in its own hash-routed screen; without --app they are still flagged', () => {
+  const screens = shell(
+    '<main class="screen" id="s-kitty"><h1>Kitty</h1></main>' +
+      '<main class="screen pushed" id="s-bills" hidden><div class="head"><h1>Bills</h1></div></main>' +
+      '<section data-screen="added" hidden><h1>Added</h1><img src="a.png" alt="x" width="1" height="1"></section>' +
+      '<section id="view-statement"><h1>Statement</h1></section>',
+  );
+  assert.ok(rules(screens).includes('h1-count'));
+  assert.ok(!appRules(screens).includes('h1-count'));
+  assert.deepEqual(h1Screens(screens), { count: 4, separate: true });
+  // Hidden sections count as screens too, and so do tab panels and templates.
+  assert.ok(!appRules(shell('<section hidden><h1>A</h1></section><section hidden><h1>B</h1></section>')).includes('h1-count'));
+  assert.ok(!appRules(shell('<div role="tabpanel"><h1>A</h1></div><template><h1>B</h1></template>')).includes('h1-count'));
+});
+
+test('--app still flags two h1s in one screen, or an h1 outside any screen', () => {
+  assert.ok(appRules(shell('<main class="screen"><h1>A</h1><h1>B</h1></main>')).includes('h1-count'));
+  assert.ok(appRules(shell('<h1>Brand</h1><main class="screen"><h1>A</h1></main>')).includes('h1-count'));
+  assert.ok(appRules(shell('<div class="wrap"><h1>A</h1></div><div class="wrap"><h1>B</h1></div>')).includes('h1-count'));
+  // aria-hidden is not the hidden attribute.
+  assert.ok(appRules(shell('<div aria-hidden="true"><h1>A</h1></div><div aria-hidden="true"><h1>B</h1></div>')).includes('h1-count'));
+  // A page with headings but no h1 is still reported.
+  assert.ok(appRules(shell('<main class="screen"><h2>A</h2></main>')).includes('h1-count'));
+});
+
+test('--app: h1s written in a script are screens drawn one at a time', () => {
+  const page = shell('<div id="view"></div><script>const a = `<h1>${name}</h1>`; const b = "<h1>Basket</h1>";</script>');
+  assert.ok(rules(page).includes('h1-count'));
+  assert.ok(!appRules(page).includes('h1-count'));
+  assert.ok(appRules(shell('<h1>One</h1><h1>Two</h1><script>x = "<h1>Three</h1>"</script>')).includes('h1-count'));
+});
+
+test('lint.js --app is read as the flag, not as a file, and --help documents it', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'argus-lint-'));
+  const logs: string[] = [];
+  const log = console.log;
+  console.log = (...a: unknown[]) => void logs.push(a.join(' '));
+  try {
+    const file = path.join(dir, 'index.html');
+    fs.writeFileSync(file, shell('<main class="screen"><h1>A</h1></main><main class="screen" hidden><h1>B</h1></main>'));
+    assert.equal(main([file, '--app']), 0);
+    assert.ok(!logs.some((l) => /Not found|h1-count/.test(l)), logs.join('\n'));
+    logs.length = 0;
+    main([file]);
+    assert.ok(logs.some((l) => /\[h1-count\]/.test(l)));
+  } finally {
+    console.log = log;
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  assert.match(USAGE, /\[--app\]/);
+  assert.match(USAGE, /--app\s+the files are an app prototype/);
+});
+
+test('--app: 11px text is the platform minimum and passes; 10px is still flagged, and without --app 11px is flagged', () => {
+  const eleven = shell('<style>.a{font-size:11px}</style><main class="screen"><h1>A</h1></main>');
+  assert.ok(!appRules(eleven).includes('small-text'));
+  assert.ok(rules(eleven).includes('small-text'));
+  assert.ok(appRules(shell('<style>.a{font-size:10px}</style><main class="screen"><h1>A</h1></main>')).includes('small-text'));
+});
+
+test('tight-tracking allows -0.05em on display type at 96px and above, and nothing tighter than -0.04em below it', () => {
+  const css = (rule: string): string => '<style>' + rule + '</style>';
+  const tight = (rule: string): boolean => rules(css(rule), 'a.html').includes('tight-tracking');
+  assert.equal(tight('h1{font-size:120px;letter-spacing:-0.05em}'), false);
+  assert.equal(tight('h1{font-size:clamp(48px,7.6vw,128px);letter-spacing:-.045em}'), false);
+  assert.equal(tight('h1{font:800 110px/.9 Archivo,sans-serif;letter-spacing:-0.05em}'), false);
+  assert.equal(tight('h1{font-size:120px;letter-spacing:-0.06em}'), true);
+  assert.equal(tight('h2{font-size:64px;letter-spacing:-0.05em}'), true);
+  assert.equal(tight('h2{font-size:64px;letter-spacing:-0.04em}'), false);
+  assert.equal(tight('p{letter-spacing:-0.1em}'), true);
+});
+
+test('an autoplaying video: muted, playsinline, a poster and a pause control are asked for; a finished one passes', () => {
+  const bad = lint([{ path: 'index.html', text: page('', '<video autoplay loop src="sea.mp4"></video>') }]).findings.filter((f) => f.rule === 'hero-video');
+  assert.deepEqual(bad.map((f) => f.sev).sort(), ['P1', 'P2', 'P2']);
+  assert.ok(bad.some((f) => /has no playsinline and no poster/.test(f.msg)));
+  const good = page('', '<video autoplay muted loop playsinline poster="sea.jpg" aria-hidden="true"><source src="sea.mp4" type="video/mp4"></video><button type="button" class="video-toggle">Pause</button>');
+  assert.ok(!rules(good).includes('hero-video'));
+  // JSX spelling, and a video that does not play by itself, are fine.
+  assert.ok(!rules('<video autoPlay muted loop playsInline poster="/p.jpg" /><button aria-label="Pause the film">||</button>', 'Hero.tsx').includes('hero-video'));
+  assert.ok(!rules(page('', '<video controls src="talk.mp4"></video>')).includes('hero-video'));
+});
+
+test('a local video file over 4 MB is flagged as heavy; a small one and a remote one are not', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'argus-lint-video-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'big.mp4'), Buffer.alloc(4 * 1024 * 1024 + 10));
+    fs.writeFileSync(path.join(dir, 'small.webm'), Buffer.alloc(1000));
+    const text = page('', '<video muted playsinline poster="p.jpg"><source src="big.mp4" type="video/mp4"><source src="small.webm"><source src="https://cdn.example.com/x.mp4"></video>');
+    const heavy = lint([{ path: path.join(dir, 'index.html'), text }]).findings.filter((f) => f.rule === 'video-heavy');
+    assert.equal(heavy.length, 1);
+    assert.match(heavy[0]!.msg, /big\.mp4 is 4\.0 MB/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

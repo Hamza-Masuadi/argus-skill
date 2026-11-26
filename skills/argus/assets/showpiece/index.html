@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  Argus showpiece starters: a plain list. Each starter is one self-contained page; open it directly
+  (file://) except the page transition, which needs http (same-origin):
+    cd skills/argus/assets/showpiece && python3 -m http.server 8000
+  then http://localhost:8000/
+  The starters that use GSAP load it from jsDelivr, so they need a network connection; offline they
+  show their finished, static state (which is also their no-script fallback).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Argus showpiece starters</title>
+<meta name="description" content="Nine tested starters for choreographed motion: smooth scroll, pinned scenes, split text, preloader, page transitions, WebGL pictures, shader grounds, a horizontal gallery, kinetic type and one toy.">
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; background: #fafaf8; color: #1b1b1a; font: 400 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 60rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+h1 { font-size: 1.75rem; margin: 0 0 .5rem; }
+p { margin: 0 0 1rem; max-width: 44rem; }
+code { font: 14px/1.4 ui-monospace, Menlo, Consolas, monospace; background: #eeeeea; padding: .1rem .3rem; border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; margin-top: 2rem; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: .75rem .5rem; border-top: 1px solid #ddd; }
+th { font-size: 13px; color: #666; font-weight: 600; }
+td:first-child { white-space: nowrap; }
+a { color: inherit; text-underline-offset: .2em; }
+:focus-visible { outline: 2px solid #1b1b1a; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Showpiece starters</h1>
+  <p>Mechanisms to copy between the <code>argus:copy-start &lt;name&gt;</code> and <code>argus:copy-end &lt;name&gt;</code> markers, then redraw for the subject. Read <code>references/showpiece.md</code> first: it says which level a site gets and when each technique earns its place.</p>
+  <p>Each one registers what it moves on <code>window.__argus</code>, so <code>shot.js --scenes</code>, <code>--timeline &lt;name&gt;</code> and <code>--arrival</code> can step through it and write a contact sheet.</p>
+  <table>
+    <thead><tr><th>Starter</th><th>What it does</th><th>Level</th><th>Needs</th></tr></thead>
+    <tbody>
+      <tr><td><a href="smooth-scroll-scene.html">smooth-scroll-scene</a></td><td>Lenis on GSAP's ticker, one pinned scene in three beats</td><td>showpiece (scene alone: moment)</td><td>Lenis (vendored), GSAP + ScrollTrigger (CDN)</td></tr>
+      <tr><td><a href="split-headline.html">split-headline</a></td><td>Line-masked headline reveal with an overlapping arrival</td><td>moment or showpiece</td><td>GSAP + SplitText (CDN)</td></tr>
+      <tr><td><a href="preloader.html">preloader</a></td><td>Waits for fonts and the hero picture (3s cap), hands off into the hero</td><td>showpiece</td><td>GSAP (CDN)</td></tr>
+      <tr><td><a href="transition.html">transition</a> + <a href="transition-project.html">project</a></td><td>Cross-document view transition with a shared picture</td><td>showpiece (shared picture alone: moment)</td><td>nothing; serve over http</td></tr>
+      <tr><td><a href="webgl-image.html">webgl-image</a></td><td>Pictures as WebGL planes: pointer ripple, scroll bend, <code>&lt;img&gt;</code> fallback</td><td>showpiece, or a picture-led moment</td><td>OGL (vendored)</td></tr>
+      <tr><td><a href="shader-background.html">shader-background</a></td><td>A cheap contour-line ground that pauses off screen, CSS fallback</td><td>moment or showpiece</td><td>OGL (vendored)</td></tr>
+      <tr><td><a href="horizontal-gallery.html">horizontal-gallery</a></td><td>Pinned sideways walk along prints; a native snap row everywhere else</td><td>showpiece</td><td>GSAP + ScrollTrigger (CDN)</td></tr>
+      <tr><td><a href="kinetic-type.html">kinetic-type</a></td><td>A short statement whose weight and spacing change with scroll</td><td>moment or showpiece</td><td>nothing (CSS scroll timelines, script fallback)</td></tr>
+      <tr><td><a href="signature-toy.html">signature-toy</a></td><td>A tray of loose type to brush or shake, with buttons and a still state</td><td>showpiece, optional</td><td>nothing</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:2rem">Vendored files and their licences are in <code>vendor/</code>: Lenis 1.3.28 (MIT) and OGL 1.0.11 (Unlicense). GSAP 3.15.1 is loaded from <code>cdn.jsdelivr.net/npm/gsap@3.15.1/dist/</code> under GSAP's own no-charge licence and is not shipped here.</p>
+</main>
+</body>
+</html>

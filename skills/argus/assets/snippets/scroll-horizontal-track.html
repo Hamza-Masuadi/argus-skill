@@ -1,0 +1,135 @@
+<!doctype html>
+<!--
+  scroll-horizontal-track: scrolling down moves a row of six cards sideways while the
+  section is pinned; a "3 / 6" counter and a hairline report where you are, and the next
+  card always peeks in at the right.
+  Mechanism: a tall section with a sticky viewport; the track's translate is a CSS
+  scroll-driven animation on the section's view timeline (contain range). The counter is
+  set from the same progress in a passive scroll handler using cached offsets.
+  Fallback (no scroll timelines, reduced motion, or phones): a native sideways rail with
+  scroll-snap, which touch, trackpad and keyboard (Tab into a card) all scroll.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horizontal track with counter (scroll-horizontal-track)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #101418; color: #eef1f3; font: 400 17px/1.6 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.pad { min-height: 70vh; max-width: 76rem; margin: 0 auto; padding: 2rem clamp(1.25rem, 4vw, 3rem); display: grid; align-content: end; }
+.pad h1 { font: 600 clamp(2.5rem, 6vw, 5.5rem)/1 "Futura", "Avenir Next", sans-serif; letter-spacing: -.02em; margin: 0 0 1rem; }
+.pad p { margin: 0; max-width: 32rem; color: #a9b3ba; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-base: 320ms; }
+.htrack { --cards: 6; position: relative; }
+.htrack-view { padding: 0 clamp(1.25rem, 4vw, 3rem); }
+.htrack-head { display: flex; justify-content: space-between; align-items: end; gap: 2rem; padding: 2rem 0 1.5rem; }
+.htrack-head h2 { font: 600 clamp(1.5rem, 3vw, 2.25rem)/1.1 "Futura", "Avenir Next", sans-serif; margin: 0; }
+.htrack-count { font: 600 15px/1 "Avenir Next", sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.htrack-bar { height: 1px; background: #eef1f333; margin-top: 1.5rem; }
+.htrack-bar i { display: block; height: 100%; background: #eef1f3; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.htrack-rail { display: flex; gap: 1.25rem; list-style: none; margin: 0; padding: 0; }
+.htrack-card { flex: 0 0 min(38vw, 30rem); }
+.htrack-card a { display: block; color: inherit; text-decoration: none; border-radius: 4px; }
+.htrack-card a:focus-visible { outline: 2px solid #ffb44a; outline-offset: 4px; }
+.htrack-pic { aspect-ratio: 4 / 3; border-radius: 4px; display: grid; place-items: end start; padding: 1rem; font: 700 13px/1 "Avenir Next", sans-serif; color: #101418; }
+.htrack-card h3 { font: 600 1.25rem/1.2 "Avenir Next", sans-serif; margin: .9rem 0 .25rem; }
+.htrack-card p { margin: 0; color: #a9b3ba; font-size: 15px; }
+
+/* Fallback and default: a native rail. */
+.htrack-rail { overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: clamp(1.25rem, 4vw, 3rem); padding-bottom: 1rem; }
+.htrack-card { scroll-snap-align: start; }
+
+/* Enhancement: pinned and scroll-driven, wide screens with motion allowed. */
+@supports (animation-timeline: view()) {
+  @media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+    .htrack { height: calc(var(--cards) * 55vh); view-timeline: --htrack block; }
+    .htrack-view { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: clip; }
+    .htrack-view > * { min-width: 0; }
+    .htrack-rail { overflow: visible; scroll-snap-type: none; width: max-content;
+      animation: htrack-move linear both; animation-timeline: --htrack; animation-range: contain 0% contain 100%; }
+    /* travel = the rail's overflow: its width minus the screen, plus the side padding */
+    @keyframes htrack-move { to { translate: calc(-100% + 100vw - 2 * clamp(1.25rem, 4vw, 3rem)) 0; } }
+  }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<section class="pad">
+  <h1>Six routes, one summer</h1>
+  <p>Guided gravel rides out of Kendal, each with a support van, lunch and a pub at the end.</p>
+</section>
+<!-- argus:copy-start html -->
+<section class="htrack" data-htrack aria-labelledby="ht-title">
+  <div class="htrack-view">
+    <div>
+      <div class="htrack-head"><h2 id="ht-title">The routes</h2><span class="htrack-count" aria-hidden="true">1 / 6</span></div>
+    </div>
+    <div>
+      <ul class="htrack-rail">
+        <li class="htrack-card"><a href="?route=1"><div class="htrack-pic" style="background:#9ccf8f">62 km</div><h3>Longsleddale loop</h3><p>Easy, 900 m of climbing, May to September</p></a></li>
+        <li class="htrack-card"><a href="?route=2"><div class="htrack-pic" style="background:#ffd27a">81 km</div><h3>Over Garburn Pass</h3><p>Hard, rough stone on the descent</p></a></li>
+        <li class="htrack-card"><a href="?route=3"><div class="htrack-pic" style="background:#8fc3e6">54 km</div><h3>Shap Fell and back</h3><p>Moderate, one long climb</p></a></li>
+        <li class="htrack-card"><a href="?route=4"><div class="htrack-pic" style="background:#f2a38d">95 km</div><h3>Howgills traverse</h3><p>Hard, remote, bring two bottles</p></a></li>
+        <li class="htrack-card"><a href="?route=5"><div class="htrack-pic" style="background:#c7b4f0">40 km</div><h3>Lyth Valley lanes</h3><p>Easy, damson orchards in September</p></a></li>
+        <li class="htrack-card"><a href="?route=6"><div class="htrack-pic" style="background:#e6e1d3">120 km</div><h3>Coast to the Lakes</h3><p>Very hard, two days with a night in Ambleside</p></a></li>
+      </ul>
+      <div class="htrack-bar" aria-hidden="true"><i></i></div>
+    </div>
+  </div>
+</section>
+<!-- argus:copy-end html -->
+<section class="pad"><p>Rides run Saturdays from 8am. £75 a person including lunch; hire bikes £40.</p></section>
+<section class="pad"></section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  document.querySelectorAll('[data-htrack]').forEach(sec => {
+    const rail = sec.querySelector('.htrack-rail');
+    const cards = rail.children.length;
+    const count = sec.querySelector('.htrack-count');
+    const bar = sec.querySelector('.htrack-bar i');
+    sec.style.setProperty('--cards', cards);
+    let top = 0, h = 0, vh = 0, queued = false;
+    const pinned = () => getComputedStyle(rail).overflowX === 'visible';
+    let isPinned = false;
+    const measure = () => {
+      isPinned = pinned();
+      const r = sec.getBoundingClientRect(); top = r.top + scrollY; h = r.height; vh = innerHeight;
+      update();
+    };
+    const show = p => {
+      const i = Math.min(cards, Math.floor(p * cards) + 1);
+      count.textContent = `${i} / ${cards}`;
+      bar.style.setProperty('--p', p.toFixed(3));
+    };
+    const update = () => {
+      queued = false;
+      if (isPinned) show(Math.min(1, Math.max(0, (scrollY - top) / Math.max(1, h - vh))));
+      else show(rail.scrollLeft / Math.max(1, rail.scrollWidth - rail.clientWidth));
+    };
+    const queue = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+    addEventListener('scroll', queue, { passive: true });
+    rail.addEventListener('scroll', queue, { passive: true });
+    addEventListener('resize', measure);
+    // Keyboard: when pinned, tabbing to a card scrolls the page to where that card is in view.
+    rail.addEventListener('focusin', e => {
+      if (!isPinned) return;
+      const i = [...rail.children].indexOf(e.target.closest('.htrack-card'));
+      if (i < 0) return;
+      scrollTo({ top: top + (i / Math.max(1, cards - 1)) * (h - vh), behavior: 'instant' });
+    });
+    measure();
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

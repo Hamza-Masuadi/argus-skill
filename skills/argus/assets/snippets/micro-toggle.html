@@ -1,0 +1,63 @@
+<!doctype html>
+<!--
+  micro-toggle: a switch whose thumb travels with a small springy overshoot and stretches
+  while it moves; the track colour leads the thumb by 50ms so the change reads instantly.
+  Mechanism: a real <button role="switch" aria-checked>, CSS transitions (so a second
+  press mid-travel reverses smoothly from where it is), the spring as a linear() token.
+  Keyboard: Space or Enter. Touch: tap; the whole row is the target (44px high).
+  Reduced motion: the thumb jumps, the colour still changes.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spring toggle (micro-toggle)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #eef0f3; color: #15181d; font: 400 16px/1.5 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.panel { width: min(30rem, 92vw); background: #fff; border-radius: 14px; padding: 1.5rem 1.75rem; }
+.panel h1 { font: 600 1.25rem/1.2 "Avenir Next", sans-serif; margin: 0 0 .25rem; }
+.panel > p { margin: 0 0 1rem; color: #5b6270; font-size: 15px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .9rem 0; border-top: 1px solid #15181d14; }
+.row span small { display: block; color: #5b6270; font-size: 14px; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --spring: cubic-bezier(.34,1.56,.64,1); --t-fast: 180ms; --t-slow: 640ms; }
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+.switch { all: unset; box-sizing: border-box; flex: none; position: relative; width: 52px; height: 32px; border-radius: 99px; cursor: pointer;
+  background: #c5cad3; transition: background-color var(--t-fast) var(--ease-out); }
+.switch::before { content: ""; position: absolute; inset: -6px; } /* 44px touch target */
+.switch .thumb { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 99px; background: #fff; box-shadow: 0 1px 3px #0003;
+  transition: translate var(--t-slow) var(--spring) 50ms, scale var(--t-fast) var(--ease-out); }
+.switch[aria-checked="true"] { background: #1f7a4a; }
+.switch[aria-checked="true"] .thumb { translate: 20px 0; }
+.switch:active .thumb { scale: 1.12 .92; }    /* the thumb squashes under the finger */
+.switch:focus-visible { outline: 2px solid #2d5bd8; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .switch .thumb { transition: none; } }
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main class="panel">
+  <h1>Notifications</h1>
+  <p>Choose what Ledgerly tells you about.</p>
+  <!-- argus:copy-start html -->
+  <div class="row"><span id="l1">Invoice paid<small>When a client pays in full</small></span><button class="switch" role="switch" aria-checked="true" aria-labelledby="l1"><span class="thumb"></span></button></div>
+  <!-- argus:copy-end html -->
+  <div class="row"><span id="l2">Invoice overdue<small>Seven days after the due date</small></span><button class="switch" role="switch" aria-checked="false" aria-labelledby="l2"><span class="thumb"></span></button></div>
+  <div class="row"><span id="l3">Weekly summary<small>Mondays at 8am</small></span><button class="switch" role="switch" aria-checked="false" aria-labelledby="l3"><span class="thumb"></span></button></div>
+</main>
+<script>
+// argus:copy-start js
+document.querySelectorAll('.switch').forEach(s => s.addEventListener('click', () => {
+  s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') !== 'true'));
+}));
+// argus:copy-end js
+if (location.search.includes('demo')) setTimeout(() => document.querySelectorAll('.switch')[1].click(), 250);
+</script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<!--
+  list-preview-pane: a fixed pane beside the list shows the hovered or focused item: its
+  picture and the facts that decide a booking. The new picture wipes in from below when you
+  move down the list and from above when you move up, settling from 1.06 scale.
+  Calmer than a follower: nothing chases the pointer, and keyboard users get the same pane.
+  Pointer: a 100ms rest on a row before the pane changes, so sweeping past does not flicker.
+  Keyboard: focusing a row changes the pane at once.
+  Touch and narrow screens: the pane is hidden and each row carries its own facts; links work on the first tap.
+  Reduced motion: the pane swaps without a wipe or scale.
+  The pane repeats what the rows say, so it is aria-hidden.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview pane swap (list-preview-pane)</title>
+<style>
+/* Motion tokens, inlined from motion-tokens.css so this file stands alone */
+:root {
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-in: cubic-bezier(.5,0,.75,0);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --t-fast: 180ms;
+  --t-base: 320ms;
+  --t-slow: 640ms;
+  --t-page: 900ms;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.071, 0.243, 0.459, 0.675, 0.862, 1.006, 1.1, 1.15, 1.163, 1.15, 1.121, 1.086, 1.051, 1.021, 0.998, 0.983, 0.975, 0.973, 0.976, 0.981, 0.986, 0.992, 0.997, 1.001, 1.003, 1.004, 1.004, 1.004, 1.003, 1.002, 1.001, 1); }
+}
+
+/* Demo page */
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh;
+  background: #0f3836; color: #eee5cf;
+  font: 400 16px/1.5 "Avenir Next", Avenir, "Helvetica Neue", sans-serif;
+}
+main { max-width: 76rem; margin: 0 auto; padding: 4.5rem 2rem; }
+h1 { font: 400 clamp(2.25rem, 4.5vw, 3.5rem)/1.05 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; margin: 0 0 .75rem; }
+.sub { margin: 0 0 3rem; color: #a9bdb6; max-width: 32rem; }
+
+/* argus:copy-start css */
+.pv { display: grid; grid-template-columns: 1fr minmax(18rem, 26rem); gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+.pv-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid #3c6460; }
+.pv-list a {
+  display: grid; grid-template-columns: 1fr auto; gap: .15rem 1rem; padding: 1.1rem .25rem;
+  border-bottom: 1px solid #3c6460; color: inherit; text-decoration: none;
+  transition: color var(--t-base) var(--ease-out);
+}
+.pv-list .nm { font: 400 1.6rem/1.2 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.pv-list .pr { font-variant-numeric: tabular-nums; align-self: baseline; }
+.pv-list .fx { grid-column: 1 / -1; color: #a9bdb6; font-size: 14px; }
+.pv-list a.is-on .nm { color: #f6c76b; }
+.pv-list a:focus-visible { outline: 2px solid #eee5cf; outline-offset: 2px; }
+
+.pv-pane { position: sticky; top: 2rem; }
+.pv-frame { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 2px; background: #0a2726; }
+.pv-fig { position: absolute; inset: 0; margin: 0; display: grid; align-content: end; padding: 1.25rem; color: #fff; }
+.pv-fig .pic { position: absolute; inset: 0; z-index: -1; }
+.pv-fig b { font: 400 1.35rem/1.2 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.pv-fig span { font-size: 14px; opacity: .9; }
+@media (max-width: 48rem), (hover: none) {
+  .pv { grid-template-columns: 1fr; }
+  .pv-pane { display: none; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+  <h1>Cottages on the Pembrokeshire coast</h1>
+  <p class="sub">Seven houses we look after between St Davids and Newport. Saturday changeovers from April.</p>
+  <!-- argus:copy-start html -->
+  <div class="pv" data-preview>
+    <ul class="pv-list">
+      <li><a href="#ty-gwyn"><span class="nm">Tŷ Gwyn, Porthgain</span><span class="pr">£145 a night</span><span class="fx">Sleeps 4 · harbour 2 min walk · dogs welcome</span></a></li>
+      <li><a href="#the-old-lifeboat"><span class="nm">The Old Lifeboat House</span><span class="pr">£260 a night</span><span class="fx">Sleeps 6 · on the slipway · wood stove</span></a></li>
+      <li><a href="#caerfai"><span class="nm">Caerfai Barn</span><span class="pr">£190 a night</span><span class="fx">Sleeps 5 · coast path from the gate · garden</span></a></li>
+      <li><a href="#newport-sands"><span class="nm">Bryn, Newport Sands</span><span class="pr">£120 a night</span><span class="fx">Sleeps 2 · dune view · bath for two</span></a></li>
+      <li><a href="#abereiddi"><span class="nm">Quarryman's Row, Abereiddi</span><span class="pr">£165 a night</span><span class="fx">Sleeps 4 · Blue Lagoon below · parking</span></a></li>
+    </ul>
+    <div class="pv-pane" aria-hidden="true">
+      <div class="pv-frame">
+        <figure class="pv-fig"><div class="pic" style="background:linear-gradient(180deg,#a9c3cf 0 48%,#e8e3d6 48% 62%,#5b7a62 62%)"></div><b>Tŷ Gwyn</b><span>Free 12 to 19 April</span></figure>
+        <figure class="pv-fig"><div class="pic" style="background:linear-gradient(180deg,#8ea4b4 0 40%,#b74a35 40% 66%,#4d6b7a 66%)"></div><b>The Old Lifeboat House</b><span>Free from 3 May</span></figure>
+        <figure class="pv-fig"><div class="pic" style="background:linear-gradient(180deg,#c3cfd3 0 44%,#7c7062 44% 70%,#6f8a52 70%)"></div><b>Caerfai Barn</b><span>Free 26 April to 3 May</span></figure>
+        <figure class="pv-fig"><div class="pic" style="background:linear-gradient(180deg,#d6d6cc 0 52%,#d9c79c 52% 78%,#9b8c62 78%)"></div><b>Bryn</b><span>Free most weeks in May</span></figure>
+        <figure class="pv-fig"><div class="pic" style="background:linear-gradient(180deg,#9fb5bf 0 38%,#5a5f66 38% 60%,#2f8a8c 60%)"></div><b>Quarryman's Row</b><span>Free 17 to 24 May</span></figure>
+      </div>
+    </div>
+  </div>
+  <!-- argus:copy-end html -->
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const root = document.querySelector('[data-preview]');
+  const links = [...root.querySelectorAll('.pv-list a')];
+  const figs = [...root.querySelectorAll('.pv-fig')];
+  const still = matchMedia('(prefers-reduced-motion: reduce)');
+  let cur = -1, z = 1, wait = 0;
+
+  const show = (i) => {
+    if (i === cur) return;
+    const down = i > cur;
+    const fig = figs[i];
+    fig.style.zIndex = ++z;
+    if (cur >= 0) links[cur].classList.remove('is-on');
+    links[i].classList.add('is-on');
+    if (cur >= 0 && !still.matches) {
+      // moving down the list brings the next picture up from below; moving up brings it down
+      fig.animate({ clipPath: [down ? 'inset(100% 0 0 0)' : 'inset(0 0 100% 0)', 'inset(0)'] },
+        { duration: 560, easing: 'cubic-bezier(.22,1,.36,1)' });
+      fig.querySelector('.pic').animate({ scale: [1.06, 1] }, { duration: 900, easing: 'cubic-bezier(.22,1,.36,1)' });
+    }
+    cur = i;
+  };
+
+  links.forEach((a, i) => {
+    a.addEventListener('pointerenter', () => { clearTimeout(wait); wait = setTimeout(() => show(i), 100); });
+    a.addEventListener('pointerleave', () => clearTimeout(wait));
+    a.addEventListener('focus', () => { clearTimeout(wait); show(i); });
+  });
+  show(0);
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>

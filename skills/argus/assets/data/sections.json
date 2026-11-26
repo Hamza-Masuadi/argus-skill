@@ -1,0 +1,868 @@
+{
+  "about": "Argus section catalogue, navigation and footer patterns, from research/layout-grids-components.md. family is the layout family: the dealer never puts two sections of one family next to each other. A navigation role is main (the header pattern), phone (the phone pattern that goes with any main one) or addition (an extra bar). structure: the shape of the section (ruled-list, sticky-steps, rail, timeline, gallery, stat-row, marquee, comparison, board, drawn-diagram, labels...); directions are dealt different shapes, and recently built ones are leaned away from. avoid: kinds of business a section is wrong for; never dealt to them. loud: never dealt with --tone calm.",
+  "sections": [
+    {
+      "id": "index-strip",
+      "name": "Index strip / contents",
+      "family": "list",
+      "structure": "ruled-list",
+      "layout": "Numbered rows across the full width with a hairline rule between each; numeral, title and a short line at fixed x-positions.",
+      "generic": "Pill tabs, or a row of equal buttons.",
+      "designed": "01-0n numerals; hovering or focusing a row shows a preview picture anchored to the row.",
+      "fits": [
+        "services",
+        "collections",
+        "menus",
+        "studios"
+      ],
+      "density": "medium",
+      "phone": "Rows stay full width; the preview becomes a thumbnail at the row end."
+    },
+    {
+      "id": "numbered-list",
+      "name": "Oversized numbered list",
+      "family": "list",
+      "structure": "ruled-list",
+      "layout": "3-5 items, each numeral 8-14rem across a 3-column span, text in 6 columns.",
+      "generic": "Three icon cards in a row.",
+      "designed": "Numerals that crop at the section edge or overlap the rule.",
+      "fits": [
+        "process",
+        "reasons",
+        "services"
+      ],
+      "density": "low",
+      "phone": "Numerals drop to about 5rem above each item."
+    },
+    {
+      "id": "sticky-media-split",
+      "name": "Sticky media split",
+      "family": "split",
+      "structure": "sticky-steps",
+      "layout": "Media sticky in 5 columns beside steps in 7, steps 50-70vh apart. Only when each step changes what the media shows; a sequence that does not is a numbered list, a rail or one drawing.",
+      "generic": "A sticky picture with an empty tail under it.",
+      "designed": "The media changes state with each step and the list ends as the media does.",
+      "fits": [
+        "process",
+        "product tour",
+        "how it works"
+      ],
+      "density": "low",
+      "phone": "The media sits above each step at a small size, or becomes one picture per step."
+    },
+    {
+      "id": "process-track",
+      "name": "Horizontal process track",
+      "family": "rail",
+      "structure": "rail",
+      "layout": "A scroll-snap rail of steps, each a picture of that step with a short caption, and a progress hairline; steps that are only text stay a numbered column (motion.md, M27).",
+      "generic": "Carousel arrows and dots.",
+      "designed": "A visible \"3/6\" counter and about 15% of the next card peeking in.",
+      "fits": [
+        "process",
+        "days",
+        "courses"
+      ],
+      "density": "medium",
+      "phone": "Stays a rail with a peek when each step is a picture; text-only steps stack as a numbered list."
+    },
+    {
+      "id": "comparison-table",
+      "name": "Editorial comparison table",
+      "family": "table",
+      "structure": "comparison",
+      "layout": "Label column of 3 columns, values in large type, rules only.",
+      "generic": "A tick and cross grid.",
+      "designed": "Few rows, a sentence per cell, one highlighted column.",
+      "fits": [
+        "saas",
+        "services",
+        "switching"
+      ],
+      "density": "medium",
+      "phone": "One column per screen with a switcher, or rows that become stacked label/value pairs.",
+      "avoid": [
+        "bakery",
+        "cafe",
+        "restaurant",
+        "food",
+        "deli",
+        "pub",
+        "bar",
+        "craft",
+        "florist",
+        "salon"
+      ]
+    },
+    {
+      "id": "price-board",
+      "name": "Price board",
+      "family": "table",
+      "structure": "board",
+      "layout": "A menu or departure-board list with leader dots or a tabular-figure price column.",
+      "generic": "Three tier cards.",
+      "designed": "One row per product with the total shown; tabular figures aligned.",
+      "fits": [
+        "restaurants",
+        "repair",
+        "services",
+        "pricing"
+      ],
+      "density": "medium",
+      "phone": "Rows keep leaders; long names wrap above the price."
+    },
+    {
+      "id": "timeline",
+      "name": "Timeline",
+      "family": "spine",
+      "structure": "timeline",
+      "layout": "A vertical spine on a column line; dates in the label size in the margin.",
+      "generic": "Alternating left-right cards with dots.",
+      "designed": "Real dates with pictures sized by importance.",
+      "fits": [
+        "heritage",
+        "history",
+        "process"
+      ],
+      "density": "medium",
+      "phone": "Spine moves to the left edge; dates sit above each entry."
+    },
+    {
+      "id": "map-list",
+      "name": "Map with list",
+      "family": "split",
+      "structure": "map",
+      "layout": "List in 4 columns, map in 8 at full height; hovering a list item highlights its pin.",
+      "generic": "An embedded map beside an address block.",
+      "designed": "Hours and \"open now\" in the list; a drawn map in the page's colours.",
+      "fits": [
+        "local",
+        "multi-site",
+        "venues"
+      ],
+      "density": "medium",
+      "phone": "Map on top at 50vh, list below, tapping an item moves the map."
+    },
+    {
+      "id": "before-after",
+      "name": "Before/after slider",
+      "family": "full-bleed",
+      "structure": "comparison",
+      "layout": "Full-bleed paired photographs with a draggable divider.",
+      "generic": "A small slider in a card.",
+      "designed": "The handle uses the motif; keyboard operable with arrow keys.",
+      "fits": [
+        "repair",
+        "cleaning",
+        "renovation",
+        "dental"
+      ],
+      "density": "low",
+      "phone": "Full width; the handle is large enough for a thumb."
+    },
+    {
+      "id": "logo-wall",
+      "name": "Logo wall",
+      "family": "grid",
+      "structure": "wall",
+      "layout": "4-6 logos in one colour at about 24-32px cap height on a ruled grid.",
+      "generic": "Twenty grey logos in a marquee.",
+      "designed": "Few logos, each with a short line on what was done.",
+      "fits": [
+        "b2b",
+        "agencies",
+        "saas"
+      ],
+      "density": "low",
+      "phone": "Two columns of logos; lines under each.",
+      "avoid": [
+        "bakery",
+        "cafe",
+        "restaurant",
+        "food",
+        "deli",
+        "pub",
+        "bar",
+        "craft",
+        "local",
+        "clinic",
+        "dentist",
+        "salon",
+        "florist"
+      ]
+    },
+    {
+      "id": "full-bleed-quote",
+      "name": "Full-bleed quote",
+      "family": "type",
+      "structure": "quote",
+      "layout": "A 4-6rem quote across 10 columns, with a hanging open-quote in the margin and the name in the label size.",
+      "generic": "A card with stars and an avatar circle.",
+      "designed": "One quote, big, with a real name, role and date.",
+      "fits": [
+        "any"
+      ],
+      "density": "low",
+      "phone": "Quote at 2-2.5rem; the hanging mark moves inside."
+    },
+    {
+      "id": "review-wall",
+      "name": "Review wall",
+      "family": "grid",
+      "structure": "wall",
+      "layout": "Masonry (grid-lanes with a columns fallback) of quotes at different lengths and type sizes.",
+      "generic": "Identical star cards in a row.",
+      "designed": "Quotes of real lengths, sizes set by importance, sources named.",
+      "fits": [
+        "restaurants",
+        "shops",
+        "services"
+      ],
+      "density": "high",
+      "phone": "One column, the strongest three quotes first, then \"more\".",
+      "loud": true
+    },
+    {
+      "id": "marquee",
+      "name": "Marquee",
+      "family": "type",
+      "structure": "marquee",
+      "layout": "One line in display type crawling across the width, pausable; at most one per page.",
+      "generic": "A logo strip or a row of buzzwords.",
+      "designed": "A real sentence or list (today's menu, dates) with a pause control.",
+      "fits": [
+        "events",
+        "shops",
+        "food"
+      ],
+      "density": "low",
+      "phone": "Smaller type, same crawl, pause stays.",
+      "avoid": [
+        "clinic",
+        "dentist",
+        "physio",
+        "care",
+        "therapy",
+        "funeral",
+        "legal",
+        "law",
+        "finance",
+        "bank",
+        "insurance",
+        "accountant"
+      ],
+      "loud": true
+    },
+    {
+      "id": "gallery-mosaic",
+      "name": "Gallery mosaic",
+      "family": "grid",
+      "structure": "gallery",
+      "layout": "A 12-column grid with pictures spanning 7/5, then 4/8, captions in the margin.",
+      "generic": "An even grid of squares.",
+      "designed": "Varied spans that repeat x-positions; captions beside the picture edge.",
+      "fits": [
+        "portfolios",
+        "hospitality",
+        "places",
+        "products"
+      ],
+      "density": "medium",
+      "phone": "A rail with a peek, or single pictures with captions under them."
+    },
+    {
+      "id": "stat-band",
+      "name": "Stat band",
+      "family": "type",
+      "structure": "stat-row",
+      "layout": "2-3 figures at display size with their sources.",
+      "generic": "Four tiles with sparklines and count-ups.",
+      "designed": "Figures that matter, set large, each with a source line.",
+      "fits": [
+        "finance",
+        "non-profit",
+        "saas"
+      ],
+      "density": "low",
+      "phone": "Figures stack, each still large.",
+      "avoid": [
+        "bakery",
+        "cafe",
+        "restaurant",
+        "food",
+        "deli",
+        "pub",
+        "bar",
+        "craft",
+        "florist",
+        "salon"
+      ],
+      "loud": true
+    },
+    {
+      "id": "faq-split",
+      "name": "FAQ, split variant",
+      "family": "split",
+      "structure": "side-by-side",
+      "layout": "Question list in 7 columns, sticky contact or a review in 5.",
+      "generic": "A centred accordion of ten questions.",
+      "designed": "Real questions in the customer's words; the side panel answers \"still unsure?\".",
+      "fits": [
+        "services",
+        "clinics",
+        "shops"
+      ],
+      "density": "medium",
+      "phone": "Accordion full width; the contact panel follows the list."
+    },
+    {
+      "id": "faq-index",
+      "name": "FAQ, index variant",
+      "family": "list",
+      "structure": "ruled-list",
+      "layout": "Questions as a contents list that jumps to the answers set as a column below.",
+      "generic": "An accordion.",
+      "designed": "Answers readable without clicking; the index works as navigation.",
+      "fits": [
+        "docs",
+        "services",
+        "policies"
+      ],
+      "density": "medium",
+      "phone": "Index collapses into a details element at the top."
+    },
+    {
+      "id": "team-names",
+      "name": "Team as names list",
+      "family": "list",
+      "structure": "ruled-list",
+      "layout": "Names in display size in a list; hovering or focusing a name shows a portrait anchored to the row.",
+      "generic": "Round headshots in a grid with job titles.",
+      "designed": "Names large, roles small, the portrait shown on demand.",
+      "fits": [
+        "studios",
+        "clinics",
+        "firms"
+      ],
+      "density": "low",
+      "phone": "Names with a small portrait beside each."
+    },
+    {
+      "id": "configurator",
+      "name": "Configurator",
+      "family": "split",
+      "structure": "tool",
+      "layout": "Options in a left rail, the result large, a sticky total.",
+      "generic": "A long form of dropdowns.",
+      "designed": "The result picture changes with each option; the total is always in view.",
+      "fits": [
+        "products",
+        "bikes",
+        "furniture",
+        "services"
+      ],
+      "density": "high",
+      "phone": "Result on top, options in a bottom sheet, total in a sticky bar.",
+      "avoid": [
+        "clinic",
+        "dentist",
+        "physio",
+        "care",
+        "therapy",
+        "funeral",
+        "legal",
+        "law",
+        "florist"
+      ]
+    },
+    {
+      "id": "calculator",
+      "name": "Calculator",
+      "family": "form",
+      "structure": "tool",
+      "layout": "A sentence with inputs inside it (\"I invoice £[ ] a month\"); the result at display size.",
+      "generic": "A form with labelled boxes and a result card.",
+      "designed": "The sentence reads naturally; the result is the biggest thing.",
+      "fits": [
+        "finance",
+        "saas",
+        "services"
+      ],
+      "density": "low",
+      "phone": "The sentence wraps; inputs stay inline and large enough to tap.",
+      "avoid": [
+        "bakery",
+        "cafe",
+        "restaurant",
+        "food",
+        "deli",
+        "pub",
+        "bar",
+        "craft",
+        "florist",
+        "salon"
+      ]
+    },
+    {
+      "id": "spec-sheet",
+      "name": "Spec sheet",
+      "family": "table",
+      "structure": "table",
+      "layout": "A 2-column definition list with rules and tabular figures, like a data plate.",
+      "generic": "Icons with feature names.",
+      "designed": "Real numbers and units, aligned, with the most important row larger.",
+      "fits": [
+        "hardware",
+        "products",
+        "bikes",
+        "property"
+      ],
+      "density": "high",
+      "phone": "One column of label/value pairs.",
+      "avoid": [
+        "bakery",
+        "cafe",
+        "restaurant",
+        "food",
+        "deli",
+        "pub",
+        "bar",
+        "clinic",
+        "dentist",
+        "physio",
+        "care",
+        "therapy",
+        "funeral",
+        "legal",
+        "law",
+        "salon",
+        "florist"
+      ]
+    },
+    {
+      "id": "material-callouts",
+      "name": "Material/ingredient breakdown",
+      "family": "full-bleed",
+      "structure": "annotated-picture",
+      "layout": "A big photograph with anchored callouts drawn over it.",
+      "generic": "A list of ingredients beside a picture.",
+      "designed": "Callout lines in the kit's drawing style, anchored to the real parts.",
+      "fits": [
+        "food",
+        "fashion",
+        "products",
+        "cosmetics"
+      ],
+      "density": "medium",
+      "phone": "The picture stays; callouts become a numbered list under it with numbers on the picture."
+    },
+    {
+      "id": "day-in-life",
+      "name": "Day in the life",
+      "family": "rail",
+      "structure": "rail",
+      "layout": "Horizontal hours, each a picture plus a timestamp.",
+      "generic": "A grid of stock lifestyle photos.",
+      "designed": "Real times and real moments in order.",
+      "fits": [
+        "hospitality",
+        "schools",
+        "workplaces"
+      ],
+      "density": "medium",
+      "phone": "A rail with a peek and a time scale."
+    },
+    {
+      "id": "founder-letter",
+      "name": "Founder letter",
+      "family": "type",
+      "structure": "letter",
+      "layout": "One 65ch column of serif text, a signature, date and place, on a different ground.",
+      "generic": "A \"Our story\" heading with a stock team photo.",
+      "designed": "A real voice, short, signed; a different ground marks it off.",
+      "fits": [
+        "craft",
+        "family business",
+        "non-profit"
+      ],
+      "density": "low",
+      "phone": "Same column at body size."
+    },
+    {
+      "id": "press-strip",
+      "name": "Press strip",
+      "family": "list",
+      "structure": "ruled-list",
+      "layout": "Quote fragments with masthead names in their own small caps.",
+      "generic": "Grey press logos in a row.",
+      "designed": "A few words each, the masthead named, linked to the piece.",
+      "fits": [
+        "restaurants",
+        "products",
+        "culture"
+      ],
+      "density": "low",
+      "phone": "Stacked fragments."
+    },
+    {
+      "id": "newsletter",
+      "name": "Newsletter block",
+      "family": "form",
+      "structure": "form",
+      "layout": "One inline field inside a sentence, with what you get and how often.",
+      "generic": "A centred \"Subscribe to our newsletter\" box.",
+      "designed": "What arrives and how often, said plainly; one field.",
+      "fits": [
+        "shops",
+        "publishing",
+        "culture"
+      ],
+      "density": "low",
+      "phone": "Field below the sentence, full width."
+    },
+    {
+      "id": "location-hours",
+      "name": "Location/hours block",
+      "family": "split",
+      "structure": "side-by-side",
+      "layout": "Address, today's hours highlighted and a live \"open until 7\", beside a picture of the door.",
+      "generic": "A footer-style address list.",
+      "designed": "Today first, live state, the real entrance pictured.",
+      "fits": [
+        "local",
+        "restaurants",
+        "clinics",
+        "shops"
+      ],
+      "density": "medium",
+      "phone": "Live state first, then hours, then the picture."
+    },
+    {
+      "id": "edition-index",
+      "name": "Lookbook/edition index",
+      "family": "rail",
+      "structure": "index-preview",
+      "layout": "A fixed numbered rail beside a large live preview of the selected item.",
+      "generic": "A product grid.",
+      "designed": "Numbered items, one large at a time, the rail as navigation.",
+      "fits": [
+        "fashion",
+        "collections",
+        "editions"
+      ],
+      "density": "medium",
+      "phone": "The rail becomes a horizontal strip of numbers above the preview."
+    },
+    {
+      "id": "category-type",
+      "name": "Category tiles as type",
+      "family": "list",
+      "structure": "ruled-list",
+      "layout": "Category words at display size; hovering shows an image.",
+      "generic": "Image cards with labels.",
+      "designed": "The words are the navigation; the image appears on demand.",
+      "fits": [
+        "shops",
+        "menus",
+        "collections"
+      ],
+      "density": "low",
+      "phone": "Words stacked with a small image beside each."
+    },
+    {
+      "id": "process-checklist",
+      "name": "Process as checklist",
+      "family": "spine",
+      "structure": "document",
+      "layout": "The real document (a job sheet, a form) filled in as the page scrolls.",
+      "generic": "Four numbered steps with icons.",
+      "designed": "The real artefact of the trade, filled in step by step.",
+      "fits": [
+        "repair",
+        "trades",
+        "services"
+      ],
+      "density": "medium",
+      "phone": "The document stays; items tick as they enter the screen."
+    },
+    {
+      "id": "guarantee-terms",
+      "name": "Guarantee/terms block",
+      "family": "list",
+      "structure": "ruled-list",
+      "layout": "A short numbered set of plain-language terms.",
+      "generic": "A shield icon with \"100% satisfaction\".",
+      "designed": "Real terms, numbered, signed off by a person.",
+      "fits": [
+        "services",
+        "shops",
+        "repair"
+      ],
+      "density": "low",
+      "phone": "Same list, full width."
+    },
+    {
+      "id": "figures-in-sentence",
+      "name": "Figures inside a sentence",
+      "family": "prose",
+      "structure": "inline-figures",
+      "layout": "Two or three figures set inside a sentence of running text at a larger size, each with its source in a note.",
+      "generic": "A row of four count-up stats.",
+      "designed": "The figures read as a claim in words, so each has a reason to be there.",
+      "fits": [
+        "finance",
+        "non-profit",
+        "saas",
+        "services",
+        "clinics"
+      ],
+      "density": "low",
+      "phone": "The sentence wraps; figures stay inline."
+    },
+    {
+      "id": "single-photo-caption",
+      "name": "One photograph with a long caption",
+      "family": "plate",
+      "structure": "single-picture",
+      "layout": "One photograph at the content width with a caption set like a museum label beside or below it: what it is, where, who made it.",
+      "generic": "A carousel of five similar pictures.",
+      "designed": "The one best picture, large, and a caption worth reading.",
+      "fits": [
+        "any",
+        "craft",
+        "places",
+        "hospitality",
+        "galleries"
+      ],
+      "density": "low",
+      "phone": "The caption sits under the picture."
+    },
+    {
+      "id": "label-cards",
+      "name": "The trade's own labels",
+      "family": "labels",
+      "structure": "labels",
+      "layout": "The items set as the printed things this trade really uses (tickets, tags, receipts, jar labels, seed packets) at their real proportions, in a loose row; each carries its real fields.",
+      "generic": "A grid of three equal product cards.",
+      "designed": "Real fields (batch, date, weight, price) in the label's own layout; one shape used throughout.",
+      "fits": [
+        "shops",
+        "food",
+        "events",
+        "products",
+        "bakery",
+        "markets"
+      ],
+      "density": "medium",
+      "phone": "Labels stack at full width or sit in a swipeable row, each whole."
+    },
+    {
+      "id": "object-states",
+      "name": "One object, several states",
+      "family": "states",
+      "structure": "object-states",
+      "layout": "One object shown in three or four states down or across the section (raw, worked, finished; booked, repaired, collected), each state with its one line.",
+      "generic": "A numbered process with icons.",
+      "designed": "The same object drawn or photographed from one angle in each state, so the change is what you see.",
+      "fits": [
+        "craft",
+        "food",
+        "bakery",
+        "repair",
+        "manufacturing",
+        "process"
+      ],
+      "density": "medium",
+      "phone": "States stack, each picture still whole, or become a swipeable row."
+    },
+    {
+      "id": "drawn-explainer",
+      "name": "Drawn explainer",
+      "family": "figure",
+      "structure": "drawn-diagram",
+      "layout": "A line drawing made for the subject (how it works, its parts, the route) across the content width, with labels set as real text beside the parts they name.",
+      "generic": "Three icon cards in a row.",
+      "designed": "One stroke language, labels anchored to the real parts, the drawing completes once as it arrives (svg snippets: techniques to redraw).",
+      "fits": [
+        "process",
+        "how it works",
+        "repair",
+        "trades",
+        "products",
+        "software",
+        "clinics"
+      ],
+      "density": "medium",
+      "phone": "The drawing stays whole at full width; labels become a numbered list under it with numbers on the drawing."
+    },
+    {
+      "id": "cta-finale",
+      "name": "CTA finale",
+      "family": "full-bleed",
+      "structure": "finale",
+      "layout": "The promise set large, the action with its reassurance line, and the practical details (hours, address, contact).",
+      "generic": "A centred heading and button on a gradient.",
+      "designed": "The last screen closes the argument: the action, one live fact, and a picture or the product.",
+      "fits": [
+        "any"
+      ],
+      "density": "low",
+      "phone": "Promise at 15vw, action full width."
+    },
+    {
+      "id": "mega-footer",
+      "name": "Mega footer",
+      "family": "grid",
+      "structure": "footer",
+      "layout": "Sitemap columns, live hours, address with map link, newsletter and a colophon (fonts, photo credits, \"set in\").",
+      "generic": "Four columns of links and social icons.",
+      "designed": "Live details and a colophon that names the faces and photographers.",
+      "fits": [
+        "shops",
+        "publishing",
+        "multi-page"
+      ],
+      "density": "high",
+      "phone": "Columns become details elements; live details first."
+    }
+  ],
+  "navigation": [
+    {
+      "id": "corner-nav",
+      "name": "Corner nav",
+      "role": "main",
+      "layout": "Four corners carry name, menu, basket and time or place.",
+      "fits": [
+        "portfolios",
+        "fashion",
+        "studios"
+      ],
+      "phone": "Name and menu stay in the top corners; the rest moves into the menu."
+    },
+    {
+      "id": "split-nav",
+      "name": "Split nav",
+      "role": "main",
+      "layout": "Links left, wordmark centred, utilities right.",
+      "fits": [
+        "shops",
+        "restaurants",
+        "hotels"
+      ],
+      "phone": "Wordmark centred, menu and basket at the sides."
+    },
+    {
+      "id": "rail-nav",
+      "name": "Rail nav",
+      "role": "main",
+      "layout": "A fixed left index that doubles as contents.",
+      "fits": [
+        "catalogues",
+        "collections",
+        "editions"
+      ],
+      "phone": "Becomes a horizontal strip of numbers or a bottom sheet."
+    },
+    {
+      "id": "fullscreen-menu",
+      "name": "Full-screen menu",
+      "role": "main",
+      "layout": "A large type list with an image preview on hover, two columns with contact details; popover plus @starting-style.",
+      "fits": [
+        "studios",
+        "hospitality",
+        "culture"
+      ],
+      "phone": "The same list at a smaller size; contact details first."
+    },
+    {
+      "id": "morph-on-scroll",
+      "name": "Morph on scroll",
+      "role": "main",
+      "layout": "Full header at the top, a compact pill once stuck (scroll-state query with an IntersectionObserver fallback).",
+      "fits": [
+        "saas",
+        "shops",
+        "services"
+      ],
+      "phone": "Compact from the start."
+    },
+    {
+      "id": "bottom-bar",
+      "name": "Bottom bar on phones",
+      "role": "phone",
+      "layout": "3-4 items in thumb reach, or a single sticky action bar (\"Book - Wed 2 Dec\").",
+      "fits": [
+        "local",
+        "booking",
+        "apps"
+      ],
+      "phone": "This is the phone pattern; desktop uses a split or corner nav."
+    },
+    {
+      "id": "command-palette",
+      "name": "Command palette",
+      "role": "main",
+      "layout": "A search-first palette opened by a key and a button.",
+      "fits": [
+        "docs",
+        "devtools",
+        "products"
+      ],
+      "phone": "A search button that opens a full-screen sheet."
+    },
+    {
+      "id": "announcement-bar",
+      "name": "Announcement bar",
+      "role": "addition",
+      "layout": "One line with real information (dispatch cutoff, opening times), dismissible, 32-40px.",
+      "fits": [
+        "shops",
+        "restaurants",
+        "events"
+      ],
+      "phone": "One short line; truncates with the full text on tap."
+    }
+  ],
+  "footers": [
+    {
+      "id": "footer-finale",
+      "name": "Footer as finale",
+      "layout": "Display-size name, the action, live details (hours, address, dispatch times), then a sitemap and a colophon.",
+      "fits": [
+        "one-page sites",
+        "local",
+        "brands"
+      ]
+    },
+    {
+      "id": "footer-sitemap",
+      "name": "Full sitemap footer",
+      "layout": "Sitemap columns, policy links, newsletter and a colophon; the shop pattern.",
+      "fits": [
+        "shops",
+        "multi-page"
+      ]
+    },
+    {
+      "id": "footer-colophon",
+      "name": "Colophon footer",
+      "layout": "One line of name and year, a short colophon naming the faces and photographers, one contact link.",
+      "fits": [
+        "studios",
+        "publishing",
+        "portfolios"
+      ]
+    },
+    {
+      "id": "footer-contact-sheet",
+      "name": "Contact sheet footer",
+      "layout": "Address, phone, hours today and a map link set large as the last screen.",
+      "fits": [
+        "local",
+        "clinics",
+        "restaurants"
+      ]
+    }
+  ]
+}

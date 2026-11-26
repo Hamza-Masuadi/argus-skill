@@ -1,0 +1,1531 @@
+{
+  "about": "Argus hero compositions, from research/heroes.md. reach: stock = makeable with stock photographs; cutout = needs a cut-out (photos.js cutout, or stock shot on a plain ground); commission = needs 3D, an illustrator or a shoot an agent cannot make (stock video is within reach: photos.js video); out = out of scope for a business page. modes: which --picture modes it fits: photographs; video (a muted loop opens the page; dealt only with --picture video, --needs video, or a trade where being there is the offer); product (the product's own interface stands in for any picture the hero needs); type (picture-free heroes only). family groups compositions so dealt directions differ. kinds: which direction kinds it suits (minimal, picture-led, expressive); deal.js deals each direction a hero of its kind. structure: the shape of the first screen (side-by-side, full-bleed, type-first, stacked, centred-object, list-board, collage, tool, drawn-scene); the three dealt directions get three different structures, and recently built structures are leaned away from. loud: a composition that draws attention to itself; never dealt with --tone calm. avoid: kinds of business it fails for; never dealt to them.",
+  "rules": {
+    "groups": "About five groups on the first screen: the header, the headline with its subhead, the action with one reassurance line, one proof line when the owner gave proof, and the picture. A form, or the one card holding it, counts as one. The checker counts each text block more than 14px from the next as its own group, so five measure up to seven; hero-crowded prompts above seven.",
+    "clear": "Nothing covers, cuts across or collides with a form, a price, the action or running text; a moving band never passes over or behind them.",
+    "faces": "Never set a headline over a face or over a busy or blurred part of a picture; text sits on a calm area, a solid panel or beside the picture.",
+    "sharp": "Every photograph is sharp, well lit and its subject clear at the size shown; otherwise choose another or go without one.",
+    "action": "The action is visible and works at 390 and at 1440."
+  },
+  "heroes": [
+    {
+      "id": "type-wall",
+      "name": "Type wall",
+      "family": "type",
+      "structure": "type-first",
+      "modes": [
+        "type",
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "One headline at 12-20vw fills 90-100% of the width in one to three lines, leading .85, running to the edges but every word readable; a small fact sits bottom right and the action bottom left; no picture, or one small picture tucked into a counter of the type.",
+      "arrival": "Lines rise out of overflow-hidden masks one after another, 80ms apart.",
+      "pointer": "Weight or width of the letters nearest the pointer swells a little (variable axis), no follower.",
+      "firstScroll": "The headline slides up past the fold at a different rate from the body, revealing the first section under it.",
+      "build": "h1{font-size:clamp(4rem,14vw,16rem);line-height:.85;letter-spacing:-.045em} .line{display:block;overflow:hidden}",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "studios",
+        "confident brands",
+        "events",
+        "services"
+      ],
+      "fails": "Reads as a type specimen: mono labels, a clock and nothing to see, the studio-portfolio tell.",
+      "pictureFree": true,
+      "examples": [
+        "Obys \"Grids\""
+      ],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "cutout-layered",
+      "name": "Type in front of and behind a cut-out",
+      "family": "cutout",
+      "structure": "centred-object",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "cutout",
+      "layout": "A cut-out subject at 90-100% of the viewport height stands on a ground sampled from the photo; the headline at 10-14vw runs behind the subject and one line or the subject's edge passes in front of it, so the type is both behind and in front; the subject is cropped at the bottom edge. Every word of the headline still reads where the subject crosses it.",
+      "arrival": "The subject rises 4% while the headline letters settle from a wider tracking.",
+      "pointer": "Two-layer parallax: subject and type move a few pixels in opposite directions with the pointer.",
+      "firstScroll": "The subject scales down slightly and the type slides on, separating the layers.",
+      "build": "Three stacked layers in one grid cell: ground, h1 (z 1), cut-out PNG (z 2), with a duplicate h1 line clipped to sit in front.",
+      "needs": [
+        "cut-out"
+      ],
+      "suits": [
+        "fashion",
+        "food",
+        "people",
+        "drink",
+        "beauty"
+      ],
+      "fails": "Haloed cut-out edges, or a subject small and centred with type beside it rather than through it.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "expressive"
+      ]
+    },
+    {
+      "id": "type-mask",
+      "name": "Picture masked by type",
+      "family": "type",
+      "structure": "type-first",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "A single word or short name at 20-30vw fills the width; a photograph or slow video shows only through the letters on a flat ground; one small line of plain text and the action sit below in corners.",
+      "arrival": "The picture inside the letters drifts from scale 1.15 to 1.",
+      "pointer": "The picture inside the letters pans a little against the pointer.",
+      "firstScroll": "The mask grows until the letters open into the full-bleed picture.",
+      "build": "h1{background:url(photo.jpg) center/cover;-webkit-background-clip:text;background-clip:text;color:transparent} or an SVG <mask> with <text>.",
+      "needs": [
+        "full-bleed-photo",
+        "type-only"
+      ],
+      "suits": [
+        "places",
+        "travel",
+        "food",
+        "culture"
+      ],
+      "fails": "The text is unreadable and the picture is unseeable: thin letters, busy photo.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "cutout-colour-field",
+      "name": "Cut-out product on a colour field",
+      "family": "cutout",
+      "structure": "centred-object",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "cutout",
+      "layout": "The product, cut out, stands at 50-70% of the viewport height on a flat ground taken from its label; the name at 10vw+ runs behind or under it; price and the action sit in opposite corners.",
+      "arrival": "The product drops in and settles with a short overshoot; the ground colour washes in first.",
+      "pointer": "The product tilts a few degrees toward the pointer (perspective transform).",
+      "firstScroll": "The product travels down with the page into the first section, shrinking.",
+      "build": "img{filter:drop-shadow(0 30px 30px oklch(30% .05 H / .25))} on a section with background:var(--label-colour).",
+      "needs": [
+        "cut-out"
+      ],
+      "suits": [
+        "food",
+        "drink",
+        "dtc",
+        "cosmetics",
+        "retail"
+      ],
+      "fails": "The product small and centred like a stock mock-up, on a generic gradient.",
+      "pictureFree": false,
+      "examples": [
+        "Graza",
+        "Olipop"
+      ],
+      "kinds": [
+        "expressive",
+        "picture-led"
+      ],
+      "avoid": [
+        "clinic",
+        "dentist",
+        "physio",
+        "legal",
+        "accountant",
+        "consultancy",
+        "saas",
+        "software",
+        "plumber",
+        "electrician"
+      ],
+      "loud": true
+    },
+    {
+      "id": "full-bleed-corners",
+      "name": "Full-bleed photo, small precise type",
+      "family": "photo",
+      "structure": "full-bleed",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "A photograph fills 100% of the viewport, cropped hard; type is small (12-16px) and sits in the four corners: name top left, menu top right, a caption with place and number bottom left, price or date bottom right; nothing in the centre. The name and one line saying what this is stay readable at a glance.",
+      "arrival": "The photo scales from 1.05 to 1 over 1.6s while the corner type fades in.",
+      "pointer": "Corner captions update with the part of the picture the pointer is over.",
+      "firstScroll": "The photo stays and the next section slides up over it.",
+      "build": ".hero{height:100svh} img{object-fit:cover;width:100%;height:100%} corners as grid areas of a 3x3 grid over the image.",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "hospitality",
+        "architecture",
+        "hotels",
+        "interiors"
+      ],
+      "fails": "A centred headline on a dark overlay; the photo becomes a background.",
+      "pictureFree": false,
+      "examples": [
+        "Casa Momo"
+      ],
+      "kinds": [
+        "picture-led"
+      ]
+    },
+    {
+      "id": "full-bleed-video",
+      "name": "Full-bleed video loop",
+      "family": "photo",
+      "structure": "full-bleed",
+      "modes": [
+        "photographs",
+        "video"
+      ],
+      "reach": "stock",
+      "layout": "A short muted loop (6-15s, slow and steady, no cuts) fills the first screen with object-fit: cover; the headline, one line and the action sit on the loop's calm area (sky, water, a wall) or on a solid band below, never over a face; a visible pause button sits in a corner. The poster is the first paint.",
+      "arrival": "The poster is there from the first frame; the loop starts without a fade once it can play, the type already in place.",
+      "pointer": "None on the video; the pause button has hover, press and focus states.",
+      "firstScroll": "The next section follows in the loop's light (its palette sampled from the poster), with a photograph within the next screen.",
+      "build": "<video autoplay muted loop playsinline aria-hidden=\"true\" poster=\"media/x-poster.jpg\"> with a 720p MP4 source for phones (media=\"(max-width: 700px)\"), a VP9 WebM and an H.264 MP4 at 1080; a <button> outside it that toggles pause; under prefers-reduced-motion or navigator.connection.saveData the video is paused and its sources removed so the poster stays. object-fit: cover; object-position for the focal point. Files from photos.js video / loop / poster (pictures.md, Video).",
+      "needs": [
+        "video"
+      ],
+      "suits": [
+        "hotels",
+        "hospitality",
+        "travel",
+        "places",
+        "food",
+        "restaurant",
+        "outdoor",
+        "kayak",
+        "surf",
+        "ski",
+        "fitness",
+        "gym",
+        "yoga",
+        "fashion",
+        "events",
+        "venues",
+        "wine",
+        "spa",
+        "festival"
+      ],
+      "fails": "A clip anyone has seen on a hundred sites, a fast-cut or shaky clip, text over a face or a busy part of the frame, no pause control, a file of 10 MB, or a software or service page where footage adds nothing.",
+      "pictureFree": false,
+      "examples": [
+        "Delta Cafes"
+      ],
+      "kinds": [
+        "picture-led"
+      ],
+      "avoid": [
+        "saas",
+        "software",
+        "app",
+        "devtools",
+        "fintech",
+        "finance",
+        "legal",
+        "accountant",
+        "accounting",
+        "insurance",
+        "consultancy",
+        "b2b",
+        "agency"
+      ]
+    },
+    {
+      "id": "split-device-straddle",
+      "name": "Split with a working device",
+      "family": "device",
+      "structure": "side-by-side",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "The picture fills one side to the edge; the working device (booking, configurator, calculator) straddles the seam between picture and text, overlapping the picture by a third of its width. The device never covers a face or the picture's subject.",
+      "arrival": "The device slides across the seam last, after the headline.",
+      "pointer": "The device responds directly; no decoration.",
+      "firstScroll": "The device docks into a sticky bar as the hero leaves.",
+      "build": "Grid with the device placed in grid-column:5/9 over a 12-column split; z-index above the picture.",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "booking",
+        "services",
+        "hospitality",
+        "tools"
+      ],
+      "fails": "Headline left, card right: the device sits beside the picture, not across it.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "expressive"
+      ]
+    },
+    {
+      "id": "product-ui",
+      "name": "Product UI as hero",
+      "family": "product",
+      "structure": "tool",
+      "modes": [
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "The real interface at 70-100% of the width, flat, starting in a live state with real data; the headline sits above or crosses its top edge.",
+      "arrival": "The UI performs one real action (a row fills in, a status changes).",
+      "pointer": "Hover states of the real UI work.",
+      "firstScroll": "The UI scales slightly and parts of it are called out as the page scrolls.",
+      "build": "A built HTML fragment of the product, not a screenshot, at max-width:none inside the wide grid line.",
+      "needs": [
+        "product-ui"
+      ],
+      "suits": [
+        "saas",
+        "devtools",
+        "apps"
+      ],
+      "fails": "Tilted in a glow with fake data and a browser frame.",
+      "pictureFree": false,
+      "examples": [
+        "Linear",
+        "Raycast"
+      ],
+      "kinds": [
+        "minimal",
+        "picture-led"
+      ]
+    },
+    {
+      "id": "pokeable-object",
+      "name": "Pokeable object",
+      "family": "device",
+      "structure": "centred-object",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "cutout",
+      "layout": "One object at 40-60% of the viewport that the visitor pours, drags or presses, with the headline set around it and the action next to the result.",
+      "arrival": "The object makes its own movement once, to show it can be moved.",
+      "pointer": "The object answers the pointer directly (drag, press, pour).",
+      "firstScroll": "The result of the poke carries into the first section.",
+      "build": "Pointer events on a cut-out with cached rects; transform only.",
+      "needs": [
+        "cut-out"
+      ],
+      "suits": [
+        "food",
+        "drink",
+        "toys",
+        "consumer"
+      ],
+      "fails": "The toy hides the action, or the movement has nothing to do with the product.",
+      "pictureFree": false,
+      "examples": [
+        "Santioni"
+      ],
+      "kinds": [
+        "expressive"
+      ],
+      "avoid": [
+        "clinic",
+        "dentist",
+        "physio",
+        "legal",
+        "accountant",
+        "consultancy",
+        "saas",
+        "software",
+        "plumber",
+        "electrician"
+      ],
+      "loud": true
+    },
+    {
+      "id": "object-3d",
+      "name": "3D or pseudo-3D object",
+      "family": "device",
+      "structure": "centred-object",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "commission",
+      "layout": "A single object rendered in depth at 60-80% of the viewport, turned by pointer or scroll; type set against it.",
+      "arrival": "The object turns into its key angle.",
+      "pointer": "The object turns a few degrees with the pointer.",
+      "firstScroll": "Scroll turns the object to show a second side.",
+      "build": "CSS perspective with layered PNGs for pseudo-3D; real 3D needs a model and WebGL.",
+      "needs": [
+        "3d"
+      ],
+      "suits": [
+        "hardware",
+        "cars",
+        "products"
+      ],
+      "fails": "An abstract blob with nothing to do with the business.",
+      "pictureFree": false,
+      "examples": [
+        "Lusion",
+        "Lando Norris"
+      ],
+      "kinds": [
+        "expressive"
+      ]
+    },
+    {
+      "id": "collage-regroup",
+      "name": "Collage that regroups",
+      "family": "collage",
+      "structure": "collage",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "Five to nine pictures at mixed sizes overlap across the viewport around a headline; on scroll they tidy into a grid.",
+      "arrival": "Pictures deal in one at a time to their scattered places.",
+      "pointer": "Pictures nearest the pointer lift slightly apart.",
+      "firstScroll": "The collage regroups into an ordered grid (FLIP).",
+      "build": "Absolutely placed figures, then a FLIP animation to grid positions on scroll.",
+      "needs": [
+        "photo-set"
+      ],
+      "suits": [
+        "events",
+        "travel",
+        "culture",
+        "retail"
+      ],
+      "fails": "An even grid from the start, or nine unrelated stock photos.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "picture-led",
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "tile-grid-opens",
+      "name": "Tile grid that opens",
+      "family": "collage",
+      "structure": "collage",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "A grid of tiles fills the viewport; one tile is already larger; clicking a tile scales it to full bleed.",
+      "arrival": "Tiles fade in row by row.",
+      "pointer": "The tile under the pointer shows its caption.",
+      "firstScroll": "Tiles scroll at two rates in alternate columns.",
+      "build": "CSS grid of tiles; view-transition-name on the opened tile.",
+      "needs": [
+        "photo-set"
+      ],
+      "suits": [
+        "studios",
+        "portfolios",
+        "collections"
+      ],
+      "fails": "An even grid with no first tile and no caption system.",
+      "pictureFree": false,
+      "examples": [
+        "Obys Grids"
+      ],
+      "kinds": [
+        "picture-led"
+      ]
+    },
+    {
+      "id": "marquee-title",
+      "name": "Marquee title",
+      "family": "type",
+      "structure": "type-first",
+      "modes": [
+        "type",
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "A 10-20vw line crawls horizontally across the full width, crossing a still picture or the ground, never the action, a form or text; small type in the corners.",
+      "arrival": "The marquee starts from still and eases to its speed.",
+      "pointer": "The crawl slows when the pointer is over it.",
+      "firstScroll": "Crawl speed follows scroll speed.",
+      "build": "Two copies of the text in a flex track with translateX keyframes; animation-play-state on hover and a pause control.",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "events",
+        "music",
+        "fashion",
+        "shops"
+      ],
+      "fails": "A logo strip pretending to be a title.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "frame-to-bleed",
+      "name": "Small frame to full-bleed",
+      "family": "photo",
+      "structure": "full-bleed",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "A picture at about 40% of the width sits in the type and opens to full bleed as it rises; the pinned track is one screen plus 70vh, the picture fills the screen early in the pin, and the next section follows as soon as the caption is in.",
+      "arrival": "The frame opens from a sliver.",
+      "pointer": "None; the frame is the pointer target for a cursor label at most.",
+      "firstScroll": "clip-path inset shrinks to zero as the picture grows to full bleed; no empty screen before or after the pin.",
+      "build": "clip-path: inset() animated on the section's view() timeline (entry 25% to contain 50%) inside @supports and prefers-reduced-motion: no-preference; without either it is a plain one-screen full-width picture with its caption, no track and no pin.",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "products",
+        "places",
+        "hospitality"
+      ],
+      "fails": "The frame starts large, so nothing grows.",
+      "pictureFree": false,
+      "examples": [
+        "Apple product pages"
+      ],
+      "kinds": [
+        "picture-led"
+      ]
+    },
+    {
+      "id": "scroll-scrub",
+      "name": "Scroll-scrubbed sequence",
+      "family": "photo",
+      "structure": "full-bleed",
+      "modes": [
+        "product",
+        "photographs"
+      ],
+      "reach": "commission",
+      "layout": "A sticky canvas shows image frames tied to scroll position while short lines of type change beside it.",
+      "arrival": "The first frame holds.",
+      "pointer": "None.",
+      "firstScroll": "Scroll plays the sequence.",
+      "build": "A sticky canvas drawing preloaded frames by scroll progress.",
+      "needs": [
+        "footage-sequence"
+      ],
+      "suits": [
+        "hardware",
+        "products"
+      ],
+      "fails": "Out of reach without footage or renders.",
+      "pictureFree": false,
+      "examples": [
+        "AirPods pages"
+      ],
+      "kinds": [
+        "expressive",
+        "picture-led"
+      ],
+      "loud": true
+    },
+    {
+      "id": "one-figure",
+      "name": "One figure or price",
+      "family": "type",
+      "structure": "type-first",
+      "modes": [
+        "type",
+        "product",
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "A number at 20-30vw (\"No. 14/40\", a price, a count) fills most of the width; the explanation sits small beside it; a small picture may sit inside a counter.",
+      "arrival": "The figure arrives whole, not counted up.",
+      "pointer": "None, or the figure's weight responds.",
+      "firstScroll": "The figure stays as the first section slides under it.",
+      "build": "font-variant-numeric:lining-nums tabular-nums; font-size:clamp(6rem,25vw,24rem).",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "limited runs",
+        "pricing",
+        "finance",
+        "events"
+      ],
+      "fails": "A count-up animation, or a vanity number with nothing behind it.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "question-configurator",
+      "name": "Question or configurator",
+      "family": "device",
+      "structure": "tool",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "The headline is the question; the answer options sit under it; the picture beside or behind updates with the answer.",
+      "arrival": "The options appear as the question settles.",
+      "pointer": "Options preview their result on hover.",
+      "firstScroll": "The chosen answer carries into the next section.",
+      "build": "Radio inputs styled as large options; :has(:checked) swaps the picture.",
+      "needs": [
+        "photo-set"
+      ],
+      "suits": [
+        "food",
+        "drink",
+        "services",
+        "retail"
+      ],
+      "fails": "A quiz for its own sake, with a result that changes nothing.",
+      "pictureFree": false,
+      "examples": [
+        "Delta Cafes quiz"
+      ],
+      "kinds": [
+        "expressive"
+      ]
+    },
+    {
+      "id": "editorial-cover",
+      "name": "Editorial cover",
+      "family": "editorial",
+      "structure": "full-bleed",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "A masthead across the top, issue number and date, a cover picture filling most of the height, coverlines set over the picture at the left edge.",
+      "arrival": "Coverlines arrive one by one.",
+      "pointer": "Coverlines are links; hovering one marks its part of the picture.",
+      "firstScroll": "The cover becomes the first spread.",
+      "build": "Masthead at 14vw; coverlines absolutely placed over the figure with real z-order.",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "publishing",
+        "culture",
+        "fashion",
+        "editions",
+        "magazines"
+      ],
+      "fails": "A magazine costume on a business with no issues.",
+      "pictureFree": false,
+      "examples": [
+        "Stripe Press"
+      ],
+      "kinds": [
+        "picture-led"
+      ],
+      "avoid": [
+        "shop",
+        "clinic",
+        "dentist",
+        "trades",
+        "repair",
+        "plumber",
+        "electrician",
+        "garage",
+        "saas",
+        "software",
+        "legal",
+        "accountant",
+        "consultancy",
+        "restaurant",
+        "cafe",
+        "bakery"
+      ]
+    },
+    {
+      "id": "map-place",
+      "name": "Map or place as hero",
+      "family": "place",
+      "structure": "drawn-scene",
+      "modes": [
+        "photographs",
+        "type"
+      ],
+      "reach": "stock",
+      "layout": "The real route, site plan or neighbourhood drawn at full width; the business marked; hours and the action in corners.",
+      "arrival": "The route draws itself.",
+      "pointer": "Points of interest reveal their names under the pointer.",
+      "firstScroll": "The map zooms to the business.",
+      "build": "An inline SVG map traced from the real place; stroke-dashoffset for the route.",
+      "needs": [
+        "map"
+      ],
+      "suits": [
+        "local",
+        "tours",
+        "estates",
+        "venues"
+      ],
+      "fails": "A generic embedded map with a pin.",
+      "pictureFree": true,
+      "examples": [
+        "Royal Sites Ireland"
+      ],
+      "kinds": [
+        "expressive"
+      ],
+      "avoid": [
+        "saas",
+        "software",
+        "devtools",
+        "online"
+      ]
+    },
+    {
+      "id": "letter",
+      "name": "Letter",
+      "family": "type",
+      "structure": "type-first",
+      "modes": [
+        "type",
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "One column of 24-32px text, about 50ch, starts near the top and is signed with a name, place and date.",
+      "arrival": "The letter appears whole; nothing types itself.",
+      "pointer": "None.",
+      "firstScroll": "The signature and a small picture appear at the end of the letter.",
+      "build": "p{font-size:clamp(1.5rem,2.2vw,2rem);max-width:50ch} on a different ground.",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "founders",
+        "non-profit",
+        "craft",
+        "publishing"
+      ],
+      "fails": "A manifesto with nothing to see and no action.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "minimal"
+      ]
+    },
+    {
+      "id": "live-data",
+      "name": "Live clock or data",
+      "family": "type",
+      "structure": "list-board",
+      "modes": [
+        "type",
+        "product",
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "Real live state set large (open now until 19:00, next departure, stock left) across the width; the action beside it.",
+      "arrival": "The value appears set, not counted up.",
+      "pointer": "None.",
+      "firstScroll": "The live value becomes a small sticky status.",
+      "build": "A small script fills real values; tabular-nums; aria-live polite.",
+      "needs": [
+        "live-data"
+      ],
+      "suits": [
+        "local",
+        "transport",
+        "venues",
+        "shops"
+      ],
+      "fails": "A decorative clock: the studio-portfolio tell.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "minimal"
+      ]
+    },
+    {
+      "id": "loop-hero",
+      "name": "Loop or transition hero",
+      "family": "type",
+      "structure": "type-first",
+      "modes": [
+        "photographs",
+        "type"
+      ],
+      "reach": "stock",
+      "layout": "The end of the page wraps back into the hero, so the hero is also the finale; a strong single image or phrase.",
+      "arrival": "A short loader that becomes the hero.",
+      "pointer": "None.",
+      "firstScroll": "Ordinary scroll; the loop shows at the end.",
+      "build": "The finale duplicates the hero; scrolling past it jumps to the top seamlessly.",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "studios",
+        "events",
+        "culture"
+      ],
+      "fails": "Scroll hijacking that traps the visitor.",
+      "pictureFree": true,
+      "examples": [
+        "Santal"
+      ],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "split-colour-fields",
+      "name": "Split colour fields",
+      "family": "cutout",
+      "structure": "side-by-side",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "cutout",
+      "layout": "Two flat hues meet at a vertical or diagonal seam; the cut-out subject straddles the seam; the headline crosses both fields with its ink switching at the seam.",
+      "arrival": "The two fields slide in from opposite edges.",
+      "pointer": "The seam leans slightly toward the pointer.",
+      "firstScroll": "One field grows to fill the viewport.",
+      "build": "background:linear-gradient(90deg,var(--a) 50%,var(--b) 50%); mix-blend-mode:difference or two clipped copies of the headline.",
+      "needs": [
+        "cut-out"
+      ],
+      "suits": [
+        "food",
+        "drink",
+        "retail",
+        "events"
+      ],
+      "fails": "Two random brand colours with a centred product and nothing crossing the seam.",
+      "pictureFree": false,
+      "examples": [
+        "Agrumea"
+      ],
+      "kinds": [
+        "expressive"
+      ],
+      "avoid": [
+        "clinic",
+        "dentist",
+        "physio",
+        "legal",
+        "accountant",
+        "consultancy",
+        "saas",
+        "software",
+        "plumber",
+        "electrician"
+      ],
+      "loud": true
+    },
+    {
+      "id": "stacked-cards",
+      "name": "Stacked cards",
+      "family": "collage",
+      "structure": "side-by-side",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "A stack of 3-6 picture cards sits slightly fanned at one side; the headline on the other; the top card is real content.",
+      "arrival": "Cards deal onto the stack.",
+      "pointer": "Cards fan out on the pointer.",
+      "firstScroll": "Cards deal down the page one per section.",
+      "build": "Absolutely placed cards with rotate transforms; transform-origin at the bottom.",
+      "needs": [
+        "photo-set"
+      ],
+      "suits": [
+        "events",
+        "menus",
+        "collections",
+        "recipes"
+      ],
+      "fails": "A generic tilted card stack with stock photos.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "expressive",
+        "picture-led"
+      ]
+    },
+    {
+      "id": "type-poster-inset",
+      "name": "Type poster with one photo inset",
+      "family": "editorial",
+      "structure": "type-first",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "A giant numeral or word fills most of the screen; a fixed index rail runs at one side; one photograph sits inset at full height of a column.",
+      "arrival": "The numeral arrives, then the photo.",
+      "pointer": "Rail rows preview their item.",
+      "firstScroll": "The rail stays while the inset photo changes.",
+      "build": "Grid of 300px rail, 1fr numeral, 1fr photo with vertical rules.",
+      "needs": [
+        "full-bleed-photo",
+        "type-only"
+      ],
+      "suits": [
+        "collections",
+        "fashion",
+        "editions",
+        "galleries"
+      ],
+      "fails": "A numeral with no system behind it.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "illustrated-world",
+      "name": "Illustrated world",
+      "family": "illustration",
+      "structure": "drawn-scene",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "commission",
+      "layout": "A drawn scene fills the viewport with the business in it; type painted into the scene.",
+      "arrival": "The scene comes to life in layers.",
+      "pointer": "Elements of the scene react to the pointer.",
+      "firstScroll": "The scene pans as the page scrolls.",
+      "build": "Layered SVG or PNG illustration with parallax.",
+      "needs": [
+        "illustration"
+      ],
+      "suits": [
+        "culture",
+        "kids",
+        "food",
+        "tourism"
+      ],
+      "fails": "Clip-art or generated illustration in a mixed style.",
+      "pictureFree": false,
+      "examples": [
+        "Santioni",
+        "197 Historias Ilustradas"
+      ],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "playable",
+      "name": "Playable",
+      "family": "illustration",
+      "structure": "drawn-scene",
+      "modes": [],
+      "reach": "out",
+      "layout": "A small game or drivable scene fills the viewport.",
+      "arrival": "The world loads.",
+      "pointer": "The visitor plays.",
+      "firstScroll": "None.",
+      "build": "WebGL.",
+      "needs": [
+        "3d"
+      ],
+      "suits": [
+        "portfolios"
+      ],
+      "fails": "Out of scope for a business page.",
+      "pictureFree": false,
+      "examples": [
+        "Bruno Simon",
+        "Night Drive"
+      ],
+      "kinds": [
+        "expressive"
+      ],
+      "loud": true
+    },
+    {
+      "id": "sticky-index",
+      "name": "Sticky index with a changing picture",
+      "family": "editorial",
+      "structure": "side-by-side",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "A list of 5-9 rows at 40-80px fills the left 60%; hovering or focusing a row swaps the large picture on the right, which bleeds off the right edge.",
+      "arrival": "Rows rise in sequence.",
+      "pointer": "Hover or focus a row to swap the picture; a small caption updates.",
+      "firstScroll": "The list stays and the picture becomes the first section.",
+      "build": "List of links with data-src; the picture swaps with a short cross-fade; focus does the same as hover.",
+      "needs": [
+        "photo-set"
+      ],
+      "suits": [
+        "menus",
+        "collections",
+        "studios",
+        "restaurants"
+      ],
+      "fails": "A list of plain links with no picture change, or a picture that follows the cursor.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "picture-led"
+      ]
+    },
+    {
+      "id": "quiet-statement",
+      "name": "Quiet statement",
+      "family": "statement",
+      "structure": "type-first",
+      "modes": [
+        "type",
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "The headline at a comfortable display size (about 2.5-4 times the body), a short subhead, the action and one proof line, set in one column with generous space around; no picture, or one small sharp picture that shows the thing itself.",
+      "arrival": "The headline and the action fade in together, under half a second.",
+      "pointer": "None beyond good hover and focus states on the action.",
+      "firstScroll": "The first section starts plainly below; nothing pinned.",
+      "build": "h1{font-size:clamp(2.5rem,5vw,4.5rem);line-height:1.08;max-width:18ch} .lead{max-width:48ch} main>section:first-child{padding-block:clamp(5rem,12vh,9rem)}",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "clinic",
+        "legal",
+        "finance",
+        "services",
+        "consultancy",
+        "software",
+        "care",
+        "any"
+      ],
+      "fails": "Reads as empty when the words are vague: the headline must say what it is and for whom, and the proof must be real.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "minimal"
+      ]
+    },
+    {
+      "id": "calm-split",
+      "name": "Calm split",
+      "family": "split",
+      "structure": "side-by-side",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "Headline, subhead and the action in one column; a sharp, well-lit photograph fills the other side to the edge (5/7 or 6/6), cropped so its subject reads at once; nothing laid over faces or the subject.",
+      "arrival": "The text rises a few pixels while the photograph fades in; under 600ms.",
+      "pointer": "None on the photograph; the action has clear hover, press and focus states.",
+      "firstScroll": "The next section starts below the split; the photograph does not pin.",
+      "build": ".hero{display:grid;grid-template-columns:5fr 7fr;align-items:center;min-height:min(88vh,56rem)} .hero img{width:100%;height:100%;object-fit:cover}",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "clinic",
+        "dentist",
+        "services",
+        "trades",
+        "legal",
+        "care",
+        "hospitality",
+        "local"
+      ],
+      "fails": "A weak, blurred or dark photograph, or one cropped through its subject; a card or form laid across the photograph.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "minimal",
+        "picture-led"
+      ]
+    },
+    {
+      "id": "photo-with-headline",
+      "name": "Photograph with a headline",
+      "family": "photo-led",
+      "structure": "full-bleed",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "One excellent, sharp photograph fills most of the first screen; a modest headline, one line and the action sit on its calm area (sky, wall, water, floor; moved there with object-position per width), with at most a light gradient scrim on that side sized to pass 4.5:1, or on a solid panel beside or below it; never over a face or the subject.",
+      "arrival": "The photograph is present from the first frame; the text fades up after it.",
+      "pointer": "None on the photograph.",
+      "firstScroll": "The photograph scrolls away normally; the first section continues in the same light.",
+      "build": ".hero{position:relative;min-height:88vh} .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--focus,50% 50%)} .hero .panel{position:relative;max-width:32rem}",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "hospitality",
+        "travel",
+        "food",
+        "places",
+        "property",
+        "fashion",
+        "outdoor",
+        "services"
+      ],
+      "fails": "Text over a busy, blurred or dark area, or over a face; a dark overlay flattening the picture to make text read.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "picture-led"
+      ]
+    },
+    {
+      "id": "headline-then-photo",
+      "name": "Headline, then the photograph",
+      "family": "photo-band",
+      "structure": "stacked",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "Headline, subhead and the action above, on the plain ground; a wide, sharp photograph (or the product in a real state) runs full width below at about half the screen height, its subject clear.",
+      "arrival": "Text first, then the picture fades in below; under 600ms.",
+      "pointer": "None.",
+      "firstScroll": "The picture scrolls with the page, or opens slightly wider as it rises (scroll-frame-grow).",
+      "build": ".hero-text{max-width:40rem;padding-block:clamp(4rem,10vh,7rem) 2.5rem} .hero-picture{width:100%;height:min(52vh,40rem);object-fit:cover}",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "clinic",
+        "services",
+        "software",
+        "trades",
+        "local",
+        "education"
+      ],
+      "fails": "A photograph so short it becomes a strip, or one whose subject is cut off by the crop at phone width.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "minimal",
+        "picture-led"
+      ]
+    },
+    {
+      "id": "ruled-offer",
+      "name": "The offer as a ruled list",
+      "family": "list",
+      "structure": "list-board",
+      "modes": [
+        "type",
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "A short headline at a modest size, then the offer itself fills the first screen as 4-7 ruled rows at full width: what, a short line, the price or time, each row a link; the action sits after the last row.",
+      "arrival": "Rows are simply there; at most the rules draw across once, under 600ms.",
+      "pointer": "A row takes the accent on hover and focus; nothing follows the pointer.",
+      "firstScroll": "The rows scroll away with the page; the next section starts on the same column lines.",
+      "build": ".offer{display:grid;grid-template-columns:auto 1fr auto;column-gap:2rem} .offer a{display:contents} .offer>*{border-top:1px solid;padding-block:1rem} .price{font-variant-numeric:tabular-nums}",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "services",
+        "repair",
+        "clinic",
+        "menus",
+        "bike",
+        "trades",
+        "salon",
+        "courses"
+      ],
+      "fails": "The rows are vague categories rather than the real offer with prices or times, so the list says nothing a menu would.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "minimal",
+        "expressive"
+      ]
+    },
+    {
+      "id": "trade-board",
+      "name": "The trade's own board",
+      "family": "board",
+      "structure": "list-board",
+      "modes": [
+        "type",
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "Today's items set as the board this trade really uses (a chalkboard of bakes, a departure board, a tide table, a specials card) in one block across most of the first screen; the name and the action sit above or beside it, small.",
+      "arrival": "The board is set; values may tick into place once, under a second.",
+      "pointer": "None beyond clear hover and focus on any row that links.",
+      "firstScroll": "The board scrolls with the page; a small \"today\" line may stay in the header.",
+      "build": "A real list or table styled as the board (tabular-nums, leader dots, the board's own lettering for headings only); data from the owner or a small script; aria-live off.",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "bakery",
+        "cafe",
+        "restaurant",
+        "market",
+        "transport",
+        "harbour",
+        "pub",
+        "local"
+      ],
+      "fails": "A fake board with invented items, or lettering so decorative the items no longer read.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "expressive",
+        "minimal"
+      ]
+    },
+    {
+      "id": "plain-object",
+      "name": "One object, plainly shown",
+      "family": "object",
+      "structure": "centred-object",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "cutout",
+      "layout": "One sharp photograph of the thing itself on a plain or sampled ground, centred at 40-55% of the viewport height like a label or a catalogue plate; the name above, one line and the action below.",
+      "arrival": "The object is there; the text fades in under half a second.",
+      "pointer": "None, or a second view of the object on hover and focus.",
+      "firstScroll": "The object scrolls away; the first section starts below it.",
+      "build": ".plate{display:grid;justify-items:center;text-align:center;gap:1.25rem} .plate img{height:min(52vh,34rem);width:auto;object-fit:contain}",
+      "needs": [
+        "cut-out"
+      ],
+      "suits": [
+        "bike",
+        "shop",
+        "products",
+        "craft",
+        "bakery",
+        "furniture",
+        "cosmetics",
+        "tools"
+      ],
+      "fails": "A soft or poorly cut photograph, or a thing that is not one object (a service, a room).",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "minimal",
+        "picture-led"
+      ]
+    },
+    {
+      "id": "drawn-subject",
+      "name": "Drawn for the subject",
+      "family": "drawing",
+      "structure": "drawn-scene",
+      "modes": [
+        "type",
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "A simple line drawing made for this subject (how it works, its parts, the route, the place) runs across the first screen in one stroke language; the headline is set into the drawing's open space and the action sits beside the part it is about.",
+      "arrival": "The drawing draws once, path by path, under about a second; the text is there from the start.",
+      "pointer": "Optional: parts of the drawing answer hover and focus with their name.",
+      "firstScroll": "The drawing completes or changes state as it leaves (bespoke.md).",
+      "build": "Inline SVG with pathLength=\"1\", one stroke width and cap, colours from the page tokens; see the svg snippets for techniques to redraw.",
+      "needs": [
+        "type-only"
+      ],
+      "suits": [
+        "services",
+        "repair",
+        "software",
+        "trades",
+        "clinic",
+        "dentist",
+        "delivery",
+        "courses",
+        "craft"
+      ],
+      "fails": "Clip-art or a generic illustration that could sit on any site, or a drawing that hides the headline or the action.",
+      "pictureFree": true,
+      "examples": [],
+      "kinds": [
+        "minimal",
+        "expressive"
+      ]
+    },
+    {
+      "id": "contact-sheet",
+      "name": "Contact sheet",
+      "family": "sheet",
+      "structure": "collage",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "Three to five photographs at one height run in a row across the full width like a contact sheet, each with a small caption; the headline and the action sit in one line above the row.",
+      "arrival": "Pictures fade in left to right, 60ms apart, under 600ms in all.",
+      "pointer": "A picture's caption darkens on hover and focus; no zoom.",
+      "firstScroll": "The row scrolls with the page; on phones it becomes a swipeable row with the first picture whole.",
+      "build": ".sheet{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(14rem,1fr);gap:.75rem;overflow-x:auto} .sheet img{aspect-ratio:3/4;object-fit:cover}",
+      "needs": [
+        "photo-set"
+      ],
+      "suits": [
+        "bakery",
+        "restaurant",
+        "hospitality",
+        "studios",
+        "shop",
+        "places",
+        "events"
+      ],
+      "fails": "Weak or repetitive pictures, or captions that only repeat the picture.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "picture-led",
+        "minimal"
+      ]
+    },
+    {
+      "id": "photo-then-label",
+      "name": "Photograph, then its label",
+      "family": "plate",
+      "structure": "stacked",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "A wide, sharp photograph opens the page at 60-100% of the screen height with no text on it; under it a label set like a museum caption carries the name, what it is, the action and one fact, on the plain ground. At 390 the picture shortens so the label and action stay on the first screen.",
+      "arrival": "The picture is there; the label fades in under half a second.",
+      "pointer": "None.",
+      "firstScroll": "The page continues on the label's column lines.",
+      "build": ".plate img{width:100%;height:min(66vh,46rem);object-fit:cover} .label{display:grid;grid-template-columns:repeat(12,1fr);padding-block:1.5rem}",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "places",
+        "hospitality",
+        "craft",
+        "furniture",
+        "galleries",
+        "architecture",
+        "bakery"
+      ],
+      "fails": "The action falls below the fold at phone width; keep the label within the first screen there.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "picture-led"
+      ]
+    },
+    {
+      "id": "window-video",
+      "name": "Video in a window",
+      "family": "photo",
+      "structure": "stacked",
+      "modes": [
+        "photographs",
+        "video"
+      ],
+      "reach": "stock",
+      "layout": "The headline, one line and the action sit on the plain ground at the top; under them, a wide window (about 16:7, inset from the edges or bleeding right) plays a short muted loop of the place or the act; a small pause button sits on the window's corner. The words never sit on the video.",
+      "arrival": "The poster is in the window from the first frame; the loop starts when it can play.",
+      "pointer": "None on the video; the pause button has hover, press and focus states.",
+      "firstScroll": "The window scrolls away normally; the next section continues on the same ground.",
+      "build": "<video autoplay muted loop playsinline aria-hidden=\"true\" poster=\"...\"> inside a figure with aspect-ratio: 16/7 and object-fit: cover; sources and the pause button as full-bleed-video; under reduced motion or saved data the poster stays. Text needs no scrim because it never touches the picture.",
+      "needs": [
+        "video"
+      ],
+      "suits": [
+        "hospitality",
+        "restaurant",
+        "cafe",
+        "bakery",
+        "fitness",
+        "yoga",
+        "studio",
+        "craft",
+        "events",
+        "venues",
+        "travel",
+        "food",
+        "workshop"
+      ],
+      "fails": "A loop that shows nothing specific to the business, a window too small to read the act at 390, or no pause control.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "picture-led"
+      ],
+      "avoid": [
+        "saas",
+        "software",
+        "app",
+        "devtools",
+        "fintech",
+        "finance",
+        "legal",
+        "accountant",
+        "accounting",
+        "insurance",
+        "consultancy",
+        "b2b",
+        "agency"
+      ]
+    },
+    {
+      "id": "photo-caption-bar",
+      "name": "Full-bleed photograph with a caption bar",
+      "family": "photo-led",
+      "structure": "full-bleed",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "One sharp photograph fills the first screen above a solid caption bar along its foot (about 20-28% of the height, the page's ground or a colour sampled from the picture): the name, one line saying what it is, a fact (place, season, price from) and the action sit in the bar, so no text touches the picture.",
+      "arrival": "The photograph is there from the first frame; the bar's text is in place with it.",
+      "pointer": "None on the photograph.",
+      "firstScroll": "The bar scrolls with the picture; the next section continues in the bar's colour.",
+      "build": ".hero{display:grid;grid-template-rows:1fr auto;min-height:100svh} .hero img{width:100%;height:100%;object-fit:cover;object-position:var(--focus,50% 50%)} .bar{display:flex;gap:2rem;align-items:center;padding:1.25rem var(--gutter)}",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "hotels",
+        "hospitality",
+        "travel",
+        "places",
+        "property",
+        "outdoor",
+        "venues",
+        "events",
+        "restaurant",
+        "architecture"
+      ],
+      "fails": "A busy or soft photograph, or a bar so tall the picture becomes a strip; at 390 the bar wraps to more than about a third of the screen.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "picture-led"
+      ]
+    },
+    {
+      "id": "quiet-field",
+      "name": "Quiet field",
+      "family": "field",
+      "structure": "full-bleed",
+      "modes": [
+        "photographs"
+      ],
+      "reach": "stock",
+      "layout": "One sharp photograph with a large calm area (sky, a wall, water, a floor, a plain surface) fills the first screen; a short headline at a comfortable size, one line and the action sit together in that calm area, with no scrim, no panel and nothing over the subject; at 390 the picture is re-cropped (object-position) so the calm area still holds the text.",
+      "arrival": "The photograph is there from the first frame; the headline and the action fade in after it, under half a second.",
+      "pointer": "None on the photograph; clear hover, press and focus on the action.",
+      "firstScroll": "The photograph scrolls away normally; the first section starts in a ground sampled from it.",
+      "build": ".hero{position:relative;min-height:min(92vh,60rem)} .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--focus,50% 50%)} .hero .words{position:relative;max-width:30rem;padding:clamp(2rem,6vw,6rem)}",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "engineering",
+        "industry",
+        "energy",
+        "manufacturing",
+        "technology",
+        "architecture",
+        "property",
+        "outdoor",
+        "services",
+        "corporate",
+        "research"
+      ],
+      "fails": "A photograph with no real calm area, so the text needs a dark overlay or lands on the subject; or a soft, generic landscape that says nothing about the business.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "minimal"
+      ]
+    },
+    {
+      "id": "centred-frame",
+      "name": "Centred frame",
+      "family": "frame",
+      "structure": "centred-object",
+      "modes": [
+        "photographs",
+        "product"
+      ],
+      "reach": "stock",
+      "layout": "The headline, one line and the action centred at the top on the plain ground; below them one sharp photograph (or the product in a real state) in a single centred frame about 55-70% of the width, its top edge inside the first screen at 1440 and 390, so the eye goes from the words down to the thing.",
+      "arrival": "The words first, then the frame opens from a slightly smaller size to its own; under 700ms.",
+      "pointer": "None on the frame; clear hover, press and focus on the action.",
+      "firstScroll": "The frame widens a little as it rises (scroll-frame-grow), then the first section follows.",
+      "build": ".hero{display:grid;justify-items:center;text-align:center;gap:clamp(1.5rem,4vh,3rem);padding-block:clamp(4rem,10vh,7rem) 0} .hero h1{max-width:20ch} .hero figure{width:min(70vw,64rem);aspect-ratio:16/10;margin:0} .hero img{width:100%;height:100%;object-fit:cover}",
+      "needs": [
+        "full-bleed-photo"
+      ],
+      "suits": [
+        "engineering",
+        "technology",
+        "products",
+        "hardware",
+        "craft",
+        "services",
+        "software",
+        "corporate",
+        "clinic",
+        "education"
+      ],
+      "fails": "A frame so small it reads as a thumbnail, a centred headline so long it becomes a paragraph, or a photograph that is not the thing itself.",
+      "pictureFree": false,
+      "examples": [],
+      "kinds": [
+        "minimal",
+        "picture-led"
+      ]
+    }
+  ]
+}

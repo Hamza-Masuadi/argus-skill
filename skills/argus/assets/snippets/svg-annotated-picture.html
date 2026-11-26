@@ -1,0 +1,117 @@
+<!doctype html>
+<!--
+  svg-annotated-picture: information drawn on a picture, with thin lines and small labels:
+  here a tide curve over a stretch of shore, with the two low waters marked. It stays
+  aligned at every width.
+  Mechanism: the picture and an SVG share one box whose aspect-ratio is the picture's own,
+  so nothing is cropped and nothing drifts. The SVG's viewBox is the picture's pixel size
+  (1600 x 1000 here), so a point is placed in the picture's own coordinates; the labels are
+  HTML placed with left/top in percentages of the same box (x / 1600, y / 1000). Stroke
+  widths are in viewBox units (2.4 is about 1.5px when the picture is shown 1000px wide).
+  No vector-effect: non-scaling-stroke here: it breaks dashes drawn with pathLength, so the
+  curve would not draw. Each label sits
+  on a small local backing in the ground colour, never a scrim over the whole picture.
+  On arrival the curve draws once (pathLength="1" and stroke-dashoffset).
+  Phones: under 34rem the labels on the picture give way to their numbers, and the list
+  under the picture shows the text.
+  Fallback and reduced motion: without script, or under prefers-reduced-motion, the curve
+  is drawn complete.
+  Accessibility: the picture keeps its own alt; the drawing and the on-picture labels are
+  aria-hidden, and the list in the figcaption carries every label as real text.
+  A technique to redraw for the subject (a route over a hillside, rings over an aerial
+  view, a section line across a building): keep the mechanism, draw your own figures, in
+  the palette's ink with one stroke weight. Use your own photograph in place of the drawn
+  stand-in, and give the box its width and height.
+  Copy the blocks marked for copying (CSS, HTML and script).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annotated picture (svg-annotated-picture)</title>
+<style>
+/* Demo page */
+* { box-sizing: border-box; }
+body { margin: 0; background: #eef0ec; color: #17302f; font: 400 17px/1.55 "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+.pad { max-width: 72rem; margin: 0 auto; padding: 10vh clamp(1.25rem, 4vw, 3rem) 4vh; }
+.pad h1 { font: 500 clamp(1.75rem, 3.5vw, 2.75rem)/1.1 "Avenir Next", sans-serif; letter-spacing: -.02em; margin: 0 0 .5rem; max-width: 22ch; }
+.pad p { margin: 0; max-width: 34rem; color: #46605d; }
+
+/* argus:copy-start css */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --t-page: 900ms; --note-ground: #eef0ec; --note-ink: #17302f; --note-accent: #b5562f; }
+.annotated { margin: 0 auto; max-width: 80rem; padding: 0 clamp(1.25rem, 4vw, 3rem) 10vh; }
+.annotated .frame { position: relative; aspect-ratio: 1600 / 1000; overflow: hidden; }
+.annotated .frame img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.annotated .frame svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.annotated .curve { fill: none; stroke: var(--note-ink); stroke-width: 2.4; }
+.annotated .rule { stroke: var(--note-ink); stroke-width: 1.6; stroke-dasharray: 5 6; opacity: .7; }
+.annotated .dot { fill: var(--note-accent); }
+.annotated .label { position: absolute; margin: 0; transform: translate(-50%, calc(-100% - 10px)); font: 500 13px/1.25 "Avenir Next", sans-serif; letter-spacing: .01em;
+  color: var(--note-ink); background: color-mix(in oklab, var(--note-ground) 86%, transparent); padding: .2em .5em; border-radius: 3px; white-space: nowrap; }
+.annotated .label b { font-weight: 500; color: var(--note-accent); margin-right: .35em; }
+.annotated figcaption { margin-top: .9rem; font-size: 14px; color: color-mix(in oklab, var(--note-ink) 75%, transparent); }
+.annotated figcaption ol { margin: .4rem 0 0; padding-left: 1.4rem; }
+/* Wide: the labels on the picture say it, and the list is for screen readers only. */
+@media (min-width: 34rem) {
+  .annotated figcaption ol { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+/* Narrow: only the numbers stay on the picture. */
+@media (max-width: 33.99rem) {
+  .annotated .label span { display: none; }
+  .annotated .label b { margin: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .annotated.will-draw .curve { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset var(--t-page) var(--ease-out); }
+  .annotated.will-draw.is-in .curve { stroke-dashoffset: 0; }
+}
+/* argus:copy-end css */
+</style>
+</head>
+<body>
+<main>
+<section class="pad"><h1>Walk out at low water, back before the turn</h1><p>The flats are safe for about three hours either side of low tide. Today's curve is drawn on the shore itself.</p></section>
+<!-- argus:copy-start html -->
+<figure class="annotated">
+  <div class="frame">
+    <!-- Your photograph, with its own width, height and alt. The demo draws a stand-in so the file needs nothing else. -->
+    <img width="1600" height="1000" alt="Sand flats at low tide, a channel of water curving across them towards the sea"
+      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1000'%3E%3Cdefs%3E%3ClinearGradient id='s' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23dfe6e2'/%3E%3Cstop offset='1' stop-color='%23c9d3cc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1600' height='1000' fill='url(%23s)'/%3E%3Cpath d='M0 720 C300 640 520 820 820 700 S1300 560 1600 640 V1000 H0Z' fill='%2397b9b2'/%3E%3Cpath d='M0 790 C340 720 560 880 860 780 S1320 660 1600 720 V1000 H0Z' fill='%235f8f89'/%3E%3C/svg%3E">
+    <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <line class="rule" x1="0" x2="1600" y1="560" y2="560"/>
+      <path class="curve" pathLength="1" d="M0 300 C180 300 260 620 420 620 S700 290 860 290 S1140 640 1300 640 S1500 360 1600 330"/>
+      <circle class="dot" cx="420" cy="620" r="7"/>
+      <circle class="dot" cx="1300" cy="640" r="7"/>
+    </svg>
+    <p class="label" style="left: 26.25%; top: 62%;" aria-hidden="true"><b>1</b><span>Low water 08:42, 0.6 m</span></p>
+    <p class="label" style="left: 81.25%; top: 64%;" aria-hidden="true"><b>2</b><span>Low water 21:05, 0.4 m</span></p>
+  </div>
+  <figcaption>
+    Tide height across today, drawn over the flats. Sample figures.
+    <ol>
+      <li>Low water 08:42, 0.6 m</li>
+      <li>Low water 21:05, 0.4 m</li>
+    </ol>
+  </figcaption>
+</figure>
+<!-- argus:copy-end html -->
+<section class="pad"><p>Tide times change daily: check the table before you set out.</p></section>
+</main>
+<script>
+// argus:copy-start js
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || document.visibilityState === 'hidden' || !('IntersectionObserver' in window)) return;
+  document.querySelectorAll('.annotated').forEach((fig) => {
+    fig.classList.add('will-draw');
+    const io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { requestAnimationFrame(() => e.target.classList.add('is-in')); io.unobserve(e.target); }
+    }), { threshold: 0.35 });
+    io.observe(fig);
+    // Never left half drawn: shown complete if it is on screen but the observer has not fired.
+    setTimeout(() => { if (fig.getBoundingClientRect().top < innerHeight) fig.classList.add('is-in'); }, 1200);
+  });
+})();
+// argus:copy-end js
+</script>
+</body>
+</html>
